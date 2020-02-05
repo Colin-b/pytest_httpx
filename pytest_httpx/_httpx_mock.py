@@ -2,8 +2,8 @@ from typing import List, Dict, Union
 
 import httpx
 import pytest
-from httpx import Request, Response, Timeout, URL, Headers
-from httpx.content_streams import IteratorStream, ByteStream
+from httpx import Request, Response, Timeout, URL
+from httpx.content_streams import ByteStream
 from httpx.dispatch.base import SyncDispatcher
 
 
@@ -39,7 +39,7 @@ class HTTPXMock:
             request=None,  # Will be set upon reception of the actual request
         ))
 
-    def get_response(self, request: Request) -> Response:
+    def _get_response(self, request: Request) -> Response:
         responses = self.responses.get((request.method, request.url))
         if not responses:
             raise Exception(f"No mock can be found for {request.method} request on {request.url}.")
@@ -51,7 +51,7 @@ class HTTPXMock:
         response.called = True
         return response
 
-    def assert_everything_called(self):
+    def _assert_everything_called(self):
         non_called_responses = {}
         for (method, url), responses in self.responses.items():
             for response in responses:
@@ -66,7 +66,7 @@ class _PytestSyncDispatcher(SyncDispatcher):
         self.mock = mock
 
     def send(self, request: Request, timeout: Timeout = None) -> Response:
-        return self.mock.get_response(request)
+        return self.mock._get_response(request)
 
 
 @pytest.fixture
@@ -75,4 +75,4 @@ def httpx_mock(monkeypatch) -> HTTPXMock:
     # TODO Handle Async
     monkeypatch.setattr(httpx.client.Client, "dispatcher_for_url", lambda self, url: _PytestSyncDispatcher(mock))
     yield mock
-    mock.assert_everything_called()
+    mock._assert_everything_called()

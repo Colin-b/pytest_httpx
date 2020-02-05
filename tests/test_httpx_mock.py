@@ -10,6 +10,11 @@ def test_httpx_mock_without_response(httpx_mock: HTTPXMock):
     assert str(exception_info.value) == "No mock can be found for GET request on http://test_url."
 
 
+@pytest.mark.xfail(raises=AssertionError, reason="Unused responses should fail test case.")
+def test_httpx_mock_unused_response(httpx_mock: HTTPXMock):
+    httpx_mock.add_response("http://test_url")
+
+
 def test_httpx_mock_default_response(httpx_mock: HTTPXMock):
     httpx_mock.add_response("http://test_url")
 

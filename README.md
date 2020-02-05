@@ -13,6 +13,9 @@ This module is still under development and cannot be considered stable.
 
 Use `pytest_httpx.httpx_mock` [`pytest`](https://docs.pytest.org/en/latest/) fixture to mock [`httpx`](https://www.python-httpx.org) requests.
 
+
+## Add responses
+
 ```python
 import httpx
 from pytest_httpx import httpx_mock, HTTPXMock
@@ -22,4 +25,21 @@ def test_something(httpx_mock: HTTPXMock):
     httpx_mock.add_response("http://test_url")
 
     response = httpx.get("http://test_url")
+```
+
+If all responses are not sent back during test execution, the test case will fail.
+
+## Check sent requests
+
+```python
+import httpx
+from pytest_httpx import httpx_mock, HTTPXMock
+
+
+def test_something(httpx_mock: HTTPXMock):
+    httpx_mock.add_response("http://test_url")
+
+    response = httpx.get("http://test_url")
+
+    # requests are in httpx_mock.requests
 ```
