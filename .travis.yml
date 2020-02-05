@@ -1,0 +1,15 @@
+language: python
+python:
+  - "3.6"
+  - "3.7"
+  - "3.8"
+install:
+  - pip install .[testing]
+script:
+  - pytest --cov=pytest_httpx --cov-fail-under=100
+deploy:
+  provider: pypi
+  username: __token__
+  edge: true
+  distributions: "sdist bdist_wheel"
+  skip_existing: true
