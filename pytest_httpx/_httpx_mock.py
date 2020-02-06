@@ -19,7 +19,10 @@ class _RequestMatcher:
         return self._url_match(request) and request.method == self.method
 
     def _url_match(self, request: Request) -> bool:
-        if isinstance(self.url, re.Pattern):
+        # re.Pattern was introduced in Python 3.7
+        if isinstance(
+            self.url, re._pattern_type if hasattr(re, "_pattern_type") else re.Pattern
+        ):
             return self.url.match(str(request.url)) is not None
         if isinstance(self.url, str):
             return URL(self.url) == request.url
@@ -170,9 +173,15 @@ class HTTPXMock:
         ), f"More than one request ({len(requests)}) matched, use get_requests instead."
         return requests[0] if requests else None
 
+    def assert_and_reset(self):
+        self._assert_responses_sent()
+        self._assert_callbacks_executed()
+
     def _assert_responses_sent(self):
         responses_not_called = [
-            response for matcher, response in self._responses if not matcher.nb_calls
+            response.url
+            for matcher, response in self._responses
+            if not matcher.nb_calls
         ]
         self._responses.clear()
         assert (
@@ -208,16 +217,17 @@ class _PytestAsyncDispatcher(AsyncDispatcher):
 @pytest.fixture
 def httpx_mock(monkeypatch) -> HTTPXMock:
     mock = HTTPXMock()
+    # Mock synchronous requests
     monkeypatch.setattr(
         httpx.client.Client,
         "dispatcher_for_url",
         lambda self, url: _PytestSyncDispatcher(mock),
     )
+    # Mock asynchronous requests
     monkeypatch.setattr(
         httpx.client.AsyncClient,
         "dispatcher_for_url",
         lambda self, url: _PytestAsyncDispatcher(mock),
     )
     yield mock
-    mock._assert_responses_sent()
-    mock._assert_callbacks_executed()
+    mock.assert_and_reset()
