@@ -21,7 +21,8 @@ Use `pytest_httpx.httpx_mock` [`pytest`](https://docs.pytest.org/en/latest/) fix
   - [HTTP status code](#add-non-200-response)
   - [HTTP headers](#reply-with-custom-headers)
   - [HTTP/2.0](#add-http/2.0-response)
-  - [Callback and exception throwing](#callback)
+- [Add dynamic responses](#dynamic-responses)
+- [Raising exceptions](#raising-exceptions)
 - [Check requests](#check-sent-requests)
 
 ## Add responses
@@ -229,7 +230,7 @@ def test_something(httpx_mock: HTTPXMock):
 
 ```
 
-### Callback
+## Dynamic responses
 
 You can perform custom manipulation upon request reception by registering callbacks.
 
@@ -264,6 +265,8 @@ def test_something(httpx_mock: HTTPXMock):
         assert response.json() == {"url": "http://test_url"}
 
 ```
+
+## Raising exceptions
 
 You can simulate httpx exception throwing by raising an exception in your callback.
 
