@@ -48,10 +48,11 @@ class HTTPXMock:
             )
         )
 
-    def _get_response(self, request: Request) -> Response:
+    def _get_response(self, request: Request, timeout: Optional[Timeout]) -> Response:
         self.requests.setdefault((request.method, request.url), []).append(request)
         responses = self.responses.get((request.method, request.url))
         if not responses:
+            # TODO raise TimeoutError() in case timeout is reached ?
             raise Exception(
                 f"No mock can be found for {request.method} request on {request.url}."
             )
@@ -93,7 +94,7 @@ class _PytestSyncDispatcher(SyncDispatcher):
         self.mock = mock
 
     def send(self, request: Request, timeout: Timeout = None) -> Response:
-        return self.mock._get_response(request)
+        return self.mock._get_response(request, timeout)
 
 
 @pytest.fixture
