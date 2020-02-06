@@ -73,7 +73,6 @@ class HTTPXMock:
          * timeout: The timeout linked to the request.
         It should return an httpx.Response instance.
         :param url: Full URL identifying the request. Can be a str or httpx.URL instance.
-        # TODO Allow non strict URL params checking
         :param method: HTTP method identifying the request. Default to GET.
         """
         self._callbacks.append((_RequestMatcher(url, method), callback))
