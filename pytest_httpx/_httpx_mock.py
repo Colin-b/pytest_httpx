@@ -12,9 +12,9 @@ def _url(url: Union[str, URL]) -> URL:
 
 class HTTPXMock:
     def __init__(self):
-        self.requests: Dict[str, List[Response]] = {}
-        self.responses: Dict[str, List[Response]] = {}
-        self.callbacks: Dict[str, List[Callable]] = {}
+        self._requests: Dict[str, List[Response]] = {}
+        self._responses: Dict[str, List[Response]] = {}
+        self._callbacks: Dict[str, List[Callable]] = {}
 
     def add_response(
         self,
@@ -40,7 +40,7 @@ class HTTPXMock:
         :param json: HTTP body of the response (if JSON should be used as content type) if data is not provided.
         :param boundary: Multipart boundary if files is provided.
         """
-        self.responses.setdefault((method.upper(), _url(url)), []).append(
+        self._responses.setdefault((method.upper(), _url(url)), []).append(
             Response(
                 status_code=status_code,
                 http_version=http_version,
@@ -65,11 +65,11 @@ class HTTPXMock:
         # TODO Allow non strict URL params checking
         :param method: HTTP method identifying the request. Default to GET.
         """
-        self.callbacks.setdefault((method.upper(), _url(url)), []).append(callback)
+        self._callbacks.setdefault((method.upper(), _url(url)), []).append(callback)
 
     def _get_response(self, request: Request, timeout: Optional[Timeout]) -> Response:
-        self.requests.setdefault((request.method, request.url), []).append(request)
-        responses = self.responses.get((request.method, request.url))
+        self._requests.setdefault((request.method, request.url), []).append(request)
+        responses = self._responses.get((request.method, request.url))
         if not responses:
             callback = self._get_callback(request)
             if callback:
@@ -89,7 +89,7 @@ class HTTPXMock:
         return response
 
     def _get_callback(self, request: Request) -> Optional[Callable]:
-        callbacks = self.callbacks.get((request.method, request.url))
+        callbacks = self._callbacks.get((request.method, request.url))
         if callbacks:
             return callbacks.pop(0) if len(callbacks) > 1 else callbacks[0]
 
@@ -103,29 +103,29 @@ class HTTPXMock:
         # TODO Allow non strict URL params checking
         :param method: HTTP method identifying the request. Must be a upper cased string value. Default to GET.
         """
-        requests = self.requests.get((method, _url(url)), [])
+        requests = self._requests.get((method, _url(url)), [])
         return requests.pop(0) if requests else None
 
     def _assert_responses_sent(self):
         non_called_responses = {}
-        for (method, url), responses in self.responses.items():
+        for (method, url), responses in self._responses.items():
             for response in responses:
                 if not hasattr(response, "called"):
                     non_called_responses.setdefault((method, url), []).append(response)
-        self.responses.clear()
+        self._responses.clear()
         assert (
             not non_called_responses
         ), f"The following responses are mocked but not requested: {non_called_responses}"
 
     def _assert_callbacks_executed(self):
         non_executed_callbacks = {}
-        for (method, url), callbacks in self.callbacks.items():
+        for (method, url), callbacks in self._callbacks.items():
             for callback in callbacks:
                 if not hasattr(callback, "called"):
                     non_executed_callbacks.setdefault((method, url), []).append(
                         callback
                     )
-        self.callbacks.clear()
+        self._callbacks.clear()
         assert (
             not non_executed_callbacks
         ), f"The following callbacks are registered but not requested: {non_executed_callbacks}"
