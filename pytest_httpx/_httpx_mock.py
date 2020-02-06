@@ -158,6 +158,8 @@ class HTTPXMock:
         matcher.nb_calls += 1
         return callback
 
+    # TODO Allow to assert requests content / files / whatever
+
     def get_requests(
         self, url: Union[str, Pattern, URL] = None, method: str = None
     ) -> List[Request]:
