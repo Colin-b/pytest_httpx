@@ -179,9 +179,7 @@ class HTTPXMock:
 
     def _assert_responses_sent(self):
         responses_not_called = [
-            response.url
-            for matcher, response in self._responses
-            if not matcher.nb_calls
+            response for matcher, response in self._responses if not matcher.nb_calls
         ]
         self._responses.clear()
         assert (
