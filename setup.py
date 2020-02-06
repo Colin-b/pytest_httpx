@@ -31,19 +31,13 @@ setup(
         "Programming Language :: Python :: 3.8",
         "Topic :: Software Development :: Build Tools",
     ],
-    keywords=[
-        "pytest",
-        "testing",
-        "mock",
-        "httpx",
-    ],
+    keywords=["pytest", "testing", "mock", "httpx"],
     packages=find_packages(exclude=["tests*"]),
-    install_requires=[
-        "httpx==0.11.*",
-        "pytest==5.*",
-    ],
+    install_requires=["httpx==0.11.*", "pytest==5.*"],
     extras_require={
         "testing": [
+            # Used to run async test functions
+            "pytest-asyncio==0.10.*",
             # Used to check coverage
             "pytest-cov==2.*",
         ]

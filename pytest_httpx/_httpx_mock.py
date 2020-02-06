@@ -4,7 +4,7 @@ import httpx
 import pytest
 from httpx import Request, Response, Timeout, URL
 from httpx.content_streams import ByteStream, JSONStream
-from httpx.dispatch.base import SyncDispatcher
+from httpx.dispatch.base import SyncDispatcher, AsyncDispatcher
 
 
 def _url(url: Union[str, URL]) -> URL:
@@ -99,14 +99,26 @@ class _PytestSyncDispatcher(SyncDispatcher):
         return self.mock._get_response(request, timeout)
 
 
+class _PytestAsyncDispatcher(AsyncDispatcher):
+    def __init__(self, mock: HTTPXMock):
+        self.mock = mock
+
+    async def send(self, request: Request, timeout: Timeout = None) -> Response:
+        return self.mock._get_response(request, timeout)
+
+
 @pytest.fixture
 def httpx_mock(monkeypatch) -> HTTPXMock:
     mock = HTTPXMock()
-    # TODO Handle Async
     monkeypatch.setattr(
         httpx.client.Client,
         "dispatcher_for_url",
         lambda self, url: _PytestSyncDispatcher(mock),
+    )
+    monkeypatch.setattr(
+        httpx.client.AsyncClient,
+        "dispatcher_for_url",
+        lambda self, url: _PytestAsyncDispatcher(mock),
     )
     yield mock
     mock._assert_responses_sent()

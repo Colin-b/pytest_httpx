@@ -9,8 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.0.3] - 2020-02-06
 ### Added
 - Allow to provide JSON response as python values.
+- Mock async httpx requests as well.
 
-### Fixed
+### Changed
 - method can now be provided even if not entirely upper cased.
 
 ## [0.0.2] - 2020-02-06
