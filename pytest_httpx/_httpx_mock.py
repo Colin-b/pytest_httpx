@@ -2,8 +2,7 @@ from typing import List, Dict, Union, Optional
 
 import httpx
 import pytest
-from httpx import Request, Response, Timeout, URL
-from httpx.content_streams import ByteStream, JSONStream
+from httpx import Request, Response, Timeout, URL, content_streams
 from httpx.dispatch.base import SyncDispatcher, AsyncDispatcher
 
 
@@ -23,8 +22,7 @@ class HTTPXMock:
         status_code: int = 200,
         http_version: str = "HTTP/1.1",
         headers: dict = None,
-        content: Union[str, bytes] = b"",
-        json: Union[list, dict] = None,
+        **content,
     ):
         """
         Mock the response that will be sent if a request is sent to this URL using this method.
@@ -35,17 +33,18 @@ class HTTPXMock:
         :param status_code: HTTP status code of the response to send. Default to 200 (OK).
         :param http_version: HTTP protocol version of the response to send. Default to HTTP/1.1
         :param headers: HTTP headers of the response to send. Default to no headers.
-        :param content: HTTP body of the response. Default to empty if json is not provided.
-        :param json: HTTP body of the response (if JSON should be used as content type). Use content by default.
-        # TODO Allow to provide files
+        :param data: HTTP body of the response, can be an iterator to stream content, bytes, str of the full body or
+        a dictionary in case of a multipart.
+        :param files: Multipart files.
+        :param json: HTTP body of the response (if JSON should be used as content type) if data is not provided.
+        :param boundary: Multipart boundary if files is provided.
         """
-        stream = JSONStream(json) if json else ByteStream(content)
         self.responses.setdefault((method.upper(), _url(url)), []).append(
             Response(
                 status_code=status_code,
                 http_version=http_version,
                 headers=list(headers.items()) if headers else [],
-                stream=stream,
+                stream=content_streams.encode(**content),
                 request=None,  # Will be set upon reception of the actual request
             )
         )

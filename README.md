@@ -5,7 +5,7 @@
 <a href="https://travis-ci.com/Colin-b/pytest_httpx"><img alt="Build status" src="https://api.travis-ci.com/Colin-b/pytest_httpx.svg?branch=master"></a>
 <a href="https://travis-ci.com/Colin-b/pytest_httpx"><img alt="Coverage" src="https://img.shields.io/badge/coverage-100%25-brightgreen"></a>
 <a href="https://github.com/psf/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
-<a href="https://travis-ci.com/Colin-b/pytest_httpx"><img alt="Number of tests" src="https://img.shields.io/badge/tests-27 passed-blue"></a>
+<a href="https://travis-ci.com/Colin-b/pytest_httpx"><img alt="Number of tests" src="https://img.shields.io/badge/tests-29 passed-blue"></a>
 <a href="https://pypi.org/project/pytest-httpx/"><img alt="Number of downloads" src="https://img.shields.io/pypi/dm/pytest_httpx"></a>
 </p>
 
@@ -16,6 +16,7 @@ Use `pytest_httpx.httpx_mock` [`pytest`](https://docs.pytest.org/en/latest/) fix
 - [Add responses](#add-responses)
   - [JSON body](#add-json-response)
   - [Custom body](#reply-with-custom-body)
+  - [Multipart body (files, ...)](#add-multipart-response)
   - [HTTP method](#add-non-get-response)
   - [HTTP status code](#add-non-200-response)
   - [HTTP headers](#reply-with-custom-headers)
@@ -74,7 +75,7 @@ def test_something(httpx_mock: HTTPXMock):
 
 ### Reply with custom body
 
-Use `content` parameter to reply with a custom body by providing bytes or UTF-8 encoded string.
+Use `data` parameter to reply with a custom body by providing bytes or UTF-8 encoded string.
 
 ```python
 import httpx
@@ -82,15 +83,43 @@ from pytest_httpx import httpx_mock, HTTPXMock
 
 
 def test_str_body(httpx_mock: HTTPXMock):
-    httpx_mock.add_response("http://test_url", content="This is my UTF-8 content")
+    httpx_mock.add_response("http://test_url", data="This is my UTF-8 content")
 
     assert httpx.get("http://test_url").text == "This is my UTF-8 content"
 
 
 def test_bytes_body(httpx_mock: HTTPXMock):
-    httpx_mock.add_response("http://test_url", content=b"This is my bytes content")
+    httpx_mock.add_response("http://test_url", data=b"This is my bytes content")
 
     assert httpx.get("http://test_url").content == b"This is my bytes content"
+    
+```
+
+### Add multipart response
+
+Use `data` parameter as a dictionary or `files` parameter (or both) to send multipart response.
+
+You can specify `boundary` parameter to specify the multipart boundary to use.
+
+```python
+import httpx
+from pytest_httpx import httpx_mock, HTTPXMock
+
+
+def test_multipart_body(httpx_mock: HTTPXMock):
+    httpx_mock.add_response("http://test_url", data={"key1": "value1"}, files={"file1": "content of file 1"}, boundary=b"2256d3a36d2a61a1eba35a22bee5c74a")
+
+    assert httpx.get("http://test_url").text == '''--2256d3a36d2a61a1eba35a22bee5c74a\r
+Content-Disposition: form-data; name="key1"\r
+\r
+value1\r
+--2256d3a36d2a61a1eba35a22bee5c74a\r
+Content-Disposition: form-data; name="file1"; filename="upload"\r
+Content-Type: application/octet-stream\r
+\r
+content of file 1\r
+--2256d3a36d2a61a1eba35a22bee5c74a--\r
+'''
     
 ```
 
