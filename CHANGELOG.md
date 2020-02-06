@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - method can now be provided even if not entirely upper cased.
 - content parameter renamed into data.
+- HTTPXMock.requests is now private, use HTTPXMock.get_request instead.
+- HTTPXMock.responses is now private, it should not be accessed anyway.
 
 ## [0.0.2] - 2020-02-06
 ### Added
