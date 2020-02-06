@@ -67,6 +67,19 @@ You can add criteria so that response will be sent only in case of a more specif
 
 Matching is performed on the full URL, query parameters included.
 
+```python
+import httpx
+from pytest_httpx import httpx_mock, HTTPXMock
+
+
+def test_url(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(url="http://test_url")
+
+    with httpx.Client() as client:
+        response1 = client.delete("http://test_url")
+        response2 = client.get("http://test_url")
+```
+
 #### Matching on HTTP method
 
 Use `method` parameter to specify the HTTP method (POST, PUT, DELETE, PATCH, HEAD) to reply to
