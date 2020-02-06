@@ -30,6 +30,7 @@ class HTTPXMock:
 
         :param url: Full URL identifying the request. Can be a str or httpx.URL instance.
         # TODO Allow non strict URL params checking
+        # TODO Allow regex in URL
         :param method: HTTP method identifying the request. Default to GET.
         :param status_code: HTTP status code of the response to send. Default to 200 (OK).
         :param http_version: HTTP protocol version of the response to send. Default to HTTP/1.1
