@@ -297,3 +297,22 @@ def test_httpx_mock_requests_retrieval_on_same_url_and_method(httpx_mock: HTTPXM
         == "test header 2"
     )
     assert not httpx_mock.get_request(httpx.URL("http://test_url"))
+
+
+def test_httpx_mock_requests_json_body(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(
+        "http://test_url", json=["list content 1", "list content 2"]
+    )
+    httpx_mock.add_response(
+        "http://test_url", method="POST", json={"key 1": "value 1", "key 2": "value 2"}
+    )
+    httpx_mock.add_response("http://test_url", method="PUT", json="string value")
+
+    response = httpx.post("http://test_url")
+    assert response.json() == {"key 1": "value 1", "key 2": "value 2"}
+
+    response = httpx.get("http://test_url")
+    assert response.json() == ["list content 1", "list content 2"]
+
+    response = httpx.put("http://test_url")
+    assert response.json() == "string value"

@@ -3,7 +3,7 @@ from typing import List, Dict, Union, Optional
 import httpx
 import pytest
 from httpx import Request, Response, Timeout, URL
-from httpx.content_streams import ByteStream
+from httpx.content_streams import ByteStream, JSONStream
 from httpx.dispatch.base import SyncDispatcher
 
 
@@ -23,27 +23,29 @@ class HTTPXMock:
         status_code: int = 200,
         http_version: str = "HTTP/1.1",
         headers: dict = None,
-        content: bytes = b"",
+        content: Union[str, bytes] = b"",
+        json: Union[list, dict] = None,
     ):
         """
         Mock the response that will be sent if a request is sent to this URL using this method.
 
         :param url: Full URL identifying the request. Can be a str or httpx.URL instance.
         # TODO Allow non strict URL params checking
-        :param method: HTTP method identifying the request. Must be a upper cased string value. Default to GET.
+        :param method: HTTP method identifying the request. Default to GET.
         :param status_code: HTTP status code of the response to send. Default to 200 (OK).
         :param http_version: HTTP protocol version of the response to send. Default to HTTP/1.1
         :param headers: HTTP headers of the response to send. Default to no headers.
-        :param content: HTTP body of the response. Default to empty.
-        # TODO Allow to provide JSON as python
+        :param content: HTTP body of the response. Default to empty if json is not provided.
+        :param json: HTTP body of the response (if JSON should be used as content type). Use content by default.
         # TODO Allow to provide files
         """
-        self.responses.setdefault((method, _url(url)), []).append(
+        stream = JSONStream(json) if json else ByteStream(content)
+        self.responses.setdefault((method.upper(), _url(url)), []).append(
             Response(
                 status_code=status_code,
                 http_version=http_version,
                 headers=list(headers.items()) if headers else [],
-                stream=ByteStream(content),
+                stream=stream,
                 request=None,  # Will be set upon reception of the actual request
             )
         )
