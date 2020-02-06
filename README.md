@@ -84,7 +84,7 @@ from pytest_httpx import httpx_mock, HTTPXMock
 
 
 def test_json(httpx_mock: HTTPXMock):
-    httpx_mock.add_response("http://test_url", json=[{"key1": "value1", "key2": "value2"}])
+    httpx_mock.add_response(json=[{"key1": "value1", "key2": "value2"}])
 
     with httpx.Client() as client:
         assert client.get("http://test_url").json() == [{"key1": "value1", "key2": "value2"}]
@@ -101,14 +101,14 @@ from pytest_httpx import httpx_mock, HTTPXMock
 
 
 def test_str_body(httpx_mock: HTTPXMock):
-    httpx_mock.add_response("http://test_url", data="This is my UTF-8 content")
+    httpx_mock.add_response(data="This is my UTF-8 content")
 
     with httpx.Client() as client:
         assert client.get("http://test_url").text == "This is my UTF-8 content"
 
 
 def test_bytes_body(httpx_mock: HTTPXMock):
-    httpx_mock.add_response("http://test_url", data=b"This is my bytes content")
+    httpx_mock.add_response(data=b"This is my bytes content")
 
     with httpx.Client() as client:
         assert client.get("http://test_url").content == b"This is my bytes content"
@@ -127,7 +127,7 @@ from pytest_httpx import httpx_mock, HTTPXMock
 
 
 def test_multipart_body(httpx_mock: HTTPXMock):
-    httpx_mock.add_response("http://test_url", data={"key1": "value1"}, files={"file1": "content of file 1"}, boundary=b"2256d3a36d2a61a1eba35a22bee5c74a")
+    httpx_mock.add_response(data={"key1": "value1"}, files={"file1": "content of file 1"}, boundary=b"2256d3a36d2a61a1eba35a22bee5c74a")
 
     with httpx.Client() as client:
         assert client.get("http://test_url").text == '''--2256d3a36d2a61a1eba35a22bee5c74a\r
@@ -154,35 +154,35 @@ from pytest_httpx import httpx_mock, HTTPXMock
 
 
 def test_post(httpx_mock: HTTPXMock):
-    httpx_mock.add_response("http://test_url", method="POST")
+    httpx_mock.add_response(method="POST")
 
     with httpx.Client() as client:
         response = client.post("http://test_url")
 
 
 def test_put(httpx_mock: HTTPXMock):
-    httpx_mock.add_response("http://test_url", method="PUT")
+    httpx_mock.add_response(method="PUT")
 
     with httpx.Client() as client:
         response = client.put("http://test_url")
 
 
 def test_delete(httpx_mock: HTTPXMock):
-    httpx_mock.add_response("http://test_url", method="DELETE")
+    httpx_mock.add_response(method="DELETE")
 
     with httpx.Client() as client:
         response = client.delete("http://test_url")
 
 
 def test_patch(httpx_mock: HTTPXMock):
-    httpx_mock.add_response("http://test_url", method="PATCH")
+    httpx_mock.add_response(method="PATCH")
 
     with httpx.Client() as client:
         response = client.patch("http://test_url")
 
 
 def test_head(httpx_mock: HTTPXMock):
-    httpx_mock.add_response("http://test_url", method="HEAD")
+    httpx_mock.add_response(method="HEAD")
 
     with httpx.Client() as client:
         response = client.head("http://test_url")
@@ -199,7 +199,7 @@ from pytest_httpx import httpx_mock, HTTPXMock
 
 
 def test_status_code(httpx_mock: HTTPXMock):
-    httpx_mock.add_response("http://test_url", status_code=404)
+    httpx_mock.add_response(status_code=404)
 
     with httpx.Client() as client:
         assert client.get("http://test_url").status_code == 404
@@ -216,7 +216,7 @@ from pytest_httpx import httpx_mock, HTTPXMock
 
 
 def test_headers(httpx_mock: HTTPXMock):
-    httpx_mock.add_response("http://test_url", headers={"X-Header1": "Test value"})
+    httpx_mock.add_response(headers={"X-Header1": "Test value"})
 
     with httpx.Client() as client:
         assert client.get("http://test_url").headers["x-header1"] == "Test value"
@@ -233,7 +233,7 @@ from pytest_httpx import httpx_mock, HTTPXMock
 
 
 def test_http_version(httpx_mock: HTTPXMock):
-    httpx_mock.add_response("http://test_url", http_version="HTTP/2.0")
+    httpx_mock.add_response(http_version="HTTP/2.0")
 
     with httpx.Client() as client:
         assert client.get("http://test_url").http_version == "HTTP/2.0"
@@ -270,7 +270,7 @@ def test_dynamic_response(httpx_mock: HTTPXMock):
             request=request,
         )
 
-    httpx_mock.add_callback(custom_response, "http://test_url")
+    httpx_mock.add_callback(custom_response)
 
     with httpx.Client() as client:
         response = client.get("http://test_url")
@@ -294,7 +294,7 @@ def test_exception_raising(httpx_mock: HTTPXMock):
     def raise_timeout(*args, **kwargs) -> httpx.Response:
         raise httpx.exceptions.TimeoutException()
 
-    httpx_mock.add_callback(raise_timeout, "http://test_url")
+    httpx_mock.add_callback(raise_timeout)
     
     with httpx.Client() as client:
         with pytest.raises(httpx.exceptions.TimeoutException):
@@ -330,22 +330,22 @@ from pytest_httpx import httpx_mock, HTTPXMock
 
 
 def test_many_requests(httpx_mock: HTTPXMock):
-    httpx_mock.add_response("http://test_url")
+    httpx_mock.add_response()
 
     with httpx.Client() as client:
         response1 = client.get("http://test_url")
         response2 = client.get("http://test_url")
 
-    requests = httpx_mock.get_requests("http://test_url")
+    requests = httpx_mock.get_requests()
 
 
 def test_single_request(httpx_mock: HTTPXMock):
-    httpx_mock.add_response("http://test_url")
+    httpx_mock.add_response()
 
     with httpx.Client() as client:
         response = client.get("http://test_url")
 
-    request = httpx_mock.get_request("http://test_url")
+    request = httpx_mock.get_request()
 ```
 
 ### How requests are selected
