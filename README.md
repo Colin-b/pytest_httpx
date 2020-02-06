@@ -5,7 +5,7 @@
 <a href="https://travis-ci.com/Colin-b/pytest_httpx"><img alt="Build status" src="https://api.travis-ci.com/Colin-b/pytest_httpx.svg?branch=master"></a>
 <a href="https://travis-ci.com/Colin-b/pytest_httpx"><img alt="Coverage" src="https://img.shields.io/badge/coverage-100%25-brightgreen"></a>
 <a href="https://github.com/psf/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
-<a href="https://travis-ci.com/Colin-b/pytest_httpx"><img alt="Number of tests" src="https://img.shields.io/badge/tests-36 passed-blue"></a>
+<a href="https://travis-ci.com/Colin-b/pytest_httpx"><img alt="Number of tests" src="https://img.shields.io/badge/tests-44 passed-blue"></a>
 <a href="https://pypi.org/project/pytest-httpx/"><img alt="Number of downloads" src="https://img.shields.io/pypi/dm/pytest_httpx"></a>
 </p>
 
@@ -63,6 +63,10 @@ Registration order is kept while checking what response to send.
 In case more than one response match request, the first one not yet sent will be sent.
 
 In case all matching responses have been sent, the last registered one will be sent.
+
+#### Providing URL
+
+URL can either be a string, a python re.Pattern instance or a httpx.URL instance.
 
 ### Add JSON response
 
@@ -247,15 +251,13 @@ Default callback is for a GET request on the provided URL.
 Callback should return a httpx.Response instance.
 
 ```python
-from typing import Optional
-
 import httpx
 from httpx import content_streams
 from pytest_httpx import httpx_mock, HTTPXMock
 
 
 def test_dynamic_response(httpx_mock: HTTPXMock):
-    def custom_response(request: httpx.Request, timeout: Optional[httpx.Timeout]) -> httpx.Response:
+    def custom_response(request: httpx.Request, *args, **kwargs) -> httpx.Response:
         return httpx.Response(
             status_code=200,
             http_version="HTTP/1.1",
@@ -279,15 +281,13 @@ You can simulate httpx exception throwing by raising an exception in your callba
 This can be useful if you want to assert that your code handles httpx exceptions properly.
 
 ```python
-from typing import Optional
-
 import httpx
 import pytest
 from pytest_httpx import httpx_mock, HTTPXMock
 
 
 def test_exception_raising(httpx_mock: HTTPXMock):
-    def raise_timeout(request: httpx.Request, timeout: Optional[httpx.Timeout]) -> httpx.Response:
+    def raise_timeout(*args, **kwargs) -> httpx.Response:
         raise httpx.exceptions.TimeoutException()
 
     httpx_mock.add_callback(raise_timeout, "http://test_url")
@@ -307,6 +307,10 @@ Registration order is kept while checking what callback to execute.
 In case more than one callback match request, the first one not yet executed will be sent.
 
 In case all matching callbacks have been sent, the last registered one will be sent.
+
+#### Providing URL
+
+URL can either be a string, a python re.Pattern instance or a httpx.URL instance.
 
 ## Check sent requests
 
@@ -339,3 +343,7 @@ def test_single_request(httpx_mock: HTTPXMock):
 Default matching is performed on the full URL, query parameters included and the HTTP method.
 
 Request original order is kept while appending to the list.
+
+#### Providing URL
+
+URL can either be a string, a python re.Pattern instance or a httpx.URL instance.

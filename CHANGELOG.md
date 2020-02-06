@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - HTTPXMock.get_request now fails if more than one request match. Use HTTPXMock.get_request instead.
 - HTTPXMock.requests is now private, use HTTPXMock.get_requests instead.
 - HTTPXMock.responses is now private, it should not be accessed anyway.
+- url can now be a re.Pattern instance.
 
 ## [0.0.2] - 2020-02-06
 ### Added
