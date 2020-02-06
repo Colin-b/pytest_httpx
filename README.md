@@ -49,17 +49,19 @@ async def test_something_async(httpx_mock: HTTPXMock):
         response = await client.get("http://test_url")
 ```
 
-In case more than one request is sent to the same URL, the responses will be sent in the registration order.
-
-First response will be sent as response of the first request and so on.
-
-If the number of responses is lower than the number of requests on an URL, the last response will be used to reply to all subsequent requests on this URL.
-
 If all responses are not sent back during test execution, the test case will fail at teardown.
 
 Default response is a 200 (OK) without any body for a GET request on the provided URL using HTTP/1.1 protocol version.
 
-Default matching is performed on the full URL, query parameters included.
+### How response is selected
+
+Default matching is performed on the full URL, query parameters included and the HTTP method.
+
+Registration order is kept while checking what response to send.
+
+In case more than one response match request, the first one not yet sent will be sent.
+
+In case all matching responses have been sent, the last registered one will be sent.
 
 ### Add JSON response
 

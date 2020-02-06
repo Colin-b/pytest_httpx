@@ -1,4 +1,4 @@
-from typing import List, Dict, Union, Optional, Callable
+from typing import List, Dict, Union, Optional, Callable, Tuple
 
 import httpx
 import pytest
@@ -10,10 +10,23 @@ def _url(url: Union[str, URL]) -> URL:
     return URL(url) if isinstance(url, str) else url
 
 
+class _RequestMatcher:
+    def __init__(self, url: Union[str, URL], method: str):
+        # TODO Allow non strict URL params checking
+        # TODO Allow regex in URL
+        self.nb_calls = 0
+        self.url = _url(url)
+        self.method = method.upper()
+
+    def match(self, request: Request) -> bool:
+        # TODO Allow to match on anything from the request
+        return request.url == self.url and request.method == self.method
+
+
 class HTTPXMock:
     def __init__(self):
         self._requests: Dict[str, List[Response]] = {}
-        self._responses: Dict[str, List[Response]] = {}
+        self._responses: List[Tuple[_RequestMatcher, Response]] = []
         self._callbacks: Dict[str, List[Callable]] = {}
 
     def add_response(
@@ -29,8 +42,6 @@ class HTTPXMock:
         Mock the response that will be sent if a request is sent to this URL using this method.
 
         :param url: Full URL identifying the request. Can be a str or httpx.URL instance.
-        # TODO Allow non strict URL params checking
-        # TODO Allow regex in URL
         :param method: HTTP method identifying the request. Default to GET.
         :param status_code: HTTP status code of the response to send. Default to 200 (OK).
         :param http_version: HTTP protocol version of the response to send. Default to HTTP/1.1
@@ -41,15 +52,14 @@ class HTTPXMock:
         :param json: HTTP body of the response (if JSON should be used as content type) if data is not provided.
         :param boundary: Multipart boundary if files is provided.
         """
-        self._responses.setdefault((method.upper(), _url(url)), []).append(
-            Response(
-                status_code=status_code,
-                http_version=http_version,
-                headers=list(headers.items()) if headers else [],
-                stream=content_streams.encode(**content),
-                request=None,  # Will be set upon reception of the actual request
-            )
+        response = Response(
+            status_code=status_code,
+            http_version=http_version,
+            headers=list(headers.items()) if headers else [],
+            stream=content_streams.encode(**content),
+            request=None,  # Will be set upon reception of the actual request
         )
+        self._responses.append((_RequestMatcher(url, method), response))
 
     def add_callback(
         self, callback: Callable, url: Union[str, URL], method: str = "GET"
@@ -68,10 +78,12 @@ class HTTPXMock:
         """
         self._callbacks.setdefault((method.upper(), _url(url)), []).append(callback)
 
-    def _get_response(self, request: Request, timeout: Optional[Timeout]) -> Response:
+    def _handle_request(
+        self, request: Request, timeout: Optional[Timeout], *args, **kwargs
+    ) -> Response:
         self._requests.setdefault((request.method, request.url), []).append(request)
-        responses = self._responses.get((request.method, request.url))
-        if not responses:
+        response = self._get_response(request)
+        if not response:
             callback = self._get_callback(request)
             if callback:
                 callback.called = True
@@ -81,12 +93,30 @@ class HTTPXMock:
                 f"No mock can be found for {request.method} request on {request.url}."
             )
 
-        if len(responses) > 1:
-            response = responses.pop(0)
-        else:
-            response = responses[0]
+        return response
+
+    def _get_response(self, request: Request) -> Optional[Response]:
+        responses = [
+            (matcher, response)
+            for matcher, response in self._responses
+            if matcher.match(request)
+        ]
+
+        # No response match this request
+        if not responses:
+            return
+
+        # Responses match this request
+        for matcher, response in responses:
+            # Return the first not yet called
+            if not matcher.nb_calls:
+                matcher.nb_calls += 1
+                response.request = request
+                return response
+
+        # Or the last registered
+        matcher.nb_calls += 1
         response.request = request
-        response.called = True
         return response
 
     def _get_callback(self, request: Request) -> Optional[Callable]:
@@ -108,11 +138,9 @@ class HTTPXMock:
         return requests.pop(0) if requests else None
 
     def _assert_responses_sent(self):
-        non_called_responses = {}
-        for (method, url), responses in self._responses.items():
-            for response in responses:
-                if not hasattr(response, "called"):
-                    non_called_responses.setdefault((method, url), []).append(response)
+        non_called_responses = [
+            response for matcher, response in self._responses if not matcher.nb_calls
+        ]
         self._responses.clear()
         assert (
             not non_called_responses
@@ -136,16 +164,16 @@ class _PytestSyncDispatcher(SyncDispatcher):
     def __init__(self, mock: HTTPXMock):
         self.mock = mock
 
-    def send(self, request: Request, timeout: Timeout = None) -> Response:
-        return self.mock._get_response(request, timeout)
+    def send(self, *args, **kwargs) -> Response:
+        return self.mock._handle_request(*args, **kwargs)
 
 
 class _PytestAsyncDispatcher(AsyncDispatcher):
     def __init__(self, mock: HTTPXMock):
         self.mock = mock
 
-    async def send(self, request: Request, timeout: Timeout = None) -> Response:
-        return self.mock._get_response(request, timeout)
+    async def send(self, *args, **kwargs) -> Response:
+        return self.mock._handle_request(*args, **kwargs)
 
 
 @pytest.fixture
