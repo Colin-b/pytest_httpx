@@ -1,4 +1,4 @@
-from typing import List, Dict, Union, Optional
+from typing import List, Dict, Union, Optional, Callable
 
 import httpx
 import pytest
@@ -14,6 +14,7 @@ class HTTPXMock:
     def __init__(self):
         self.requests: Dict[str, List[Response]] = {}
         self.responses: Dict[str, List[Response]] = {}
+        self.callbacks: Dict[str, List[Callable]] = {}
 
     def add_response(
         self,
@@ -49,14 +50,36 @@ class HTTPXMock:
             )
         )
 
+    def add_callback(
+        self, callback: Callable, url: Union[str, URL], method: str = "GET"
+    ):
+        """
+        Mock the action that will take place if a request is sent to this URL using this method.
+
+        :param callback: The callable that will be called upon reception of the request.
+        It must expect at least 2 parameters:
+         * request: The received request.
+         * timeout: The timeout linked to the request.
+        It should return an httpx.Response instance.
+        :param url: Full URL identifying the request. Can be a str or httpx.URL instance.
+        # TODO Allow non strict URL params checking
+        :param method: HTTP method identifying the request. Default to GET.
+        """
+        self.callbacks.setdefault((method.upper(), _url(url)), []).append(callback)
+
     def _get_response(self, request: Request, timeout: Optional[Timeout]) -> Response:
         self.requests.setdefault((request.method, request.url), []).append(request)
         responses = self.responses.get((request.method, request.url))
         if not responses:
-            # TODO raise TimeoutError() in case timeout is reached ?
+            callback = self._get_callback(request)
+            if callback:
+                callback.called = True
+                return callback(request=request, timeout=timeout)
+
             raise Exception(
                 f"No mock can be found for {request.method} request on {request.url}."
             )
+
         if len(responses) > 1:
             response = responses.pop(0)
         else:
@@ -64,6 +87,11 @@ class HTTPXMock:
         response.request = request
         response.called = True
         return response
+
+    def _get_callback(self, request: Request) -> Optional[Callable]:
+        callbacks = self.callbacks.get((request.method, request.url))
+        if callbacks:
+            return callbacks.pop(0) if len(callbacks) > 1 else callbacks[0]
 
     def get_request(
         self, url: Union[str, URL], method: str = "GET"
@@ -88,6 +116,19 @@ class HTTPXMock:
         assert (
             not non_called_responses
         ), f"The following responses are mocked but not requested: {non_called_responses}"
+
+    def _assert_callbacks_executed(self):
+        non_executed_callbacks = {}
+        for (method, url), callbacks in self.callbacks.items():
+            for callback in callbacks:
+                if not hasattr(callback, "called"):
+                    non_executed_callbacks.setdefault((method, url), []).append(
+                        callback
+                    )
+        self.callbacks.clear()
+        assert (
+            not non_executed_callbacks
+        ), f"The following callbacks are registered but not requested: {non_executed_callbacks}"
 
 
 class _PytestSyncDispatcher(SyncDispatcher):
@@ -121,3 +162,4 @@ def httpx_mock(monkeypatch) -> HTTPXMock:
     )
     yield mock
     mock._assert_responses_sent()
+    mock._assert_callbacks_executed()

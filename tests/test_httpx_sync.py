@@ -1,5 +1,8 @@
+from typing import Optional
+
 import pytest
 import httpx
+from httpx import content_streams
 
 from pytest_httpx import httpx_mock, HTTPXMock
 
@@ -357,3 +360,35 @@ def test_httpx_mock_requests_json_body(httpx_mock: HTTPXMock):
 
         response = client.put("http://test_url")
         assert response.json() == "string value"
+
+
+def test_callback_raising_exception(httpx_mock: HTTPXMock):
+    def raise_timeout(
+        request: httpx.Request, timeout: Optional[httpx.Timeout]
+    ) -> httpx.Response:
+        raise httpx.exceptions.TimeoutException()
+
+    httpx_mock.add_callback(raise_timeout, "http://test_url")
+
+    with httpx.Client() as client:
+        with pytest.raises(httpx.exceptions.TimeoutException):
+            client.get("http://test_url")
+
+
+def test_callback_returning_response(httpx_mock: HTTPXMock):
+    def custom_response(
+        request: httpx.Request, timeout: Optional[httpx.Timeout]
+    ) -> httpx.Response:
+        return httpx.Response(
+            status_code=200,
+            http_version="HTTP/1.1",
+            headers=[],
+            stream=content_streams.JSONStream({"url": str(request.url)}),
+            request=request,
+        )
+
+    httpx_mock.add_callback(custom_response, "http://test_url")
+
+    with httpx.Client() as client:
+        response = client.get("http://test_url")
+        assert response.json() == {"url": "http://test_url"}
