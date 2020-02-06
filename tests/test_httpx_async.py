@@ -356,15 +356,10 @@ async def test_httpx_mock_requests_retrieval_on_same_url_and_method(
         await client.get("http://test_url", headers={"X-TEST": "test header 1"})
         await client.get("http://test_url", headers={"X-TEST": "test header 2"})
 
-    assert (
-        httpx_mock.get_request(httpx.URL("http://test_url")).headers["x-test"]
-        == "test header 1"
-    )
-    assert (
-        httpx_mock.get_request(httpx.URL("http://test_url")).headers["x-test"]
-        == "test header 2"
-    )
-    assert not httpx_mock.get_request(httpx.URL("http://test_url"))
+    requests = httpx_mock.get_requests(httpx.URL("http://test_url"))
+    assert len(requests) == 2
+    assert requests[0].headers["x-test"] == "test header 1"
+    assert requests[1].headers["x-test"] == "test header 2"
 
 
 @pytest.mark.asyncio
@@ -420,3 +415,18 @@ async def test_callback_returning_response(httpx_mock: HTTPXMock):
     async with httpx.AsyncClient() as client:
         response = await client.get("http://test_url")
         assert response.json() == {"url": "http://test_url"}
+
+
+@pytest.mark.xfail(
+    raises=AssertionError,
+    reason="Single request cannot be returned if there is more than one matching.",
+)
+@pytest.mark.asyncio
+async def test_httpx_mock_request_retrieval_with_more_than_one(httpx_mock: HTTPXMock):
+    httpx_mock.add_response("http://test_url")
+
+    async with httpx.AsyncClient() as client:
+        await client.get("http://test_url", headers={"X-TEST": "test header 1"})
+        await client.get("http://test_url", headers={"X-TEST": "test header 2"})
+
+    httpx_mock.get_request(httpx.URL("http://test_url"))

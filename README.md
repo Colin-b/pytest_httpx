@@ -5,7 +5,7 @@
 <a href="https://travis-ci.com/Colin-b/pytest_httpx"><img alt="Build status" src="https://api.travis-ci.com/Colin-b/pytest_httpx.svg?branch=master"></a>
 <a href="https://travis-ci.com/Colin-b/pytest_httpx"><img alt="Coverage" src="https://img.shields.io/badge/coverage-100%25-brightgreen"></a>
 <a href="https://github.com/psf/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
-<a href="https://travis-ci.com/Colin-b/pytest_httpx"><img alt="Number of tests" src="https://img.shields.io/badge/tests-34 passed-blue"></a>
+<a href="https://travis-ci.com/Colin-b/pytest_httpx"><img alt="Number of tests" src="https://img.shields.io/badge/tests-36 passed-blue"></a>
 <a href="https://pypi.org/project/pytest-httpx/"><img alt="Number of downloads" src="https://img.shields.io/pypi/dm/pytest_httpx"></a>
 </p>
 
@@ -73,7 +73,7 @@ import httpx
 from pytest_httpx import httpx_mock, HTTPXMock
 
 
-def test_something(httpx_mock: HTTPXMock):
+def test_json(httpx_mock: HTTPXMock):
     httpx_mock.add_response("http://test_url", json=[{"key1": "value1", "key2": "value2"}])
 
     with httpx.Client() as client:
@@ -188,7 +188,7 @@ import httpx
 from pytest_httpx import httpx_mock, HTTPXMock
 
 
-def test_something(httpx_mock: HTTPXMock):
+def test_status_code(httpx_mock: HTTPXMock):
     httpx_mock.add_response("http://test_url", status_code=404)
 
     with httpx.Client() as client:
@@ -205,7 +205,7 @@ import httpx
 from pytest_httpx import httpx_mock, HTTPXMock
 
 
-def test_something(httpx_mock: HTTPXMock):
+def test_headers(httpx_mock: HTTPXMock):
     httpx_mock.add_response("http://test_url", headers={"X-Header1": "Test value"})
 
     with httpx.Client() as client:
@@ -222,7 +222,7 @@ import httpx
 from pytest_httpx import httpx_mock, HTTPXMock
 
 
-def test_something(httpx_mock: HTTPXMock):
+def test_http_version(httpx_mock: HTTPXMock):
     httpx_mock.add_response("http://test_url", http_version="HTTP/2.0")
 
     with httpx.Client() as client:
@@ -230,13 +230,19 @@ def test_something(httpx_mock: HTTPXMock):
 
 ```
 
-## Dynamic responses
+## Add callbacks
 
 You can perform custom manipulation upon request reception by registering callbacks.
 
 Callback should expect at least two parameters:
  * request: The received request.
  * timeout: The timeout linked to the request.
+
+If all callbacks are not executed during test execution, the test case will fail at teardown.
+
+Default callback is for a GET request on the provided URL.
+
+### Dynamic responses
 
 Callback should return a httpx.Response instance.
 
@@ -248,7 +254,7 @@ from httpx import content_streams
 from pytest_httpx import httpx_mock, HTTPXMock
 
 
-def test_something(httpx_mock: HTTPXMock):
+def test_dynamic_response(httpx_mock: HTTPXMock):
     def custom_response(request: httpx.Request, timeout: Optional[httpx.Timeout]) -> httpx.Response:
         return httpx.Response(
             status_code=200,
@@ -266,7 +272,7 @@ def test_something(httpx_mock: HTTPXMock):
 
 ```
 
-## Raising exceptions
+### Raising exceptions
 
 You can simulate httpx exception throwing by raising an exception in your callback.
 
@@ -280,7 +286,7 @@ import pytest
 from pytest_httpx import httpx_mock, HTTPXMock
 
 
-def test_something(httpx_mock: HTTPXMock):
+def test_exception_raising(httpx_mock: HTTPXMock):
     def raise_timeout(request: httpx.Request, timeout: Optional[httpx.Timeout]) -> httpx.Response:
         raise httpx.exceptions.TimeoutException()
 
@@ -292,17 +298,15 @@ def test_something(httpx_mock: HTTPXMock):
 
 ```
 
-In case more than one request is sent to the same URL, the callbacks will be called in the registration order.
+### How callback is selected
 
-First callback will be called upon reception of the first request and so on.
+Default matching is performed on the full URL, query parameters included and the HTTP method.
 
-If the number of callbacks is lower than the number of requests on an URL, the last callback will be called for each subsequent requests on this URL.
+Registration order is kept while checking what callback to execute.
 
-If all callbacks are not executed during test execution, the test case will fail at teardown.
+In case more than one callback match request, the first one not yet executed will be sent.
 
-Default callback is for a GET request on the provided URL.
-
-Default matching is performed on the full URL, query parameters included.
+In case all matching callbacks have been sent, the last registered one will be sent.
 
 ## Check sent requests
 
@@ -311,7 +315,17 @@ import httpx
 from pytest_httpx import httpx_mock, HTTPXMock
 
 
-def test_something(httpx_mock: HTTPXMock):
+def test_many_requests(httpx_mock: HTTPXMock):
+    httpx_mock.add_response("http://test_url")
+
+    with httpx.Client() as client:
+        response1 = client.get("http://test_url")
+        response2 = client.get("http://test_url")
+
+    requests = httpx_mock.get_requests("http://test_url")
+
+
+def test_single_request(httpx_mock: HTTPXMock):
     httpx_mock.add_response("http://test_url")
 
     with httpx.Client() as client:
@@ -320,6 +334,8 @@ def test_something(httpx_mock: HTTPXMock):
     request = httpx_mock.get_request("http://test_url")
 ```
 
-A request can only be retrieved once per test case. 
+### How requests are selected
 
-Calling order is preserved, so in case more than one request is sent to the same URL, the first one will be returned first.
+Default matching is performed on the full URL, query parameters included and the HTTP method.
+
+Request original order is kept while appending to the list.

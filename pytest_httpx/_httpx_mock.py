@@ -25,9 +25,9 @@ class _RequestMatcher:
 
 class HTTPXMock:
     def __init__(self):
-        self._requests: Dict[str, List[Response]] = {}
+        self._requests: List[Request] = []
         self._responses: List[Tuple[_RequestMatcher, Response]] = []
-        self._callbacks: Dict[str, List[Callable]] = {}
+        self._callbacks: List[Tuple[_RequestMatcher, Callable]] = []
 
     def add_response(
         self,
@@ -76,12 +76,12 @@ class HTTPXMock:
         # TODO Allow non strict URL params checking
         :param method: HTTP method identifying the request. Default to GET.
         """
-        self._callbacks.setdefault((method.upper(), _url(url)), []).append(callback)
+        self._callbacks.append((_RequestMatcher(url, method), callback))
 
     def _handle_request(
         self, request: Request, timeout: Optional[Timeout], *args, **kwargs
     ) -> Response:
-        self._requests.setdefault((request.method, request.url), []).append(request)
+        self._requests.append(request)
         response = self._get_response(request)
         if not response:
             callback = self._get_callback(request)
@@ -120,44 +120,69 @@ class HTTPXMock:
         return response
 
     def _get_callback(self, request: Request) -> Optional[Callable]:
-        callbacks = self._callbacks.get((request.method, request.url))
-        if callbacks:
-            return callbacks.pop(0) if len(callbacks) > 1 else callbacks[0]
+        callbacks = [
+            (matcher, callback)
+            for matcher, callback in self._callbacks
+            if matcher.match(request)
+        ]
+
+        # No callback match this request
+        if not callbacks:
+            return
+
+        # Callbacks match this request
+        for matcher, callback in callbacks:
+            # Return the first not yet called
+            if not matcher.nb_calls:
+                matcher.nb_calls += 1
+                return callback
+
+        # Or the last registered
+        matcher.nb_calls += 1
+        return callback
+
+    def get_requests(self, url: Union[str, URL], method: str = "GET") -> List[Request]:
+        """
+        Return all requests sent to this URL using this method (empty list if no requests was sent).
+
+        :param url: Full URL identifying the requests. Can be a str or httpx.URL instance.
+        :param method: HTTP method identifying the requests. Must be a upper cased string value. Default to GET.
+        """
+        matcher = _RequestMatcher(url, method)
+        return [request for request in self._requests if matcher.match(request)]
 
     def get_request(
         self, url: Union[str, URL], method: str = "GET"
     ) -> Optional[Request]:
         """
-        Return the first request sent to this URL using this method (if any, None otherwise).
+        Return the request sent to this URL using this method (or None).
 
         :param url: Full URL identifying the request. Can be a str or httpx.URL instance.
-        # TODO Allow non strict URL params checking
         :param method: HTTP method identifying the request. Must be a upper cased string value. Default to GET.
         """
-        requests = self._requests.get((method, _url(url)), [])
-        return requests.pop(0) if requests else None
+        requests = self.get_requests(url, method)
+        assert (
+            len(requests) <= 1
+        ), "More than one request match, use get_requests instead."
+        return requests[0] if requests else None
 
     def _assert_responses_sent(self):
-        non_called_responses = [
+        responses_not_called = [
             response for matcher, response in self._responses if not matcher.nb_calls
         ]
         self._responses.clear()
         assert (
-            not non_called_responses
-        ), f"The following responses are mocked but not requested: {non_called_responses}"
+            not responses_not_called
+        ), f"The following responses are mocked but not requested: {responses_not_called}"
 
     def _assert_callbacks_executed(self):
-        non_executed_callbacks = {}
-        for (method, url), callbacks in self._callbacks.items():
-            for callback in callbacks:
-                if not hasattr(callback, "called"):
-                    non_executed_callbacks.setdefault((method, url), []).append(
-                        callback
-                    )
+        callbacks_not_executed = [
+            callback for matcher, callback in self._callbacks if not matcher.nb_calls
+        ]
         self._callbacks.clear()
         assert (
-            not non_executed_callbacks
-        ), f"The following callbacks are registered but not requested: {non_executed_callbacks}"
+            not callbacks_not_executed
+        ), f"The following callbacks are registered but not executed: {callbacks_not_executed}"
 
 
 class _PytestSyncDispatcher(SyncDispatcher):

@@ -14,11 +14,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Allow to provide data as a dictionary for multipart response.
 - Allow to provide callbacks that are executed upon reception of a request.
 - Handle the fact that parameters may be introduced in httpx *Dispatcher.send method.
+- Allow to retrieve all matching requests with HTTPXMock.get_requests
 
 ### Changed
 - method can now be provided even if not entirely upper cased.
 - content parameter renamed into data.
-- HTTPXMock.requests is now private, use HTTPXMock.get_request instead.
+- HTTPXMock.get_request now fails if more than one request match. Use HTTPXMock.get_request instead.
+- HTTPXMock.requests is now private, use HTTPXMock.get_requests instead.
 - HTTPXMock.responses is now private, it should not be accessed anyway.
 
 ## [0.0.2] - 2020-02-06
