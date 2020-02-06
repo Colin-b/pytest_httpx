@@ -17,7 +17,6 @@ Use `pytest_httpx.httpx_mock` [`pytest`](https://docs.pytest.org/en/latest/) fix
   - [JSON body](#add-json-response)
   - [Custom body](#reply-with-custom-body)
   - [Multipart body (files, ...)](#add-multipart-response)
-  - [HTTP method](#add-non-get-response)
   - [HTTP status code](#add-non-200-response)
   - [HTTP headers](#reply-with-custom-headers)
   - [HTTP/2.0](#add-http/2.0-response)
@@ -70,9 +69,52 @@ Matching is performed on the full URL, query parameters included.
 
 #### Matching on HTTP method
 
+Use `method` parameter to specify the HTTP method (POST, PUT, DELETE, PATCH, HEAD) to reply to
+
 `method` parameter must be a string. It will be upper cased so it can be provided lower cased.
 
 Matching is performed on equality.
+
+```python
+import httpx
+from pytest_httpx import httpx_mock, HTTPXMock
+
+
+def test_post(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(method="POST")
+
+    with httpx.Client() as client:
+        response = client.post("http://test_url")
+
+
+def test_put(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(method="PUT")
+
+    with httpx.Client() as client:
+        response = client.put("http://test_url")
+
+
+def test_delete(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(method="DELETE")
+
+    with httpx.Client() as client:
+        response = client.delete("http://test_url")
+
+
+def test_patch(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(method="PATCH")
+
+    with httpx.Client() as client:
+        response = client.patch("http://test_url")
+
+
+def test_head(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(method="HEAD")
+
+    with httpx.Client() as client:
+        response = client.head("http://test_url")
+    
+```
 
 ### Add JSON response
 
@@ -141,51 +183,6 @@ Content-Type: application/octet-stream\r
 content of file 1\r
 --2256d3a36d2a61a1eba35a22bee5c74a--\r
 '''
-    
-```
-
-### Add non GET response
-
-Use `method` parameter to specify the HTTP method (POST, PUT, DELETE, PATCH, HEAD) to reply to on provided URL.
-
-```python
-import httpx
-from pytest_httpx import httpx_mock, HTTPXMock
-
-
-def test_post(httpx_mock: HTTPXMock):
-    httpx_mock.add_response(method="POST")
-
-    with httpx.Client() as client:
-        response = client.post("http://test_url")
-
-
-def test_put(httpx_mock: HTTPXMock):
-    httpx_mock.add_response(method="PUT")
-
-    with httpx.Client() as client:
-        response = client.put("http://test_url")
-
-
-def test_delete(httpx_mock: HTTPXMock):
-    httpx_mock.add_response(method="DELETE")
-
-    with httpx.Client() as client:
-        response = client.delete("http://test_url")
-
-
-def test_patch(httpx_mock: HTTPXMock):
-    httpx_mock.add_response(method="PATCH")
-
-    with httpx.Client() as client:
-        response = client.patch("http://test_url")
-
-
-def test_head(httpx_mock: HTTPXMock):
-    httpx_mock.add_response(method="HEAD")
-
-    with httpx.Client() as client:
-        response = client.head("http://test_url")
     
 ```
 
@@ -318,6 +315,8 @@ Matching is performed on the full URL, query parameters included.
 
 #### Matching on HTTP method
 
+Use `method` parameter to specify the HTTP method (POST, PUT, DELETE, PATCH, HEAD) executing the callback.
+
 `method` parameter must be a string. It will be upper cased so it can be provided lower cased.
 
 Matching is performed on equality.
@@ -359,6 +358,8 @@ You can add criteria so that requests will be returned only in case of a more sp
 Matching is performed on the full URL, query parameters included.
 
 #### Matching on HTTP method
+
+Use `method` parameter to specify the HTTP method (POST, PUT, DELETE, PATCH, HEAD) of the requests to retrieve.
 
 `method` parameter must be a string. It will be upper cased so it can be provided lower cased.
 
