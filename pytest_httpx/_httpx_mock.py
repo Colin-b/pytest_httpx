@@ -8,17 +8,20 @@ from httpx.dispatch.base import SyncDispatcher, AsyncDispatcher
 
 
 class _RequestMatcher:
-    def __init__(self, url: Union[str, Pattern, URL], method: str):
+    def __init__(self, url: Union[str, Pattern, URL] = None, method: str = None):
         # TODO Allow non strict URL params checking
         self.nb_calls = 0
         self.url = url
-        self.method = method.upper()
+        self.method = method
 
     def match(self, request: Request) -> bool:
         # TODO Allow to match on anything from the request
-        return self._url_match(request) and request.method == self.method
+        return self._url_match(request) and self._method_match(request)
 
     def _url_match(self, request: Request) -> bool:
+        if not self.url:
+            return True
+
         # re.Pattern was introduced in Python 3.7
         if isinstance(
             self.url, re._pattern_type if hasattr(re, "_pattern_type") else re.Pattern
@@ -27,6 +30,12 @@ class _RequestMatcher:
         if isinstance(self.url, str):
             return URL(self.url) == request.url
         return self.url == request.url
+
+    def _method_match(self, request: Request) -> bool:
+        if not self.method:
+            return True
+
+        return request.method == self.method.upper()
 
 
 class HTTPXMock:
@@ -37,18 +46,18 @@ class HTTPXMock:
 
     def add_response(
         self,
-        url: Union[str, Pattern, URL],
-        method: str = "GET",
+        url: Union[str, Pattern, URL] = None,
+        method: str = None,
         status_code: int = 200,
         http_version: str = "HTTP/1.1",
         headers: dict = None,
         **content,
     ):
         """
-        Mock the response that will be sent if a request is sent to this URL using this method.
+        Mock the response that will be sent if a request match.
 
         :param url: Full URL identifying the request. Can be a str, a re.Pattern instance or a httpx.URL instance.
-        :param method: HTTP method identifying the request. Default to GET.
+        :param method: HTTP method identifying the request.
         :param status_code: HTTP status code of the response to send. Default to 200 (OK).
         :param http_version: HTTP protocol version of the response to send. Default to HTTP/1.1
         :param headers: HTTP headers of the response to send. Default to no headers.
@@ -68,10 +77,13 @@ class HTTPXMock:
         self._responses.append((_RequestMatcher(url, method), response))
 
     def add_callback(
-        self, callback: Callable, url: Union[str, Pattern, URL], method: str = "GET"
+        self,
+        callback: Callable,
+        url: Union[str, Pattern, URL] = None,
+        method: str = None,
     ):
         """
-        Mock the action that will take place if a request is sent to this URL using this method.
+        Mock the action that will take place if a request match.
 
         :param callback: The callable that will be called upon reception of the request.
         It must expect at least 2 parameters:
@@ -79,7 +91,7 @@ class HTTPXMock:
          * timeout: The timeout linked to the request.
         It should return an httpx.Response instance.
         :param url: Full URL identifying the request. Can be a str, a re.Pattern instance or a httpx.URL instance.
-        :param method: HTTP method identifying the request. Default to GET.
+        :param method: HTTP method identifying the request.
         """
         self._callbacks.append((_RequestMatcher(url, method), callback))
 
@@ -147,25 +159,25 @@ class HTTPXMock:
         return callback
 
     def get_requests(
-        self, url: Union[str, Pattern, URL], method: str = "GET"
+        self, url: Union[str, Pattern, URL] = None, method: str = None
     ) -> List[Request]:
         """
-        Return all requests sent to this URL using this method (empty list if no requests was sent).
+        Return all requests sent that match (empty list if no requests were matched).
 
         :param url: Full URL identifying the requests. Can be a str, a re.Pattern instance or a httpx.URL instance.
-        :param method: HTTP method identifying the requests. Must be a upper cased string value. Default to GET.
+        :param method: HTTP method identifying the requests. Must be a upper cased string value.
         """
         matcher = _RequestMatcher(url, method)
         return [request for request in self._requests if matcher.match(request)]
 
     def get_request(
-        self, url: Union[str, Pattern, URL], method: str = "GET"
+        self, url: Union[str, Pattern, URL] = None, method: str = None
     ) -> Optional[Request]:
         """
-        Return the request sent to this URL using this method (or None).
+        Return the request that match (or None).
 
         :param url: Full URL identifying the request. Can be a str, a re.Pattern instance or a httpx.URL instance.
-        :param method: HTTP method identifying the request. Must be a upper cased string value. Default to GET.
+        :param method: HTTP method identifying the request. Must be a upper cased string value.
         """
         requests = self.get_requests(url, method)
         assert (

@@ -5,6 +5,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Changed
+- url is not a mandatory parameter for response registration anymore.
+- url is not a mandatory parameter for callback registration anymore.
+- url is not a mandatory parameter for request retrieval anymore.
+- method does not have a default value for response registration anymore.
+- method does not have a default value for callback registration anymore.
+- method does not have a default value for request retrieval anymore.
 
 ## [0.0.3] - 2020-02-06
 ### Added

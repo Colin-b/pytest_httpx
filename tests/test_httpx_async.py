@@ -21,7 +21,7 @@ async def test_without_response(httpx_mock: HTTPXMock):
 
 @pytest.mark.asyncio
 async def test_default_response(httpx_mock: HTTPXMock):
-    httpx_mock.add_response("http://test_url")
+    httpx_mock.add_response()
 
     async with httpx.AsyncClient() as client:
         response = await client.get("http://test_url")
@@ -29,6 +29,30 @@ async def test_default_response(httpx_mock: HTTPXMock):
     assert response.status_code == 200
     assert response.headers == httpx.Headers({})
     assert response.http_version == "HTTP/1.1"
+
+
+@pytest.mark.asyncio
+async def test_url_matching(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(url="http://test_url")
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get("http://test_url")
+        assert response.content == b""
+
+        response = await client.post("http://test_url")
+        assert response.content == b""
+
+
+@pytest.mark.asyncio
+async def test_method_matching(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(method="get")
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get("http://test_url")
+        assert response.content == b""
+
+        response = await client.get("http://test_url2")
+        assert response.content == b""
 
 
 @pytest.mark.asyncio
@@ -411,7 +435,7 @@ async def test_requests_retrieval(httpx_mock: HTTPXMock):
         == b"sent content 3"
     )
     assert (
-        httpx_mock.get_request(httpx.URL("http://test_url")).headers["x-test"]
+        httpx_mock.get_request(httpx.URL("http://test_url"), "GET").headers["x-test"]
         == "test header 1"
     )
     assert (
@@ -425,7 +449,7 @@ async def test_requests_retrieval(httpx_mock: HTTPXMock):
 
 
 @pytest.mark.asyncio
-async def test_requests_retrieval_on_same_url_and_method(httpx_mock: HTTPXMock):
+async def test_requests_retrieval_on_same_url(httpx_mock: HTTPXMock):
     httpx_mock.add_response("http://test_url")
 
     async with httpx.AsyncClient() as client:
@@ -439,9 +463,88 @@ async def test_requests_retrieval_on_same_url_and_method(httpx_mock: HTTPXMock):
 
 
 @pytest.mark.asyncio
+async def test_request_retrieval_on_same_url(httpx_mock: HTTPXMock):
+    httpx_mock.add_response()
+
+    async with httpx.AsyncClient() as client:
+        await client.get("http://test_url", headers={"X-TEST": "test header 1"})
+        await client.get("http://test_url2", headers={"X-TEST": "test header 2"})
+
+    request = httpx_mock.get_request(url=httpx.URL("http://test_url"))
+    assert request.headers["x-test"] == "test header 1"
+
+
+@pytest.mark.asyncio
+async def test_requests_retrieval_on_same_method(httpx_mock: HTTPXMock):
+    httpx_mock.add_response()
+
+    async with httpx.AsyncClient() as client:
+        await client.get("http://test_url", headers={"X-TEST": "test header 1"})
+        await client.get("http://test_url2", headers={"X-TEST": "test header 2"})
+
+    requests = httpx_mock.get_requests(method="GET")
+    assert len(requests) == 2
+    assert requests[0].headers["x-test"] == "test header 1"
+    assert requests[1].headers["x-test"] == "test header 2"
+
+
+@pytest.mark.asyncio
+async def test_request_retrieval_on_same_method(httpx_mock: HTTPXMock):
+    httpx_mock.add_response()
+
+    async with httpx.AsyncClient() as client:
+        await client.get("http://test_url", headers={"X-TEST": "test header 1"})
+        await client.post("http://test_url", headers={"X-TEST": "test header 2"})
+
+    request = httpx_mock.get_request(method="GET")
+    assert request.headers["x-test"] == "test header 1"
+
+
+@pytest.mark.asyncio
+async def test_requests_retrieval_on_same_url_and_method(httpx_mock: HTTPXMock):
+    httpx_mock.add_response()
+
+    async with httpx.AsyncClient() as client:
+        await client.get("http://test_url", headers={"X-TEST": "test header 1"})
+        await client.get("http://test_url", headers={"X-TEST": "test header 2"})
+        await client.post("http://test_url", headers={"X-TEST": "test header 3"})
+        await client.get("http://test_url2", headers={"X-TEST": "test header 4"})
+
+    requests = httpx_mock.get_requests(httpx.URL("http://test_url"), "GET")
+    assert len(requests) == 2
+    assert requests[0].headers["x-test"] == "test header 1"
+    assert requests[1].headers["x-test"] == "test header 2"
+
+
+@pytest.mark.asyncio
+async def test_default_requests_retrieval(httpx_mock: HTTPXMock):
+    httpx_mock.add_response()
+
+    async with httpx.AsyncClient() as client:
+        await client.post("http://test_url", headers={"X-TEST": "test header 1"})
+        await client.get("http://test_url2", headers={"X-TEST": "test header 2"})
+
+    requests = httpx_mock.get_requests()
+    assert len(requests) == 2
+    assert requests[0].headers["x-test"] == "test header 1"
+    assert requests[1].headers["x-test"] == "test header 2"
+
+
+@pytest.mark.asyncio
+async def test_default_request_retrieval(httpx_mock: HTTPXMock):
+    httpx_mock.add_response()
+
+    async with httpx.AsyncClient() as client:
+        await client.post("http://test_url", headers={"X-TEST": "test header 1"})
+
+    request = httpx_mock.get_request()
+    assert request.headers["x-test"] == "test header 1"
+
+
+@pytest.mark.asyncio
 async def test_requests_json_body(httpx_mock: HTTPXMock):
     httpx_mock.add_response(
-        "http://test_url", json=["list content 1", "list content 2"]
+        "http://test_url", method="GET", json=["list content 1", "list content 2"]
     )
     httpx_mock.add_response(
         "http://test_url", method="POST", json={"key 1": "value 1", "key 2": "value 2"}
@@ -506,13 +609,36 @@ async def test_callback_executed_twice(httpx_mock: HTTPXMock):
             request=request,
         )
 
-    httpx_mock.add_callback(custom_response, "http://test_url")
+    httpx_mock.add_callback(custom_response)
 
     async with httpx.AsyncClient() as client:
         response = await client.get("http://test_url")
         assert response.json() == ["content"]
 
+        response = await client.post("http://test_url")
+        assert response.json() == ["content"]
+
+
+@pytest.mark.asyncio
+async def test_callback_matching_method(httpx_mock: HTTPXMock):
+    def custom_response(
+        request: httpx.Request, timeout: Optional[httpx.Timeout], *args, **kwargs
+    ) -> httpx.Response:
+        return httpx.Response(
+            status_code=200,
+            http_version="HTTP/1.1",
+            headers=[],
+            stream=content_streams.JSONStream(["content"]),
+            request=request,
+        )
+
+    httpx_mock.add_callback(custom_response, method="GET")
+
+    async with httpx.AsyncClient() as client:
         response = await client.get("http://test_url")
+        assert response.json() == ["content"]
+
+        response = await client.get("http://test_url2")
         assert response.json() == ["content"]
 
 
@@ -522,7 +648,7 @@ async def test_callback_executed_twice(httpx_mock: HTTPXMock):
 )
 @pytest.mark.asyncio
 async def test_request_retrieval_with_more_than_one(httpx_mock: HTTPXMock):
-    httpx_mock.add_response("http://test_url")
+    httpx_mock.add_response()
 
     async with httpx.AsyncClient() as client:
         await client.get("http://test_url", headers={"X-TEST": "test header 1"})

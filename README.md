@@ -5,7 +5,7 @@
 <a href="https://travis-ci.com/Colin-b/pytest_httpx"><img alt="Build status" src="https://api.travis-ci.com/Colin-b/pytest_httpx.svg?branch=master"></a>
 <a href="https://travis-ci.com/Colin-b/pytest_httpx"><img alt="Coverage" src="https://img.shields.io/badge/coverage-100%25-brightgreen"></a>
 <a href="https://github.com/psf/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
-<a href="https://travis-ci.com/Colin-b/pytest_httpx"><img alt="Number of tests" src="https://img.shields.io/badge/tests-44 passed-blue"></a>
+<a href="https://travis-ci.com/Colin-b/pytest_httpx"><img alt="Number of tests" src="https://img.shields.io/badge/tests-64 passed-blue"></a>
 <a href="https://pypi.org/project/pytest-httpx/"><img alt="Number of downloads" src="https://img.shields.io/pypi/dm/pytest_httpx"></a>
 </p>
 
@@ -36,7 +36,7 @@ from pytest_httpx import httpx_mock, HTTPXMock
 
 
 def test_something(httpx_mock: HTTPXMock):
-    httpx_mock.add_response("http://test_url")
+    httpx_mock.add_response()
 
     with httpx.Client() as client:
         response = client.get("http://test_url")
@@ -44,7 +44,7 @@ def test_something(httpx_mock: HTTPXMock):
 
 @pytest.mark.asyncio
 async def test_something_async(httpx_mock: HTTPXMock):
-    httpx_mock.add_response("http://test_url")
+    httpx_mock.add_response()
 
     async with httpx.AsyncClient() as client:
         response = await client.get("http://test_url")
@@ -52,21 +52,27 @@ async def test_something_async(httpx_mock: HTTPXMock):
 
 If all responses are not sent back during test execution, the test case will fail at teardown.
 
-Default response is a 200 (OK) without any body for a GET request on the provided URL using HTTP/1.1 protocol version.
+Default response is a HTTP/1.1 200 (OK) without any body.
 
 ### How response is selected
 
-Default matching is performed on the full URL, query parameters included and the HTTP method.
+In case more than one response match request, the first one not yet sent (according to the registration order) will be sent.
 
-Registration order is kept while checking what response to send.
+In case all matching responses have been sent, the last one (according to the registration order) will be sent.
 
-In case more than one response match request, the first one not yet sent will be sent.
+You can add criteria so that response will be sent only in case of a more specific matching.
 
-In case all matching responses have been sent, the last registered one will be sent.
+#### Matching on URL
 
-#### Providing URL
+`url` parameter can either be a string, a python re.Pattern instance or a httpx.URL instance.
 
-URL can either be a string, a python re.Pattern instance or a httpx.URL instance.
+Matching is performed on the full URL, query parameters included.
+
+#### Matching on HTTP method
+
+`method` parameter must be a string. It will be upper cased so it can be provided lower cased.
+
+Matching is performed on equality.
 
 ### Add JSON response
 
@@ -244,8 +250,6 @@ Callback should expect at least two parameters:
 
 If all callbacks are not executed during test execution, the test case will fail at teardown.
 
-Default callback is for a GET request on the provided URL.
-
 ### Dynamic responses
 
 Callback should return a httpx.Response instance.
@@ -300,17 +304,23 @@ def test_exception_raising(httpx_mock: HTTPXMock):
 
 ### How callback is selected
 
-Default matching is performed on the full URL, query parameters included and the HTTP method.
+In case more than one callback match request, the first one not yet executed (according to the registration order) will be executed.
 
-Registration order is kept while checking what callback to execute.
+In case all matching callbacks have been executed, the last one (according to the registration order) will be executed.
 
-In case more than one callback match request, the first one not yet executed will be sent.
+You can add criteria so that callback will be sent only in case of a more specific matching.
 
-In case all matching callbacks have been sent, the last registered one will be sent.
+#### Matching on URL
 
-#### Providing URL
+`url` parameter can either be a string, a python re.Pattern instance or a httpx.URL instance.
 
-URL can either be a string, a python re.Pattern instance or a httpx.URL instance.
+Matching is performed on the full URL, query parameters included.
+
+#### Matching on HTTP method
+
+`method` parameter must be a string. It will be upper cased so it can be provided lower cased.
+
+Matching is performed on equality.
 
 ## Check sent requests
 
@@ -340,10 +350,16 @@ def test_single_request(httpx_mock: HTTPXMock):
 
 ### How requests are selected
 
-Default matching is performed on the full URL, query parameters included and the HTTP method.
+You can add criteria so that requests will be returned only in case of a more specific matching.
 
-Request original order is kept while appending to the list.
+#### Matching on URL
 
-#### Providing URL
+`url` parameter can either be a string, a python re.Pattern instance or a httpx.URL instance.
 
-URL can either be a string, a python re.Pattern instance or a httpx.URL instance.
+Matching is performed on the full URL, query parameters included.
+
+#### Matching on HTTP method
+
+`method` parameter must be a string. It will be upper cased so it can be provided lower cased.
+
+Matching is performed on equality.
