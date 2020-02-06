@@ -163,7 +163,7 @@ class HTTPXMock:
         requests = self.get_requests(url, method)
         assert (
             len(requests) <= 1
-        ), "More than one request match, use get_requests instead."
+        ), f"More than one request ({len(requests)}) matched, use get_requests instead."
         return requests[0] if requests else None
 
     def _assert_responses_sent(self):
