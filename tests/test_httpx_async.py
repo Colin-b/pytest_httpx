@@ -493,6 +493,29 @@ async def test_callback_returning_response(httpx_mock: HTTPXMock):
         assert response.json() == {"url": "http://test_url"}
 
 
+@pytest.mark.asyncio
+async def test_callback_executed_twice(httpx_mock: HTTPXMock):
+    def custom_response(
+        request: httpx.Request, timeout: Optional[httpx.Timeout], *args, **kwargs
+    ) -> httpx.Response:
+        return httpx.Response(
+            status_code=200,
+            http_version="HTTP/1.1",
+            headers=[],
+            stream=content_streams.JSONStream(["content"]),
+            request=request,
+        )
+
+    httpx_mock.add_callback(custom_response, "http://test_url")
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get("http://test_url")
+        assert response.json() == ["content"]
+
+        response = await client.get("http://test_url")
+        assert response.json() == ["content"]
+
+
 @pytest.mark.xfail(
     raises=AssertionError,
     reason="Single request cannot be returned if there is more than one matching.",
