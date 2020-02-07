@@ -27,8 +27,10 @@ class _RequestMatcher:
             self.url, re._pattern_type if hasattr(re, "_pattern_type") else re.Pattern
         ):
             return self.url.match(str(request.url)) is not None
+
         if isinstance(self.url, str):
             return URL(self.url) == request.url
+
         return self.url == request.url
 
     def _method_match(self, request: Request) -> bool:
