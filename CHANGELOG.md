@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.4] - 2020-02-07
+### Changed
+- url is not a mandatory parameter for response registration anymore.
+- url is not a mandatory parameter for callback registration anymore.
+- url is not a mandatory parameter for request retrieval anymore.
+- method does not have a default value for response registration anymore.
+- method does not have a default value for callback registration anymore.
+- method does not have a default value for request retrieval anymore.
+- url and methods are not positional arguments anymore.
+
 ## [0.0.3] - 2020-02-06
 ### Added
 - Allow to provide JSON response as python values.
@@ -32,7 +42,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - First release, should be considered as unstable for now as design might change.
 
-[Unreleased]: https://github.com/Colin-b/pytest_httpx/compare/v0.0.3...HEAD
+[Unreleased]: https://github.com/Colin-b/pytest_httpx/compare/v0.0.4...HEAD
+[0.0.4]: https://github.com/Colin-b/pytest_httpx/compare/v0.0.3...v0.0.4
 [0.0.3]: https://github.com/Colin-b/pytest_httpx/compare/v0.0.2...v0.0.3
 [0.0.2]: https://github.com/Colin-b/pytest_httpx/compare/v0.0.1...v0.0.2
 [0.0.1]: https://github.com/Colin-b/pytest_httpx/releases/tag/v0.0.1

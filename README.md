@@ -5,7 +5,7 @@
 <a href="https://travis-ci.com/Colin-b/pytest_httpx"><img alt="Build status" src="https://api.travis-ci.com/Colin-b/pytest_httpx.svg?branch=master"></a>
 <a href="https://travis-ci.com/Colin-b/pytest_httpx"><img alt="Coverage" src="https://img.shields.io/badge/coverage-100%25-brightgreen"></a>
 <a href="https://github.com/psf/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
-<a href="https://travis-ci.com/Colin-b/pytest_httpx"><img alt="Number of tests" src="https://img.shields.io/badge/tests-44 passed-blue"></a>
+<a href="https://travis-ci.com/Colin-b/pytest_httpx"><img alt="Number of tests" src="https://img.shields.io/badge/tests-64 passed-blue"></a>
 <a href="https://pypi.org/project/pytest-httpx/"><img alt="Number of downloads" src="https://img.shields.io/pypi/dm/pytest_httpx"></a>
 </p>
 
@@ -17,7 +17,6 @@ Use `pytest_httpx.httpx_mock` [`pytest`](https://docs.pytest.org/en/latest/) fix
   - [JSON body](#add-json-response)
   - [Custom body](#reply-with-custom-body)
   - [Multipart body (files, ...)](#add-multipart-response)
-  - [HTTP method](#add-non-get-response)
   - [HTTP status code](#add-non-200-response)
   - [HTTP headers](#reply-with-custom-headers)
   - [HTTP/2.0](#add-http/2.0-response)
@@ -27,7 +26,7 @@ Use `pytest_httpx.httpx_mock` [`pytest`](https://docs.pytest.org/en/latest/) fix
 
 ## Add responses
 
-You can register responses for both sync and async `httpx` requests.
+You can register responses for both sync and async [`HTTPX`](https://www.python-httpx.org) requests.
 
 ```python
 import pytest
@@ -36,7 +35,7 @@ from pytest_httpx import httpx_mock, HTTPXMock
 
 
 def test_something(httpx_mock: HTTPXMock):
-    httpx_mock.add_response("http://test_url")
+    httpx_mock.add_response()
 
     with httpx.Client() as client:
         response = client.get("http://test_url")
@@ -44,7 +43,7 @@ def test_something(httpx_mock: HTTPXMock):
 
 @pytest.mark.asyncio
 async def test_something_async(httpx_mock: HTTPXMock):
-    httpx_mock.add_response("http://test_url")
+    httpx_mock.add_response()
 
     async with httpx.AsyncClient() as client:
         response = await client.get("http://test_url")
@@ -52,21 +51,83 @@ async def test_something_async(httpx_mock: HTTPXMock):
 
 If all responses are not sent back during test execution, the test case will fail at teardown.
 
-Default response is a 200 (OK) without any body for a GET request on the provided URL using HTTP/1.1 protocol version.
+Default response is a HTTP/1.1 200 (OK) without any body.
 
 ### How response is selected
 
-Default matching is performed on the full URL, query parameters included and the HTTP method.
+In case more than one response match request, the first one not yet sent (according to the registration order) will be sent.
 
-Registration order is kept while checking what response to send.
+In case all matching responses have been sent, the last one (according to the registration order) will be sent.
 
-In case more than one response match request, the first one not yet sent will be sent.
+You can add criteria so that response will be sent only in case of a more specific matching.
 
-In case all matching responses have been sent, the last registered one will be sent.
+#### Matching on URL
 
-#### Providing URL
+`url` parameter can either be a string, a python [re.Pattern](https://docs.python.org/3/library/re.html) instance or a [httpx.URL](https://www.python-httpx.org/api/#url) instance.
 
-URL can either be a string, a python re.Pattern instance or a httpx.URL instance.
+Matching is performed on the full URL, query parameters included.
+
+```python
+import httpx
+from pytest_httpx import httpx_mock, HTTPXMock
+
+
+def test_url(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(url="http://test_url")
+
+    with httpx.Client() as client:
+        response1 = client.delete("http://test_url")
+        response2 = client.get("http://test_url")
+```
+
+#### Matching on HTTP method
+
+Use `method` parameter to specify the HTTP method (POST, PUT, DELETE, PATCH, HEAD) to reply to
+
+`method` parameter must be a string. It will be upper cased so it can be provided lower cased.
+
+Matching is performed on equality.
+
+```python
+import httpx
+from pytest_httpx import httpx_mock, HTTPXMock
+
+
+def test_post(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(method="POST")
+
+    with httpx.Client() as client:
+        response = client.post("http://test_url")
+
+
+def test_put(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(method="PUT")
+
+    with httpx.Client() as client:
+        response = client.put("http://test_url")
+
+
+def test_delete(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(method="DELETE")
+
+    with httpx.Client() as client:
+        response = client.delete("http://test_url")
+
+
+def test_patch(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(method="PATCH")
+
+    with httpx.Client() as client:
+        response = client.patch("http://test_url")
+
+
+def test_head(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(method="HEAD")
+
+    with httpx.Client() as client:
+        response = client.head("http://test_url")
+    
+```
 
 ### Add JSON response
 
@@ -78,7 +139,7 @@ from pytest_httpx import httpx_mock, HTTPXMock
 
 
 def test_json(httpx_mock: HTTPXMock):
-    httpx_mock.add_response("http://test_url", json=[{"key1": "value1", "key2": "value2"}])
+    httpx_mock.add_response(json=[{"key1": "value1", "key2": "value2"}])
 
     with httpx.Client() as client:
         assert client.get("http://test_url").json() == [{"key1": "value1", "key2": "value2"}]
@@ -95,14 +156,14 @@ from pytest_httpx import httpx_mock, HTTPXMock
 
 
 def test_str_body(httpx_mock: HTTPXMock):
-    httpx_mock.add_response("http://test_url", data="This is my UTF-8 content")
+    httpx_mock.add_response(data="This is my UTF-8 content")
 
     with httpx.Client() as client:
         assert client.get("http://test_url").text == "This is my UTF-8 content"
 
 
 def test_bytes_body(httpx_mock: HTTPXMock):
-    httpx_mock.add_response("http://test_url", data=b"This is my bytes content")
+    httpx_mock.add_response(data=b"This is my bytes content")
 
     with httpx.Client() as client:
         assert client.get("http://test_url").content == b"This is my bytes content"
@@ -121,7 +182,7 @@ from pytest_httpx import httpx_mock, HTTPXMock
 
 
 def test_multipart_body(httpx_mock: HTTPXMock):
-    httpx_mock.add_response("http://test_url", data={"key1": "value1"}, files={"file1": "content of file 1"}, boundary=b"2256d3a36d2a61a1eba35a22bee5c74a")
+    httpx_mock.add_response(data={"key1": "value1"}, files={"file1": "content of file 1"}, boundary=b"2256d3a36d2a61a1eba35a22bee5c74a")
 
     with httpx.Client() as client:
         assert client.get("http://test_url").text == '''--2256d3a36d2a61a1eba35a22bee5c74a\r
@@ -138,51 +199,6 @@ content of file 1\r
     
 ```
 
-### Add non GET response
-
-Use `method` parameter to specify the HTTP method (POST, PUT, DELETE, PATCH, HEAD) to reply to on provided URL.
-
-```python
-import httpx
-from pytest_httpx import httpx_mock, HTTPXMock
-
-
-def test_post(httpx_mock: HTTPXMock):
-    httpx_mock.add_response("http://test_url", method="POST")
-
-    with httpx.Client() as client:
-        response = client.post("http://test_url")
-
-
-def test_put(httpx_mock: HTTPXMock):
-    httpx_mock.add_response("http://test_url", method="PUT")
-
-    with httpx.Client() as client:
-        response = client.put("http://test_url")
-
-
-def test_delete(httpx_mock: HTTPXMock):
-    httpx_mock.add_response("http://test_url", method="DELETE")
-
-    with httpx.Client() as client:
-        response = client.delete("http://test_url")
-
-
-def test_patch(httpx_mock: HTTPXMock):
-    httpx_mock.add_response("http://test_url", method="PATCH")
-
-    with httpx.Client() as client:
-        response = client.patch("http://test_url")
-
-
-def test_head(httpx_mock: HTTPXMock):
-    httpx_mock.add_response("http://test_url", method="HEAD")
-
-    with httpx.Client() as client:
-        response = client.head("http://test_url")
-    
-```
-
 ### Add non 200 response
 
 Use `status_code` parameter to specify the HTTP status code of the response.
@@ -193,7 +209,7 @@ from pytest_httpx import httpx_mock, HTTPXMock
 
 
 def test_status_code(httpx_mock: HTTPXMock):
-    httpx_mock.add_response("http://test_url", status_code=404)
+    httpx_mock.add_response(status_code=404)
 
     with httpx.Client() as client:
         assert client.get("http://test_url").status_code == 404
@@ -210,7 +226,7 @@ from pytest_httpx import httpx_mock, HTTPXMock
 
 
 def test_headers(httpx_mock: HTTPXMock):
-    httpx_mock.add_response("http://test_url", headers={"X-Header1": "Test value"})
+    httpx_mock.add_response(headers={"X-Header1": "Test value"})
 
     with httpx.Client() as client:
         assert client.get("http://test_url").headers["x-header1"] == "Test value"
@@ -227,7 +243,7 @@ from pytest_httpx import httpx_mock, HTTPXMock
 
 
 def test_http_version(httpx_mock: HTTPXMock):
-    httpx_mock.add_response("http://test_url", http_version="HTTP/2.0")
+    httpx_mock.add_response(http_version="HTTP/2.0")
 
     with httpx.Client() as client:
         assert client.get("http://test_url").http_version == "HTTP/2.0"
@@ -239,16 +255,14 @@ def test_http_version(httpx_mock: HTTPXMock):
 You can perform custom manipulation upon request reception by registering callbacks.
 
 Callback should expect at least two parameters:
- * request: The received request.
- * timeout: The timeout linked to the request.
+ * request: The received [`httpx.Request`](https://www.python-httpx.org/api/#request).
+ * timeout: The [`httpx.Timeout`](https://www.python-httpx.org/advanced/#timeout-configuration) linked to the request.
 
 If all callbacks are not executed during test execution, the test case will fail at teardown.
 
-Default callback is for a GET request on the provided URL.
-
 ### Dynamic responses
 
-Callback should return a httpx.Response instance.
+Callback should return a [`httpx.Response`](https://www.python-httpx.org/api/#response) instance.
 
 ```python
 import httpx
@@ -266,7 +280,7 @@ def test_dynamic_response(httpx_mock: HTTPXMock):
             request=request,
         )
 
-    httpx_mock.add_callback(custom_response, "http://test_url")
+    httpx_mock.add_callback(custom_response)
 
     with httpx.Client() as client:
         response = client.get("http://test_url")
@@ -276,9 +290,9 @@ def test_dynamic_response(httpx_mock: HTTPXMock):
 
 ### Raising exceptions
 
-You can simulate httpx exception throwing by raising an exception in your callback.
+You can simulate HTTPX exception throwing by raising an exception in your callback.
 
-This can be useful if you want to assert that your code handles httpx exceptions properly.
+This can be useful if you want to assert that your code handles HTTPX exceptions properly.
 
 ```python
 import httpx
@@ -290,7 +304,7 @@ def test_exception_raising(httpx_mock: HTTPXMock):
     def raise_timeout(*args, **kwargs) -> httpx.Response:
         raise httpx.exceptions.TimeoutException()
 
-    httpx_mock.add_callback(raise_timeout, "http://test_url")
+    httpx_mock.add_callback(raise_timeout)
     
     with httpx.Client() as client:
         with pytest.raises(httpx.exceptions.TimeoutException):
@@ -300,17 +314,25 @@ def test_exception_raising(httpx_mock: HTTPXMock):
 
 ### How callback is selected
 
-Default matching is performed on the full URL, query parameters included and the HTTP method.
+In case more than one callback match request, the first one not yet executed (according to the registration order) will be executed.
 
-Registration order is kept while checking what callback to execute.
+In case all matching callbacks have been executed, the last one (according to the registration order) will be executed.
 
-In case more than one callback match request, the first one not yet executed will be sent.
+You can add criteria so that callback will be sent only in case of a more specific matching.
 
-In case all matching callbacks have been sent, the last registered one will be sent.
+#### Matching on URL
 
-#### Providing URL
+`url` parameter can either be a string, a python [re.Pattern](https://docs.python.org/3/library/re.html) instance or a [httpx.URL](https://www.python-httpx.org/api/#url) instance.
 
-URL can either be a string, a python re.Pattern instance or a httpx.URL instance.
+Matching is performed on the full URL, query parameters included.
+
+#### Matching on HTTP method
+
+Use `method` parameter to specify the HTTP method (POST, PUT, DELETE, PATCH, HEAD) executing the callback.
+
+`method` parameter must be a string. It will be upper cased so it can be provided lower cased.
+
+Matching is performed on equality.
 
 ## Check sent requests
 
@@ -320,30 +342,38 @@ from pytest_httpx import httpx_mock, HTTPXMock
 
 
 def test_many_requests(httpx_mock: HTTPXMock):
-    httpx_mock.add_response("http://test_url")
+    httpx_mock.add_response()
 
     with httpx.Client() as client:
         response1 = client.get("http://test_url")
         response2 = client.get("http://test_url")
 
-    requests = httpx_mock.get_requests("http://test_url")
+    requests = httpx_mock.get_requests()
 
 
 def test_single_request(httpx_mock: HTTPXMock):
-    httpx_mock.add_response("http://test_url")
+    httpx_mock.add_response()
 
     with httpx.Client() as client:
         response = client.get("http://test_url")
 
-    request = httpx_mock.get_request("http://test_url")
+    request = httpx_mock.get_request()
 ```
 
 ### How requests are selected
 
-Default matching is performed on the full URL, query parameters included and the HTTP method.
+You can add criteria so that requests will be returned only in case of a more specific matching.
 
-Request original order is kept while appending to the list.
+#### Matching on URL
 
-#### Providing URL
+`url` parameter can either be a string, a python [re.Pattern](https://docs.python.org/3/library/re.html) instance or a [httpx.URL](https://www.python-httpx.org/api/#url) instance.
 
-URL can either be a string, a python re.Pattern instance or a httpx.URL instance.
+Matching is performed on the full URL, query parameters included.
+
+#### Matching on HTTP method
+
+Use `method` parameter to specify the HTTP method (POST, PUT, DELETE, PATCH, HEAD) of the requests to retrieve.
+
+`method` parameter must be a string. It will be upper cased so it can be provided lower cased.
+
+Matching is performed on equality.
