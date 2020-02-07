@@ -63,7 +63,7 @@ You can add criteria so that response will be sent only in case of a more specif
 
 #### Matching on URL
 
-`url` parameter can either be a string, a python re.Pattern instance or a httpx.URL instance.
+`url` parameter can either be a string, a python [re.Pattern](https://docs.python.org/3/library/re.html) instance or a [httpx.URL](https://www.python-httpx.org/api/#url) instance.
 
 Matching is performed on the full URL, query parameters included.
 
@@ -322,7 +322,7 @@ You can add criteria so that callback will be sent only in case of a more specif
 
 #### Matching on URL
 
-`url` parameter can either be a string, a python re.Pattern instance or a httpx.URL instance.
+`url` parameter can either be a string, a python [re.Pattern](https://docs.python.org/3/library/re.html) instance or a [httpx.URL](https://www.python-httpx.org/api/#url) instance.
 
 Matching is performed on the full URL, query parameters included.
 
@@ -366,7 +366,7 @@ You can add criteria so that requests will be returned only in case of a more sp
 
 #### Matching on URL
 
-`url` parameter can either be a string, a python re.Pattern instance or a httpx.URL instance.
+`url` parameter can either be a string, a python [re.Pattern](https://docs.python.org/3/library/re.html) instance or a [httpx.URL](https://www.python-httpx.org/api/#url) instance.
 
 Matching is performed on the full URL, query parameters included.
 

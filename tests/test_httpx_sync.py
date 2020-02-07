@@ -52,7 +52,7 @@ def test_method_matching(httpx_mock: HTTPXMock):
 
 
 def test_with_one_response(httpx_mock: HTTPXMock):
-    httpx_mock.add_response("http://test_url", data=b"test content")
+    httpx_mock.add_response(url="http://test_url", data=b"test content")
 
     with httpx.Client() as client:
         response = client.get("http://test_url")
@@ -63,8 +63,8 @@ def test_with_one_response(httpx_mock: HTTPXMock):
 
 
 def test_with_many_responses(httpx_mock: HTTPXMock):
-    httpx_mock.add_response("http://test_url", data=b"test content 1")
-    httpx_mock.add_response("http://test_url", data=b"test content 2")
+    httpx_mock.add_response(url="http://test_url", data=b"test content 1")
+    httpx_mock.add_response(url="http://test_url", data=b"test content 2")
 
     with httpx.Client() as client:
         response = client.get("http://test_url")
@@ -78,12 +78,20 @@ def test_with_many_responses(httpx_mock: HTTPXMock):
 
 
 def test_with_many_responses_methods(httpx_mock: HTTPXMock):
-    httpx_mock.add_response("http://test_url", method="GET", data=b"test content 1")
-    httpx_mock.add_response("http://test_url", method="POST", data=b"test content 2")
-    httpx_mock.add_response("http://test_url", method="PUT", data=b"test content 3")
-    httpx_mock.add_response("http://test_url", method="DELETE", data=b"test content 4")
-    httpx_mock.add_response("http://test_url", method="PATCH", data=b"test content 5")
-    httpx_mock.add_response("http://test_url", method="HEAD", data=b"test content 6")
+    httpx_mock.add_response(url="http://test_url", method="GET", data=b"test content 1")
+    httpx_mock.add_response(
+        url="http://test_url", method="POST", data=b"test content 2"
+    )
+    httpx_mock.add_response(url="http://test_url", method="PUT", data=b"test content 3")
+    httpx_mock.add_response(
+        url="http://test_url", method="DELETE", data=b"test content 4"
+    )
+    httpx_mock.add_response(
+        url="http://test_url", method="PATCH", data=b"test content 5"
+    )
+    httpx_mock.add_response(
+        url="http://test_url", method="HEAD", data=b"test content 6"
+    )
 
     with httpx.Client() as client:
         response = client.post("http://test_url")
@@ -107,22 +115,22 @@ def test_with_many_responses_methods(httpx_mock: HTTPXMock):
 
 def test_with_many_responses_status_codes(httpx_mock: HTTPXMock):
     httpx_mock.add_response(
-        "http://test_url", method="GET", data=b"test content 1", status_code=200
+        url="http://test_url", method="GET", data=b"test content 1", status_code=200
     )
     httpx_mock.add_response(
-        "http://test_url", method="POST", data=b"test content 2", status_code=201
+        url="http://test_url", method="POST", data=b"test content 2", status_code=201
     )
     httpx_mock.add_response(
-        "http://test_url", method="PUT", data=b"test content 3", status_code=202
+        url="http://test_url", method="PUT", data=b"test content 3", status_code=202
     )
     httpx_mock.add_response(
-        "http://test_url", method="DELETE", data=b"test content 4", status_code=303
+        url="http://test_url", method="DELETE", data=b"test content 4", status_code=303
     )
     httpx_mock.add_response(
-        "http://test_url", method="PATCH", data=b"test content 5", status_code=404
+        url="http://test_url", method="PATCH", data=b"test content 5", status_code=404
     )
     httpx_mock.add_response(
-        "http://test_url", method="HEAD", data=b"test content 6", status_code=500
+        url="http://test_url", method="HEAD", data=b"test content 6", status_code=500
     )
 
     with httpx.Client() as client:
@@ -153,22 +161,22 @@ def test_with_many_responses_status_codes(httpx_mock: HTTPXMock):
 
 def test_with_many_responses_urls_str(httpx_mock: HTTPXMock):
     httpx_mock.add_response(
-        "http://test_url?param1=test", method="GET", data=b"test content 1"
+        url="http://test_url?param1=test", method="GET", data=b"test content 1"
     )
     httpx_mock.add_response(
-        "http://test_url?param2=test", method="POST", data=b"test content 2"
+        url="http://test_url?param2=test", method="POST", data=b"test content 2"
     )
     httpx_mock.add_response(
-        "http://test_url?param3=test", method="PUT", data=b"test content 3"
+        url="http://test_url?param3=test", method="PUT", data=b"test content 3"
     )
     httpx_mock.add_response(
-        "http://test_url?param4=test", method="DELETE", data=b"test content 4"
+        url="http://test_url?param4=test", method="DELETE", data=b"test content 4"
     )
     httpx_mock.add_response(
-        "http://test_url?param5=test", method="PATCH", data=b"test content 5"
+        url="http://test_url?param5=test", method="PATCH", data=b"test content 5"
     )
     httpx_mock.add_response(
-        "http://test_url?param6=test", method="HEAD", data=b"test content 6"
+        url="http://test_url?param6=test", method="HEAD", data=b"test content 6"
     )
 
     with httpx.Client() as client:
@@ -194,8 +202,8 @@ def test_with_many_responses_urls_str(httpx_mock: HTTPXMock):
 
 
 def test_response_with_pattern_in_url(httpx_mock: HTTPXMock):
-    httpx_mock.add_response(re.compile(".*test.*"))
-    httpx_mock.add_response("http://unmatched", data=b"test content")
+    httpx_mock.add_response(url=re.compile(".*test.*"))
+    httpx_mock.add_response(url="http://unmatched", data=b"test content")
 
     with httpx.Client() as client:
         response = client.get("http://unmatched")
@@ -206,27 +214,27 @@ def test_response_with_pattern_in_url(httpx_mock: HTTPXMock):
 
 
 def test_request_with_pattern_in_url(httpx_mock: HTTPXMock):
-    httpx_mock.add_response("http://test_url")
-    httpx_mock.add_response("http://unmatched")
+    httpx_mock.add_response(url="http://test_url")
+    httpx_mock.add_response(url="http://unmatched")
 
     with httpx.Client() as client:
         client.get("http://unmatched")
         client.get("http://test_url", headers={"X-Test": "1"})
 
-    assert httpx_mock.get_request(re.compile(".*test.*")).headers["x-test"] == "1"
+    assert httpx_mock.get_request(url=re.compile(".*test.*")).headers["x-test"] == "1"
 
 
 def test_requests_with_pattern_in_url(httpx_mock: HTTPXMock):
-    httpx_mock.add_response("http://test_url")
-    httpx_mock.add_response("http://tests_url")
-    httpx_mock.add_response("http://unmatched")
+    httpx_mock.add_response(url="http://test_url")
+    httpx_mock.add_response(url="http://tests_url")
+    httpx_mock.add_response(url="http://unmatched")
 
     with httpx.Client() as client:
         client.get("http://tests_url", headers={"X-Test": "1"})
         client.get("http://unmatched", headers={"X-Test": "2"})
         client.get("http://test_url")
 
-    requests = httpx_mock.get_requests(re.compile(".*test.*"))
+    requests = httpx_mock.get_requests(url=re.compile(".*test.*"))
     assert len(requests) == 2
     assert requests[0].headers["x-test"] == "1"
     assert "x-test" not in requests[1].headers
@@ -255,8 +263,8 @@ def test_callback_with_pattern_in_url(httpx_mock: HTTPXMock):
             request=request,
         )
 
-    httpx_mock.add_callback(custom_response, re.compile(".*test.*"))
-    httpx_mock.add_callback(custom_response2, "http://unmatched")
+    httpx_mock.add_callback(custom_response, url=re.compile(".*test.*"))
+    httpx_mock.add_callback(custom_response2, url="http://unmatched")
 
     with httpx.Client() as client:
         response = client.get("http://unmatched")
@@ -268,32 +276,32 @@ def test_callback_with_pattern_in_url(httpx_mock: HTTPXMock):
 
 def test_with_many_responses_urls_instances(httpx_mock: HTTPXMock):
     httpx_mock.add_response(
-        httpx.URL("http://test_url", params={"param1": "test"}),
+        url=httpx.URL("http://test_url", params={"param1": "test"}),
         method="GET",
         data=b"test content 1",
     )
     httpx_mock.add_response(
-        httpx.URL("http://test_url", params={"param2": "test"}),
+        url=httpx.URL("http://test_url", params={"param2": "test"}),
         method="POST",
         data=b"test content 2",
     )
     httpx_mock.add_response(
-        httpx.URL("http://test_url", params={"param3": "test"}),
+        url=httpx.URL("http://test_url", params={"param3": "test"}),
         method="PUT",
         data=b"test content 3",
     )
     httpx_mock.add_response(
-        httpx.URL("http://test_url", params={"param4": "test"}),
+        url=httpx.URL("http://test_url", params={"param4": "test"}),
         method="DELETE",
         data=b"test content 4",
     )
     httpx_mock.add_response(
-        httpx.URL("http://test_url", params={"param5": "test"}),
+        url=httpx.URL("http://test_url", params={"param5": "test"}),
         method="PATCH",
         data=b"test content 5",
     )
     httpx_mock.add_response(
-        httpx.URL("http://test_url", params={"param6": "test"}),
+        url=httpx.URL("http://test_url", params={"param6": "test"}),
         method="HEAD",
         data=b"test content 6",
     )
@@ -320,7 +328,7 @@ def test_with_many_responses_urls_instances(httpx_mock: HTTPXMock):
 
 def test_with_http_version_2(httpx_mock: HTTPXMock):
     httpx_mock.add_response(
-        "http://test_url", http_version="HTTP/2", data=b"test content 1"
+        url="http://test_url", http_version="HTTP/2", data=b"test content 1"
     )
 
     with httpx.Client() as client:
@@ -331,7 +339,7 @@ def test_with_http_version_2(httpx_mock: HTTPXMock):
 
 def test_with_headers(httpx_mock: HTTPXMock):
     httpx_mock.add_response(
-        "http://test_url", data=b"test content 1", headers={"X-Test": "Test value"}
+        url="http://test_url", data=b"test content 1", headers={"X-Test": "Test value"}
     )
 
     with httpx.Client() as client:
@@ -341,14 +349,14 @@ def test_with_headers(httpx_mock: HTTPXMock):
 
 
 def test_multipart_body(httpx_mock: HTTPXMock):
-    httpx_mock.add_response("http://test_url", data={"key1": "value1"})
+    httpx_mock.add_response(url="http://test_url", data={"key1": "value1"})
     httpx_mock.add_response(
-        "http://test_url",
+        url="http://test_url",
         files={"file1": "content of file 1"},
         boundary=b"2256d3a36d2a61a1eba35a22bee5c74a",
     )
     httpx_mock.add_response(
-        "http://test_url",
+        url="http://test_url",
         data={"key1": "value1"},
         files={"file1": "content of file 1"},
         boundary=b"2256d3a36d2a61a1eba35a22bee5c74a",
@@ -382,12 +390,20 @@ content of file 1\r
 
 
 def test_requests_retrieval(httpx_mock: HTTPXMock):
-    httpx_mock.add_response("http://test_url", method="GET", data=b"test content 1")
-    httpx_mock.add_response("http://test_url", method="POST", data=b"test content 2")
-    httpx_mock.add_response("http://test_url", method="PUT", data=b"test content 3")
-    httpx_mock.add_response("http://test_url", method="DELETE", data=b"test content 4")
-    httpx_mock.add_response("http://test_url", method="PATCH", data=b"test content 5")
-    httpx_mock.add_response("http://test_url", method="HEAD", data=b"test content 6")
+    httpx_mock.add_response(url="http://test_url", method="GET", data=b"test content 1")
+    httpx_mock.add_response(
+        url="http://test_url", method="POST", data=b"test content 2"
+    )
+    httpx_mock.add_response(url="http://test_url", method="PUT", data=b"test content 3")
+    httpx_mock.add_response(
+        url="http://test_url", method="DELETE", data=b"test content 4"
+    )
+    httpx_mock.add_response(
+        url="http://test_url", method="PATCH", data=b"test content 5"
+    )
+    httpx_mock.add_response(
+        url="http://test_url", method="HEAD", data=b"test content 6"
+    )
 
     with httpx.Client() as client:
         client.post("http://test_url", data=b"sent content 2")
@@ -398,36 +414,43 @@ def test_requests_retrieval(httpx_mock: HTTPXMock):
         client.delete("http://test_url", headers={"X-Test": "test header 4"})
 
     assert (
-        httpx_mock.get_request(httpx.URL("http://test_url"), "PATCH").read()
+        httpx_mock.get_request(url=httpx.URL("http://test_url"), method="PATCH").read()
         == b"sent content 5"
     )
-    assert httpx_mock.get_request(httpx.URL("http://test_url"), "HEAD").read() == b""
     assert (
-        httpx_mock.get_request(httpx.URL("http://test_url"), "PUT").read()
+        httpx_mock.get_request(url=httpx.URL("http://test_url"), method="HEAD").read()
+        == b""
+    )
+    assert (
+        httpx_mock.get_request(url=httpx.URL("http://test_url"), method="PUT").read()
         == b"sent content 3"
     )
     assert (
-        httpx_mock.get_request(httpx.URL("http://test_url"), "GET").headers["x-test"]
+        httpx_mock.get_request(url=httpx.URL("http://test_url"), method="GET").headers[
+            "x-test"
+        ]
         == "test header 1"
     )
     assert (
-        httpx_mock.get_request(httpx.URL("http://test_url"), "POST").read()
+        httpx_mock.get_request(url=httpx.URL("http://test_url"), method="POST").read()
         == b"sent content 2"
     )
     assert (
-        httpx_mock.get_request(httpx.URL("http://test_url"), "DELETE").headers["x-test"]
+        httpx_mock.get_request(
+            url=httpx.URL("http://test_url"), method="DELETE"
+        ).headers["x-test"]
         == "test header 4"
     )
 
 
 def test_requests_retrieval_on_same_url(httpx_mock: HTTPXMock):
-    httpx_mock.add_response("http://test_url")
+    httpx_mock.add_response(url="http://test_url")
 
     with httpx.Client() as client:
         client.get("http://test_url", headers={"X-TEST": "test header 1"})
         client.get("http://test_url", headers={"X-TEST": "test header 2"})
 
-    requests = httpx_mock.get_requests(httpx.URL("http://test_url"))
+    requests = httpx_mock.get_requests(url=httpx.URL("http://test_url"))
     assert len(requests) == 2
     assert requests[0].headers["x-test"] == "test header 1"
     assert requests[1].headers["x-test"] == "test header 2"
@@ -477,7 +500,7 @@ def test_requests_retrieval_on_same_url_and_method(httpx_mock: HTTPXMock):
         client.post("http://test_url", headers={"X-TEST": "test header 3"})
         client.get("http://test_url2", headers={"X-TEST": "test header 4"})
 
-    requests = httpx_mock.get_requests(httpx.URL("http://test_url"), "GET")
+    requests = httpx_mock.get_requests(url=httpx.URL("http://test_url"), method="GET")
     assert len(requests) == 2
     assert requests[0].headers["x-test"] == "test header 1"
     assert requests[1].headers["x-test"] == "test header 2"
@@ -508,12 +531,14 @@ def test_default_request_retrieval(httpx_mock: HTTPXMock):
 
 def test_requests_json_body(httpx_mock: HTTPXMock):
     httpx_mock.add_response(
-        "http://test_url", method="GET", json=["list content 1", "list content 2"]
+        url="http://test_url", method="GET", json=["list content 1", "list content 2"]
     )
     httpx_mock.add_response(
-        "http://test_url", method="POST", json={"key 1": "value 1", "key 2": "value 2"}
+        url="http://test_url",
+        method="POST",
+        json={"key 1": "value 1", "key 2": "value 2"},
     )
-    httpx_mock.add_response("http://test_url", method="PUT", json="string value")
+    httpx_mock.add_response(url="http://test_url", method="PUT", json="string value")
 
     with httpx.Client() as client:
         response = client.post("http://test_url")
@@ -532,7 +557,7 @@ def test_callback_raising_exception(httpx_mock: HTTPXMock):
     ) -> httpx.Response:
         raise httpx.exceptions.TimeoutException()
 
-    httpx_mock.add_callback(raise_timeout, "http://test_url")
+    httpx_mock.add_callback(raise_timeout, url="http://test_url")
 
     with httpx.Client() as client:
         with pytest.raises(httpx.exceptions.TimeoutException):
@@ -551,7 +576,7 @@ def test_callback_returning_response(httpx_mock: HTTPXMock):
             request=request,
         )
 
-    httpx_mock.add_callback(custom_response, "http://test_url")
+    httpx_mock.add_callback(custom_response, url="http://test_url")
 
     with httpx.Client() as client:
         response = client.get("http://test_url")
@@ -613,4 +638,4 @@ def test_request_retrieval_with_more_than_one(httpx_mock: HTTPXMock):
         client.get("http://test_url", headers={"X-TEST": "test header 1"})
         client.get("http://test_url", headers={"X-TEST": "test header 2"})
 
-    httpx_mock.get_request(httpx.URL("http://test_url"))
+    httpx_mock.get_request(url=httpx.URL("http://test_url"))

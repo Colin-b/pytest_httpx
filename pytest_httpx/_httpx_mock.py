@@ -1,5 +1,5 @@
 import re
-from typing import List, Union, Optional, Callable, Tuple, Pattern
+from typing import List, Union, Optional, Callable, Tuple, Pattern, Any
 
 import httpx
 import pytest
@@ -46,18 +46,18 @@ class HTTPXMock:
 
     def add_response(
         self,
-        url: Union[str, Pattern, URL] = None,
-        method: str = None,
         status_code: int = 200,
         http_version: str = "HTTP/1.1",
         headers: dict = None,
-        **content,
+        data: content_streams.RequestData = None,
+        files: content_streams.RequestFiles = None,
+        json: Any = None,
+        boundary: bytes = None,
+        **matchers,
     ):
         """
         Mock the response that will be sent if a request match.
 
-        :param url: Full URL identifying the request. Can be a str, a re.Pattern instance or a httpx.URL instance.
-        :param method: HTTP method identifying the request.
         :param status_code: HTTP status code of the response to send. Default to 200 (OK).
         :param http_version: HTTP protocol version of the response to send. Default to HTTP/1.1
         :param headers: HTTP headers of the response to send. Default to no headers.
@@ -66,15 +66,19 @@ class HTTPXMock:
         :param files: Multipart files.
         :param json: HTTP body of the response (if JSON should be used as content type) if data is not provided.
         :param boundary: Multipart boundary if files is provided.
+        :param url: Full URL identifying the request(s) to match. Can be a str, a re.Pattern instance or a httpx.URL instance.
+        :param method: HTTP method identifying the request(s) to match.
         """
         response = Response(
             status_code=status_code,
             http_version=http_version,
             headers=list(headers.items()) if headers else [],
-            stream=content_streams.encode(**content),
+            stream=content_streams.encode(
+                data=data, files=files, json=json, boundary=boundary
+            ),
             request=None,  # Will be set upon reception of the actual request
         )
-        self._responses.append((_RequestMatcher(url, method), response))
+        self._responses.append((_RequestMatcher(**matchers), response))
 
     def add_callback(
         self,
@@ -90,8 +94,8 @@ class HTTPXMock:
          * request: The received request.
          * timeout: The timeout linked to the request.
         It should return an httpx.Response instance.
-        :param url: Full URL identifying the request. Can be a str, a re.Pattern instance or a httpx.URL instance.
-        :param method: HTTP method identifying the request.
+        :param url: Full URL identifying the request(s) to match. Can be a str, a re.Pattern instance or a httpx.URL instance.
+        :param method: HTTP method identifying the request(s) to match.
         """
         self._callbacks.append((_RequestMatcher(url, method), callback))
 
@@ -166,8 +170,8 @@ class HTTPXMock:
         """
         Return all requests sent that match (empty list if no requests were matched).
 
-        :param url: Full URL identifying the requests. Can be a str, a re.Pattern instance or a httpx.URL instance.
-        :param method: HTTP method identifying the requests. Must be a upper cased string value.
+        :param url: Full URL identifying the requests to retrieve. Can be a str, a re.Pattern instance or a httpx.URL instance.
+        :param method: HTTP method identifying the requests to retrieve. Must be a upper cased string value.
         """
         matcher = _RequestMatcher(url, method)
         return [request for request in self._requests if matcher.match(request)]
@@ -176,10 +180,11 @@ class HTTPXMock:
         self, url: Union[str, Pattern, URL] = None, method: str = None
     ) -> Optional[Request]:
         """
-        Return the request that match (or None).
+        Return the single request that match (or None).
 
-        :param url: Full URL identifying the request. Can be a str, a re.Pattern instance or a httpx.URL instance.
-        :param method: HTTP method identifying the request. Must be a upper cased string value.
+        :param url: Full URL identifying the request to retrieve. Can be a str, a re.Pattern instance or a httpx.URL instance.
+        :param method: HTTP method identifying the request to retrieve. Must be a upper cased string value.
+        :raises AssertionError: in case more than one request match.
         """
         requests = self.get_requests(url, method)
         assert (
