@@ -26,7 +26,7 @@ Use `pytest_httpx.httpx_mock` [`pytest`](https://docs.pytest.org/en/latest/) fix
 
 ## Add responses
 
-You can register responses for both sync and async `httpx` requests.
+You can register responses for both sync and async [`HTTPX`](https://www.python-httpx.org) requests.
 
 ```python
 import pytest
@@ -255,14 +255,14 @@ def test_http_version(httpx_mock: HTTPXMock):
 You can perform custom manipulation upon request reception by registering callbacks.
 
 Callback should expect at least two parameters:
- * request: The received request.
- * timeout: The timeout linked to the request.
+ * request: The received [`httpx.Request`](https://www.python-httpx.org/api/#request).
+ * timeout: The [`httpx.Timeout`](https://www.python-httpx.org/advanced/#timeout-configuration) linked to the request.
 
 If all callbacks are not executed during test execution, the test case will fail at teardown.
 
 ### Dynamic responses
 
-Callback should return a httpx.Response instance.
+Callback should return a [`httpx.Response`](https://www.python-httpx.org/api/#response) instance.
 
 ```python
 import httpx
@@ -290,9 +290,9 @@ def test_dynamic_response(httpx_mock: HTTPXMock):
 
 ### Raising exceptions
 
-You can simulate httpx exception throwing by raising an exception in your callback.
+You can simulate HTTPX exception throwing by raising an exception in your callback.
 
-This can be useful if you want to assert that your code handles httpx exceptions properly.
+This can be useful if you want to assert that your code handles HTTPX exceptions properly.
 
 ```python
 import httpx

@@ -3,7 +3,7 @@ from typing import List, Union, Optional, Callable, Tuple, Pattern, Any
 
 import httpx
 import pytest
-from httpx import Request, Response, Timeout, URL, content_streams
+from httpx import Request, Response, URL, content_streams
 from httpx.dispatch.base import SyncDispatcher, AsyncDispatcher
 
 
@@ -84,7 +84,7 @@ class HTTPXMock:
         """
         Mock the action that will take place if a request match.
 
-        :param callback: The callable that will be called upon reception of the request.
+        :param callback: The callable that will be called upon reception of the matched request.
         It must expect at least 2 parameters:
          * request: The received request.
          * timeout: The timeout linked to the request.
@@ -94,9 +94,7 @@ class HTTPXMock:
         """
         self._callbacks.append((_RequestMatcher(**matchers), callback))
 
-    def _handle_request(
-        self, request: Request, timeout: Optional[Timeout], *args, **kwargs
-    ) -> Response:
+    def _handle_request(self, request: Request, *args, **kwargs) -> Response:
         self._requests.append(request)
 
         response = self._get_response(request)
@@ -105,7 +103,7 @@ class HTTPXMock:
 
         callback = self._get_callback(request)
         if callback:
-            return callback(request=request, timeout=timeout, *args, **kwargs)
+            return callback(request=request, *args, **kwargs)
 
         raise Exception(
             f"No mock can be found for {request.method} request on {request.url}."
