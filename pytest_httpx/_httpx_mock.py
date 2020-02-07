@@ -80,12 +80,7 @@ class HTTPXMock:
         )
         self._responses.append((_RequestMatcher(**matchers), response))
 
-    def add_callback(
-        self,
-        callback: Callable,
-        url: Union[str, Pattern, URL] = None,
-        method: str = None,
-    ):
+    def add_callback(self, callback: Callable, **matchers):
         """
         Mock the action that will take place if a request match.
 
@@ -97,7 +92,7 @@ class HTTPXMock:
         :param url: Full URL identifying the request(s) to match. Can be a str, a re.Pattern instance or a httpx.URL instance.
         :param method: HTTP method identifying the request(s) to match.
         """
-        self._callbacks.append((_RequestMatcher(url, method), callback))
+        self._callbacks.append((_RequestMatcher(**matchers), callback))
 
     def _handle_request(
         self, request: Request, timeout: Optional[Timeout], *args, **kwargs
@@ -164,21 +159,17 @@ class HTTPXMock:
 
     # TODO Allow to assert requests content / files / whatever
 
-    def get_requests(
-        self, url: Union[str, Pattern, URL] = None, method: str = None
-    ) -> List[Request]:
+    def get_requests(self, **matchers) -> List[Request]:
         """
         Return all requests sent that match (empty list if no requests were matched).
 
         :param url: Full URL identifying the requests to retrieve. Can be a str, a re.Pattern instance or a httpx.URL instance.
         :param method: HTTP method identifying the requests to retrieve. Must be a upper cased string value.
         """
-        matcher = _RequestMatcher(url, method)
+        matcher = _RequestMatcher(**matchers)
         return [request for request in self._requests if matcher.match(request)]
 
-    def get_request(
-        self, url: Union[str, Pattern, URL] = None, method: str = None
-    ) -> Optional[Request]:
+    def get_request(self, **matchers) -> Optional[Request]:
         """
         Return the single request that match (or None).
 
@@ -186,7 +177,7 @@ class HTTPXMock:
         :param method: HTTP method identifying the request to retrieve. Must be a upper cased string value.
         :raises AssertionError: in case more than one request match.
         """
-        requests = self.get_requests(url, method)
+        requests = self.get_requests(**matchers)
         assert (
             len(requests) <= 1
         ), f"More than one request ({len(requests)}) matched, use get_requests instead."
