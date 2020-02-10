@@ -639,3 +639,55 @@ def test_request_retrieval_with_more_than_one(httpx_mock: HTTPXMock):
         client.get("http://test_url", headers={"X-TEST": "test header 2"})
 
     httpx_mock.get_request(url=httpx.URL("http://test_url"))
+
+
+def test_headers_matching(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(match_headers={"user-agent": "python-httpx/0.11.1"})
+
+    with httpx.Client() as client:
+        response = client.get("http://test_url")
+        assert response.content == b""
+
+
+def test_headers_not_matching(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(
+        match_headers={
+            "user-agent": "python-httpx/0.11.1",
+            "host": "test_url2",
+            "host2": "test_url",
+        }
+    )
+
+    with httpx.Client() as client:
+        with pytest.raises(httpx.HTTPError) as exception_info:
+            client.get("http://test_url")
+        assert (
+            str(exception_info.value)
+            == "No mock can be found for GET request on http://test_url."
+        )
+
+    # Clean up responses to avoid assertion failure
+    httpx_mock._responses.clear()
+
+
+def test_content_matching(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(match_content=b"This is the body")
+
+    with httpx.Client() as client:
+        response = client.post("http://test_url", data=b"This is the body")
+        assert response.read() == b""
+
+
+def test_content_not_matching(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(match_content=b"This is the body")
+
+    with httpx.Client() as client:
+        with pytest.raises(httpx.HTTPError) as exception_info:
+            client.post("http://test_url", data=b"This is the body2")
+        assert (
+            str(exception_info.value)
+            == "No mock can be found for POST request on http://test_url."
+        )
+
+    # Clean up responses to avoid assertion failure
+    httpx_mock._responses.clear()

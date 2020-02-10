@@ -7,8 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ## [0.0.5] - 2020-02-10
+### Added
+- match_headers parameter now allows to match on headers.
+- match_content parameter now allows to match on full body.
+
 ### Changed
 - module is now a pytest plugin, auto discovered at installation.
+- httpx.HTTPError is now raised instead of Exception in case a request cannot be matched.
 
 ## [0.0.4] - 2020-02-07
 ### Changed

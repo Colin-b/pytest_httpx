@@ -5,7 +5,7 @@
 <a href="https://travis-ci.com/Colin-b/pytest_httpx"><img alt="Build status" src="https://api.travis-ci.com/Colin-b/pytest_httpx.svg?branch=master"></a>
 <a href="https://travis-ci.com/Colin-b/pytest_httpx"><img alt="Coverage" src="https://img.shields.io/badge/coverage-100%25-brightgreen"></a>
 <a href="https://github.com/psf/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
-<a href="https://travis-ci.com/Colin-b/pytest_httpx"><img alt="Number of tests" src="https://img.shields.io/badge/tests-64 passed-blue"></a>
+<a href="https://travis-ci.com/Colin-b/pytest_httpx"><img alt="Number of tests" src="https://img.shields.io/badge/tests-72 passed-blue"></a>
 <a href="https://pypi.org/project/pytest-httpx/"><img alt="Number of downloads" src="https://img.shields.io/pypi/dm/pytest_httpx"></a>
 </p>
 
@@ -83,7 +83,7 @@ def test_url(httpx_mock: HTTPXMock):
 
 #### Matching on HTTP method
 
-Use `method` parameter to specify the HTTP method (POST, PUT, DELETE, PATCH, HEAD) to reply to
+Use `method` parameter to specify the HTTP method (POST, PUT, DELETE, PATCH, HEAD) to reply to.
 
 `method` parameter must be a string. It will be upper cased so it can be provided lower cased.
 
@@ -128,6 +128,42 @@ def test_head(httpx_mock: HTTPXMock):
     with httpx.Client() as client:
         response = client.head("http://test_url")
     
+```
+
+#### Matching on HTTP headers
+
+Use `match_headers` parameter to specify the HTTP headers to reply to.
+
+Matching is performed on equality for each provided header.
+
+```python
+import httpx
+from pytest_httpx import HTTPXMock
+
+
+def test_headers_matching(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(match_headers={'user-agent': 'python-httpx/0.11.1'})
+
+    with httpx.Client() as client:
+        response = client.get("http://test_url")
+```
+
+#### Matching on HTTP body
+
+Use `match_content` parameter to specify the full HTTP body to reply to.
+
+Matching is performed on equality.
+
+```python
+import httpx
+from pytest_httpx import HTTPXMock
+
+
+def test_content_matching(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(match_content=b"This is the body")
+
+    with httpx.Client() as client:
+        response = client.post("http://test_url", data=b"This is the body")
 ```
 
 ### Add JSON response
