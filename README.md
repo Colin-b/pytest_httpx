@@ -371,6 +371,18 @@ Use `method` parameter to specify the HTTP method (POST, PUT, DELETE, PATCH, HEA
 
 Matching is performed on equality.
 
+#### Matching on HTTP headers
+
+Use `match_headers` parameter to specify the HTTP headers executing the callback.
+
+Matching is performed on equality for each provided header.
+
+#### Matching on HTTP body
+
+Use `match_content` parameter to specify the full HTTP body executing the callback.
+
+Matching is performed on equality.
+
 ## Check sent requests
 
 ```python
@@ -412,5 +424,17 @@ Matching is performed on the full URL, query parameters included.
 Use `method` parameter to specify the HTTP method (POST, PUT, DELETE, PATCH, HEAD) of the requests to retrieve.
 
 `method` parameter must be a string. It will be upper cased so it can be provided lower cased.
+
+Matching is performed on equality.
+
+#### Matching on HTTP headers
+
+Use `match_headers` parameter to specify the HTTP headers executing the callback.
+
+Matching is performed on equality for each provided header.
+
+#### Matching on HTTP body
+
+Use `match_content` parameter to specify the full HTTP body executing the callback.
 
 Matching is performed on equality.
