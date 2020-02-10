@@ -13,7 +13,7 @@ class _RequestMatcher:
         url: Union[str, Pattern, URL] = None,
         method: str = None,
         match_headers: dict = None,
-        match_content=None,
+        match_content: bytes = None,
     ):
         self.nb_calls = 0
         self.url = url
