@@ -6,7 +6,7 @@ python:
 install:
   - pip install .[testing]
 script:
-  - pytest
+  - pytest --cov=pytest_httpx --cov-fail-under=100
 deploy:
   provider: pypi
   username: __token__
