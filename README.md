@@ -5,13 +5,13 @@
 <a href="https://travis-ci.com/Colin-b/pytest_httpx"><img alt="Build status" src="https://api.travis-ci.com/Colin-b/pytest_httpx.svg?branch=master"></a>
 <a href="https://travis-ci.com/Colin-b/pytest_httpx"><img alt="Coverage" src="https://img.shields.io/badge/coverage-100%25-brightgreen"></a>
 <a href="https://github.com/psf/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
-<a href="https://travis-ci.com/Colin-b/pytest_httpx"><img alt="Number of tests" src="https://img.shields.io/badge/tests-64 passed-blue"></a>
+<a href="https://travis-ci.com/Colin-b/pytest_httpx"><img alt="Number of tests" src="https://img.shields.io/badge/tests-72 passed-blue"></a>
 <a href="https://pypi.org/project/pytest-httpx/"><img alt="Number of downloads" src="https://img.shields.io/pypi/dm/pytest_httpx"></a>
 </p>
 
 Notice: This module is still under development, versions prior to 1.0.0 are subject to breaking changes without notice.
 
-Use `pytest_httpx.httpx_mock` [`pytest`](https://docs.pytest.org/en/latest/) fixture to mock [`httpx`](https://www.python-httpx.org) requests.
+Once this module is installed, `httpx_mock` [`pytest`](https://docs.pytest.org/en/latest/) fixture will make sure every [`httpx`](https://www.python-httpx.org) request will be replied to with user provided responses.
 
 - [Add responses](#add-responses)
   - [JSON body](#add-json-response)
@@ -28,13 +28,15 @@ Use `pytest_httpx.httpx_mock` [`pytest`](https://docs.pytest.org/en/latest/) fix
 
 You can register responses for both sync and async [`HTTPX`](https://www.python-httpx.org) requests.
 
+`httpx_mock` fixture is available within `pytest_httpx`.
+
 ```python
 import pytest
 import httpx
-from pytest_httpx import httpx_mock, HTTPXMock
+from pytest_httpx import httpx_mock
 
 
-def test_something(httpx_mock: HTTPXMock):
+def test_something(httpx_mock):
     httpx_mock.add_response()
 
     with httpx.Client() as client:
@@ -42,14 +44,14 @@ def test_something(httpx_mock: HTTPXMock):
 
 
 @pytest.mark.asyncio
-async def test_something_async(httpx_mock: HTTPXMock):
+async def test_something_async(httpx_mock):
     httpx_mock.add_response()
 
     async with httpx.AsyncClient() as client:
         response = await client.get("http://test_url")
 ```
 
-If all responses are not sent back during test execution, the test case will fail at teardown.
+If all registered responses are not sent back during test execution, the test case will fail at teardown.
 
 Default response is a HTTP/1.1 200 (OK) without any body.
 
@@ -82,7 +84,7 @@ def test_url(httpx_mock: HTTPXMock):
 
 #### Matching on HTTP method
 
-Use `method` parameter to specify the HTTP method (POST, PUT, DELETE, PATCH, HEAD) to reply to
+Use `method` parameter to specify the HTTP method (POST, PUT, DELETE, PATCH, HEAD) to reply to.
 
 `method` parameter must be a string. It will be upper cased so it can be provided lower cased.
 
@@ -127,6 +129,42 @@ def test_head(httpx_mock: HTTPXMock):
     with httpx.Client() as client:
         response = client.head("http://test_url")
     
+```
+
+#### Matching on HTTP headers
+
+Use `match_headers` parameter to specify the HTTP headers to reply to.
+
+Matching is performed on equality for each provided header.
+
+```python
+import httpx
+from pytest_httpx import httpx_mock, HTTPXMock
+
+
+def test_headers_matching(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(match_headers={'user-agent': 'python-httpx/0.11.1'})
+
+    with httpx.Client() as client:
+        response = client.get("http://test_url")
+```
+
+#### Matching on HTTP body
+
+Use `match_content` parameter to specify the full HTTP body to reply to.
+
+Matching is performed on equality.
+
+```python
+import httpx
+from pytest_httpx import httpx_mock, HTTPXMock
+
+
+def test_content_matching(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(match_content=b"This is the body")
+
+    with httpx.Client() as client:
+        response = client.post("http://test_url", data=b"This is the body")
 ```
 
 ### Add JSON response
@@ -334,6 +372,18 @@ Use `method` parameter to specify the HTTP method (POST, PUT, DELETE, PATCH, HEA
 
 Matching is performed on equality.
 
+#### Matching on HTTP headers
+
+Use `match_headers` parameter to specify the HTTP headers executing the callback.
+
+Matching is performed on equality for each provided header.
+
+#### Matching on HTTP body
+
+Use `match_content` parameter to specify the full HTTP body executing the callback.
+
+Matching is performed on equality.
+
 ## Check sent requests
 
 ```python
@@ -375,5 +425,17 @@ Matching is performed on the full URL, query parameters included.
 Use `method` parameter to specify the HTTP method (POST, PUT, DELETE, PATCH, HEAD) of the requests to retrieve.
 
 `method` parameter must be a string. It will be upper cased so it can be provided lower cased.
+
+Matching is performed on equality.
+
+#### Matching on HTTP headers
+
+Use `match_headers` parameter to specify the HTTP headers executing the callback.
+
+Matching is performed on equality for each provided header.
+
+#### Matching on HTTP body
+
+Use `match_content` parameter to specify the full HTTP body executing the callback.
 
 Matching is performed on equality.

@@ -680,3 +680,59 @@ async def test_request_retrieval_with_more_than_one(httpx_mock: HTTPXMock):
         await client.get("http://test_url", headers={"X-TEST": "test header 2"})
 
     httpx_mock.get_request(url=httpx.URL("http://test_url"))
+
+
+@pytest.mark.asyncio
+async def test_headers_matching(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(match_headers={"user-agent": "python-httpx/0.11.1"})
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get("http://test_url")
+        assert response.content == b""
+
+
+@pytest.mark.asyncio
+async def test_headers_not_matching(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(
+        match_headers={
+            "user-agent": "python-httpx/0.11.1",
+            "host": "test_url2",
+            "host2": "test_url",
+        }
+    )
+
+    async with httpx.AsyncClient() as client:
+        with pytest.raises(httpx.HTTPError) as exception_info:
+            await client.get("http://test_url")
+        assert (
+            str(exception_info.value)
+            == "No mock can be found for GET request on http://test_url."
+        )
+
+    # Clean up responses to avoid assertion failure
+    httpx_mock._responses.clear()
+
+
+@pytest.mark.asyncio
+async def test_content_matching(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(match_content=b"This is the body")
+
+    async with httpx.AsyncClient() as client:
+        response = await client.post("http://test_url", data=b"This is the body")
+        assert response.read() == b""
+
+
+@pytest.mark.asyncio
+async def test_content_not_matching(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(match_content=b"This is the body")
+
+    async with httpx.AsyncClient() as client:
+        with pytest.raises(httpx.HTTPError) as exception_info:
+            await client.post("http://test_url", data=b"This is the body2")
+        assert (
+            str(exception_info.value)
+            == "No mock can be found for POST request on http://test_url."
+        )
+
+    # Clean up responses to avoid assertion failure
+    httpx_mock._responses.clear()

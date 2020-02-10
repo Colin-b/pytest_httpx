@@ -8,15 +8,26 @@ from httpx.dispatch.base import SyncDispatcher, AsyncDispatcher
 
 
 class _RequestMatcher:
-    def __init__(self, url: Union[str, Pattern, URL] = None, method: str = None):
-        # TODO Allow non strict URL params checking
+    def __init__(
+        self,
+        url: Union[str, Pattern, URL] = None,
+        method: str = None,
+        match_headers: dict = None,
+        match_content: bytes = None,
+    ):
         self.nb_calls = 0
         self.url = url
         self.method = method
+        self.headers = match_headers
+        self.content = match_content
 
     def match(self, request: Request) -> bool:
-        # TODO Allow to match on anything from the request
-        return self._url_match(request) and self._method_match(request)
+        return (
+            self._url_match(request)
+            and self._method_match(request)
+            and self._headers_match(request)
+            and self._content_match(request)
+        )
 
     def _url_match(self, request: Request) -> bool:
         if not self.url:
@@ -38,6 +49,21 @@ class _RequestMatcher:
             return True
 
         return request.method == self.method.upper()
+
+    def _headers_match(self, request: Request) -> bool:
+        if not self.headers:
+            return True
+
+        return all(
+            request.headers.get(header_name) == header_value
+            for header_name, header_value in self.headers.items()
+        )
+
+    def _content_match(self, request: Request) -> bool:
+        if self.content is None:
+            return True
+
+        return request.read() == self.content
 
 
 class HTTPXMock:
@@ -70,6 +96,8 @@ class HTTPXMock:
         :param boundary: Multipart boundary if files is provided.
         :param url: Full URL identifying the request(s) to match. Can be a str, a re.Pattern instance or a httpx.URL instance.
         :param method: HTTP method identifying the request(s) to match.
+        :param match_headers: HTTP headers identifying the request(s) to match. Must be a dictionary.
+        :param match_content: Full HTTP body identifying the request(s) to match. Must be bytes.
         """
         response = Response(
             status_code=status_code,
@@ -93,6 +121,8 @@ class HTTPXMock:
         It should return an httpx.Response instance.
         :param url: Full URL identifying the request(s) to match. Can be a str, a re.Pattern instance or a httpx.URL instance.
         :param method: HTTP method identifying the request(s) to match.
+        :param match_headers: HTTP headers identifying the request(s) to match. Must be a dictionary.
+        :param match_content: Full HTTP body identifying the request(s) to match. Must be bytes.
         """
         self._callbacks.append((_RequestMatcher(**matchers), callback))
 
@@ -107,8 +137,9 @@ class HTTPXMock:
         if callback:
             return callback(request=request, *args, **kwargs)
 
-        raise Exception(
-            f"No mock can be found for {request.method} request on {request.url}."
+        raise httpx.HTTPError(
+            f"No mock can be found for {request.method} request on {request.url}.",
+            request=request,
         )
 
     def _get_response(self, request: Request) -> Optional[Response]:
@@ -157,14 +188,14 @@ class HTTPXMock:
         matcher.nb_calls += 1
         return callback
 
-    # TODO Allow to assert requests content / files / whatever
-
     def get_requests(self, **matchers) -> List[Request]:
         """
         Return all requests sent that match (empty list if no requests were matched).
 
         :param url: Full URL identifying the requests to retrieve. Can be a str, a re.Pattern instance or a httpx.URL instance.
         :param method: HTTP method identifying the requests to retrieve. Must be a upper cased string value.
+        :param match_headers: HTTP headers identifying the requests to retrieve. Must be a dictionary.
+        :param match_content: Full HTTP body identifying the requests to retrieve. Must be bytes.
         """
         matcher = _RequestMatcher(**matchers)
         return [request for request in self._requests if matcher.match(request)]
@@ -175,6 +206,8 @@ class HTTPXMock:
 
         :param url: Full URL identifying the request to retrieve. Can be a str, a re.Pattern instance or a httpx.URL instance.
         :param method: HTTP method identifying the request to retrieve. Must be a upper cased string value.
+        :param match_headers: HTTP headers identifying the request to retrieve. Must be a dictionary.
+        :param match_content: Full HTTP body identifying the request to retrieve. Must be bytes.
         :raises AssertionError: in case more than one request match.
         """
         requests = self.get_requests(**matchers)
@@ -239,3 +272,6 @@ def httpx_mock(monkeypatch) -> HTTPXMock:
     )
     yield mock
     mock.assert_and_reset()
+
+
+# TODO Allow to assert requests content / files / whatever
