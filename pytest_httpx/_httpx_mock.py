@@ -188,8 +188,6 @@ class HTTPXMock:
         matcher.nb_calls += 1
         return callback
 
-    # TODO Allow to assert requests content / files / whatever
-
     def get_requests(self, **matchers) -> List[Request]:
         """
         Return all requests sent that match (empty list if no requests were matched).
@@ -274,3 +272,6 @@ def httpx_mock(monkeypatch) -> HTTPXMock:
     )
     yield mock
     mock.assert_and_reset()
+
+
+# TODO Allow to assert requests content / files / whatever
