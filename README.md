@@ -50,7 +50,7 @@ async def test_something_async(httpx_mock):
         response = await client.get("http://test_url")
 ```
 
-If all responses are not sent back during test execution, the test case will fail at teardown.
+If all registered responses are not sent back during test execution, the test case will fail at teardown.
 
 Default response is a HTTP/1.1 200 (OK) without any body.
 
