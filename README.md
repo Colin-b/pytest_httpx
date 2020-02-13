@@ -1,4 +1,4 @@
-<h2 align="center">pytest fixture for HTTPX</h2>
+<h2 align="center">Send responses to HTTPX using pytest</h2>
 
 <p align="center">
 <a href="https://pypi.org/project/pytest-httpx/"><img alt="pypi version" src="https://img.shields.io/pypi/v/pytest_httpx"></a>
@@ -9,9 +9,11 @@
 <a href="https://pypi.org/project/pytest-httpx/"><img alt="Number of downloads" src="https://img.shields.io/pypi/dm/pytest_httpx"></a>
 </p>
 
-Notice: This module is still under development, versions prior to 1.0.0 are subject to breaking changes without notice.
+> Version 1.0.0 will be released once httpx is considered as stable (release of 1.0.0).
+>
+> However current state can be considered as stable.
 
-Once this module is installed, `httpx_mock` [`pytest`](https://docs.pytest.org/en/latest/) fixture will make sure every [`httpx`](https://www.python-httpx.org) request will be replied to with user provided responses.
+Once installed, `httpx_mock` [`pytest`](https://docs.pytest.org/en/latest/) fixture will make sure every [`httpx`](https://www.python-httpx.org) request will be replied to with user provided responses.
 
 - [Add responses](#add-responses)
   - [JSON body](#add-json-response)
