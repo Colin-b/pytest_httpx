@@ -684,7 +684,7 @@ async def test_request_retrieval_with_more_than_one(httpx_mock: HTTPXMock):
 
 @pytest.mark.asyncio
 async def test_headers_matching(httpx_mock: HTTPXMock):
-    httpx_mock.add_response(match_headers={"user-agent": "python-httpx/0.11.1"})
+    httpx_mock.add_response(match_headers={"user-agent": "python-httpx/0.12.0"})
 
     async with httpx.AsyncClient() as client:
         response = await client.get("http://test_url")
@@ -695,7 +695,7 @@ async def test_headers_matching(httpx_mock: HTTPXMock):
 async def test_headers_not_matching(httpx_mock: HTTPXMock):
     httpx_mock.add_response(
         match_headers={
-            "user-agent": "python-httpx/0.11.1",
+            "user-agent": "python-httpx/0.12.0",
             "host": "test_url2",
             "host2": "test_url",
         }

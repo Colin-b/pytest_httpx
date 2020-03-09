@@ -260,13 +260,13 @@ def httpx_mock(monkeypatch) -> HTTPXMock:
     mock = HTTPXMock()
     # Mock synchronous requests
     monkeypatch.setattr(
-        httpx.client.Client,
+        httpx.Client,
         "dispatcher_for_url",
         lambda self, url: _PytestSyncDispatcher(mock),
     )
     # Mock asynchronous requests
     monkeypatch.setattr(
-        httpx.client.AsyncClient,
+        httpx.AsyncClient,
         "dispatcher_for_url",
         lambda self, url: _PytestAsyncDispatcher(mock),
     )

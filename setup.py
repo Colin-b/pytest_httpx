@@ -35,7 +35,7 @@ setup(
     ],
     keywords=["pytest", "testing", "mock", "httpx"],
     packages=find_packages(exclude=["tests*"]),
-    install_requires=["httpx==0.11.*", "pytest==5.*"],
+    install_requires=["httpx==0.12.*", "pytest==5.*"],
     extras_require={
         "testing": [
             # Used to run async test functions
