@@ -306,7 +306,7 @@ Callback should return a [`httpx.Response`](https://www.python-httpx.org/api/#re
 
 ```python
 import httpx
-from httpx import content_streams
+from httpx._content_streams import JSONStream
 from pytest_httpx import httpx_mock, HTTPXMock
 
 
@@ -316,7 +316,7 @@ def test_dynamic_response(httpx_mock: HTTPXMock):
             status_code=200,
             http_version="HTTP/1.1",
             headers=[],
-            stream=content_streams.JSONStream({"url": str(request.url)}),
+            stream=JSONStream({"url": str(request.url)}),
             request=request,
         )
 
