@@ -3,7 +3,7 @@ from typing import Optional
 
 import pytest
 import httpx
-from httpx import content_streams
+from httpx._content_streams import JSONStream
 
 from pytest_httpx import httpx_mock, HTTPXMock
 
@@ -271,7 +271,7 @@ async def test_callback_with_pattern_in_url(httpx_mock: HTTPXMock):
             status_code=200,
             http_version="HTTP/1.1",
             headers=[],
-            stream=content_streams.JSONStream({"url": str(request.url)}),
+            stream=JSONStream({"url": str(request.url)}),
             request=request,
         )
 
@@ -282,7 +282,7 @@ async def test_callback_with_pattern_in_url(httpx_mock: HTTPXMock):
             status_code=200,
             http_version="HTTP/2.0",
             headers=[],
-            stream=content_streams.JSONStream({"url": str(request.url)}),
+            stream=JSONStream({"url": str(request.url)}),
             request=request,
         )
 
@@ -592,12 +592,12 @@ async def test_callback_raising_exception(httpx_mock: HTTPXMock):
     def raise_timeout(
         request: httpx.Request, timeout: Optional[httpx.Timeout], *args, **kwargs
     ) -> httpx.Response:
-        raise httpx.exceptions.TimeoutException()
+        raise httpx.TimeoutException()
 
     httpx_mock.add_callback(raise_timeout, url="http://test_url")
 
     async with httpx.AsyncClient() as client:
-        with pytest.raises(httpx.exceptions.TimeoutException):
+        with pytest.raises(httpx.TimeoutException):
             await client.get("http://test_url")
 
 
@@ -610,7 +610,7 @@ async def test_callback_returning_response(httpx_mock: HTTPXMock):
             status_code=200,
             http_version="HTTP/1.1",
             headers=[],
-            stream=content_streams.JSONStream({"url": str(request.url)}),
+            stream=JSONStream({"url": str(request.url)}),
             request=request,
         )
 
@@ -630,7 +630,7 @@ async def test_callback_executed_twice(httpx_mock: HTTPXMock):
             status_code=200,
             http_version="HTTP/1.1",
             headers=[],
-            stream=content_streams.JSONStream(["content"]),
+            stream=JSONStream(["content"]),
             request=request,
         )
 
@@ -653,7 +653,7 @@ async def test_callback_matching_method(httpx_mock: HTTPXMock):
             status_code=200,
             http_version="HTTP/1.1",
             headers=[],
-            stream=content_streams.JSONStream(["content"]),
+            stream=JSONStream(["content"]),
             request=request,
         )
 
@@ -684,7 +684,7 @@ async def test_request_retrieval_with_more_than_one(httpx_mock: HTTPXMock):
 
 @pytest.mark.asyncio
 async def test_headers_matching(httpx_mock: HTTPXMock):
-    httpx_mock.add_response(match_headers={"user-agent": "python-httpx/0.12.0"})
+    httpx_mock.add_response(match_headers={"user-agent": "python-httpx/0.12.1"})
 
     async with httpx.AsyncClient() as client:
         response = await client.get("http://test_url")

@@ -3,8 +3,9 @@ from typing import List, Union, Optional, Callable, Tuple, Pattern, Any
 
 import httpx
 import pytest
-from httpx import Request, Response, URL, content_streams
-from httpx.dispatch.base import SyncDispatcher, AsyncDispatcher
+from httpx import Request, Response, URL
+from httpx._content_streams import encode
+from httpx._dispatch.base import SyncDispatcher, AsyncDispatcher
 
 
 class _RequestMatcher:
@@ -77,8 +78,8 @@ class HTTPXMock:
         status_code: int = 200,
         http_version: str = "HTTP/1.1",
         headers: dict = None,
-        data: content_streams.RequestData = None,
-        files: content_streams.RequestFiles = None,
+        data=None,
+        files=None,
         json: Any = None,
         boundary: bytes = None,
         **matchers,
@@ -103,9 +104,7 @@ class HTTPXMock:
             status_code=status_code,
             http_version=http_version,
             headers=list(headers.items()) if headers else [],
-            stream=content_streams.encode(
-                data=data, files=files, json=json, boundary=boundary
-            ),
+            stream=encode(data=data, files=files, json=json, boundary=boundary),
             request=None,  # Will be set upon reception of the actual request
         )
         self._responses.append((_RequestMatcher(**matchers), response))
