@@ -296,28 +296,23 @@ You can perform custom manipulation upon request reception by registering callba
 
 Callback should expect at least two parameters:
  * request: The received [`httpx.Request`](https://www.python-httpx.org/api/#request).
- * timeout: The [`httpx.Timeout`](https://www.python-httpx.org/advanced/#timeout-configuration) linked to the request.
+ * timeout: The [timeouts](https://www.python-httpx.org/advanced/#timeout-configuration) linked to the request.
 
 If all callbacks are not executed during test execution, the test case will fail at teardown.
 
 ### Dynamic responses
 
-Callback should return a [`httpx.Response`](https://www.python-httpx.org/api/#response) instance.
+Callback should return a httpcore response (as a tuple), you can use `pytest_httpx.to_response` function to create such a tuple.
 
 ```python
 import httpx
-from httpx._content_streams import JSONStream
-from pytest_httpx import httpx_mock, HTTPXMock
+from pytest_httpx import httpx_mock, HTTPXMock, to_response
 
 
 def test_dynamic_response(httpx_mock: HTTPXMock):
-    def custom_response(request: httpx.Request, *args, **kwargs) -> httpx.Response:
-        return httpx.Response(
-            status_code=200,
-            http_version="HTTP/1.1",
-            headers=[],
-            stream=JSONStream({"url": str(request.url)}),
-            request=request,
+    def custom_response(request: httpx.Request, *args, **kwargs):
+        return to_response(
+            json={"url": str(request.url)},
         )
 
     httpx_mock.add_callback(custom_response)
@@ -341,13 +336,13 @@ from pytest_httpx import httpx_mock, HTTPXMock
 
 
 def test_exception_raising(httpx_mock: HTTPXMock):
-    def raise_timeout(*args, **kwargs) -> httpx.Response:
-        raise httpx.exceptions.TimeoutException()
+    def raise_timeout(*args, **kwargs):
+        raise httpx.ReadTimeout()
 
     httpx_mock.add_callback(raise_timeout)
     
     with httpx.Client() as client:
-        with pytest.raises(httpx.exceptions.TimeoutException):
+        with pytest.raises(httpx.ReadTimeout):
             client.get("http://test_url")
 
 ```
