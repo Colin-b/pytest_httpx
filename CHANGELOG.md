@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2020-05-24
+### Changed
+- Requires [`httpx`](https://www.python-httpx.org)==0.13.*
+- requires [`pytest`](https://docs.pytest.org/en/latest/) 5.4.0 (at least)
+- callbacks must now return a tuple as per `httpcore` specifications. Refer to documentation for more details.
+- callbacks timeout parameter is now a dict as per `httpcore` specifications.
+
 ## [0.2.1] - 2020-03-20
 ### Fixed
 - Handle the fact that some classes and functions we use are now part of internals within [`httpx`](https://www.python-httpx.org).
@@ -62,7 +69,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - First release, should be considered as unstable for now as design might change.
 
-[Unreleased]: https://github.com/Colin-b/pytest_httpx/compare/v0.2.1...HEAD
+[Unreleased]: https://github.com/Colin-b/pytest_httpx/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/Colin-b/pytest_httpx/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.0.5...v0.1.0

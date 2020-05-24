@@ -1,17 +1,47 @@
 import re
-from typing import List, Union, Optional, Callable, Tuple, Pattern, Any
+from typing import List, Union, Optional, Callable, Tuple, Pattern, Any, Dict
 
+import httpcore
 import httpx
 import pytest
-from httpx import Request, Response, URL
+
+# TODO Stop using internals from httpx, see https://github.com/encode/httpx/issues/872
 from httpx._content_streams import encode
-from httpx._dispatch.base import SyncDispatcher, AsyncDispatcher
+
+
+# Those types are internally defined within httpcore._types
+URL = Tuple[bytes, bytes, Optional[int], bytes]
+Headers = List[Tuple[bytes, bytes]]
+TimeoutDict = Dict[str, Optional[float]]
+
+Response = Tuple[
+    bytes, int, bytes, Headers, Union[httpcore.SyncByteStream, httpcore.AsyncByteStream]
+]
+
+
+def to_request(
+    method: bytes,
+    url: URL,
+    headers: Headers = None,
+    stream: Union[httpcore.SyncByteStream, httpcore.AsyncByteStream] = None,
+) -> httpx.Request:
+    scheme, host, port, path = url
+    port = f":{port}" if port not in [80, 443] else ""
+    path = path.decode() if path != b"/" else ""
+    if path.startswith("/?"):
+        path = path[1:]
+    return httpx.Request(
+        method=method.decode(),
+        url=f"{scheme.decode()}://{host.decode()}{port}{path}",
+        headers=headers,
+        stream=stream,
+    )
 
 
 class _RequestMatcher:
     def __init__(
         self,
-        url: Union[str, Pattern, URL] = None,
+        url: Union[str, Pattern, httpx.URL] = None,
         method: str = None,
         match_headers: dict = None,
         match_content: bytes = None,
@@ -22,7 +52,7 @@ class _RequestMatcher:
         self.headers = match_headers
         self.content = match_content
 
-    def match(self, request: Request) -> bool:
+    def match(self, request: httpx.Request) -> bool:
         return (
             self._url_match(request)
             and self._method_match(request)
@@ -30,7 +60,7 @@ class _RequestMatcher:
             and self._content_match(request)
         )
 
-    def _url_match(self, request: Request) -> bool:
+    def _url_match(self, request: httpx.Request) -> bool:
         if not self.url:
             return True
 
@@ -40,18 +70,18 @@ class _RequestMatcher:
         ):
             return self.url.match(str(request.url)) is not None
 
-        if isinstance(self.url, str):
-            return URL(self.url) == request.url
+        if isinstance(self.url, httpx.URL):
+            return self.url == request.url
 
-        return self.url == request.url
+        return self.url == str(request.url)
 
-    def _method_match(self, request: Request) -> bool:
+    def _method_match(self, request: httpx.Request) -> bool:
         if not self.method:
             return True
 
         return request.method == self.method.upper()
 
-    def _headers_match(self, request: Request) -> bool:
+    def _headers_match(self, request: httpx.Request) -> bool:
         if not self.headers:
             return True
 
@@ -60,7 +90,7 @@ class _RequestMatcher:
             for header_name, header_value in self.headers.items()
         )
 
-    def _content_match(self, request: Request) -> bool:
+    def _content_match(self, request: httpx.Request) -> bool:
         if self.content is None:
             return True
 
@@ -69,7 +99,7 @@ class _RequestMatcher:
 
 class HTTPXMock:
     def __init__(self):
-        self._requests: List[Request] = []
+        self._requests: List[httpx.Request] = []
         self._responses: List[Tuple[_RequestMatcher, Response]] = []
         self._callbacks: List[Tuple[_RequestMatcher, Callable]] = []
 
@@ -100,12 +130,8 @@ class HTTPXMock:
         :param match_headers: HTTP headers identifying the request(s) to match. Must be a dictionary.
         :param match_content: Full HTTP body identifying the request(s) to match. Must be bytes.
         """
-        response = Response(
-            status_code=status_code,
-            http_version=http_version,
-            headers=list(headers.items()) if headers else [],
-            stream=encode(data=data, files=files, json=json, boundary=boundary),
-            request=None,  # Will be set upon reception of the actual request
+        response = to_response(
+            status_code, http_version, headers, data, files, json, boundary
         )
         self._responses.append((_RequestMatcher(**matchers), response))
 
@@ -115,9 +141,9 @@ class HTTPXMock:
 
         :param callback: The callable that will be called upon reception of the matched request.
         It must expect at least 2 parameters:
-         * request: The received request.
+         * request: The received httpx.Request.
          * timeout: The timeout linked to the request.
-        It should return an httpx.Response instance.
+        It should return a valid httpcore response tuple, you can use pytest_httpx.to_response function to create one.
         :param url: Full URL identifying the request(s) to match. Can be a str, a re.Pattern instance or a httpx.URL instance.
         :param method: HTTP method identifying the request(s) to match.
         :param match_headers: HTTP headers identifying the request(s) to match. Must be a dictionary.
@@ -125,7 +151,15 @@ class HTTPXMock:
         """
         self._callbacks.append((_RequestMatcher(**matchers), callback))
 
-    def _handle_request(self, request: Request, *args, **kwargs) -> Response:
+    def _handle_request(
+        self,
+        method: bytes,
+        url: URL,
+        headers: Headers = None,
+        stream: Union[httpcore.SyncByteStream, httpcore.AsyncByteStream] = None,
+        timeout: TimeoutDict = None,
+    ) -> Response:
+        request = to_request(method, url, headers, stream)
         self._requests.append(request)
 
         response = self._get_response(request)
@@ -134,14 +168,14 @@ class HTTPXMock:
 
         callback = self._get_callback(request)
         if callback:
-            return callback(request=request, *args, **kwargs)
+            return callback(request=request, timeout=timeout)
 
         raise httpx.HTTPError(
             f"No mock can be found for {request.method} request on {request.url}.",
             request=request,
         )
 
-    def _get_response(self, request: Request) -> Optional[Response]:
+    def _get_response(self, request: httpx.Request) -> Optional[Response]:
         responses = [
             (matcher, response)
             for matcher, response in self._responses
@@ -157,15 +191,13 @@ class HTTPXMock:
             # Return the first not yet called
             if not matcher.nb_calls:
                 matcher.nb_calls += 1
-                response.request = request
                 return response
 
         # Or the last registered
         matcher.nb_calls += 1
-        response.request = request
         return response
 
-    def _get_callback(self, request: Request) -> Optional[Callable]:
+    def _get_callback(self, request: httpx.Request) -> Optional[Callable]:
         callbacks = [
             (matcher, callback)
             for matcher, callback in self._callbacks
@@ -187,7 +219,7 @@ class HTTPXMock:
         matcher.nb_calls += 1
         return callback
 
-    def get_requests(self, **matchers) -> List[Request]:
+    def get_requests(self, **matchers) -> List[httpx.Request]:
         """
         Return all requests sent that match (empty list if no requests were matched).
 
@@ -199,7 +231,7 @@ class HTTPXMock:
         matcher = _RequestMatcher(**matchers)
         return [request for request in self._requests if matcher.match(request)]
 
-    def get_request(self, **matchers) -> Optional[Request]:
+    def get_request(self, **matchers) -> Optional[httpx.Request]:
         """
         Return the single request that match (or None).
 
@@ -238,19 +270,23 @@ class HTTPXMock:
         ), f"The following callbacks are registered but not executed: {callbacks_not_executed}"
 
 
-class _PytestSyncDispatcher(SyncDispatcher):
+class _PytestSyncTransport(httpcore.SyncHTTPTransport):
     def __init__(self, mock: HTTPXMock):
         self.mock = mock
 
-    def send(self, *args, **kwargs) -> Response:
+    def request(
+        self, *args, **kwargs
+    ) -> Tuple[bytes, int, bytes, List[Tuple[bytes, bytes]], httpcore.SyncByteStream]:
         return self.mock._handle_request(*args, **kwargs)
 
 
-class _PytestAsyncDispatcher(AsyncDispatcher):
+class _PytestAsyncTransport(httpcore.AsyncHTTPTransport):
     def __init__(self, mock: HTTPXMock):
         self.mock = mock
 
-    async def send(self, *args, **kwargs) -> Response:
+    async def request(
+        self, *args, **kwargs
+    ) -> Tuple[bytes, int, bytes, List[Tuple[bytes, bytes]], httpcore.AsyncByteStream]:
         return self.mock._handle_request(*args, **kwargs)
 
 
@@ -259,18 +295,45 @@ def httpx_mock(monkeypatch) -> HTTPXMock:
     mock = HTTPXMock()
     # Mock synchronous requests
     monkeypatch.setattr(
-        httpx.Client,
-        "dispatcher_for_url",
-        lambda self, url: _PytestSyncDispatcher(mock),
+        httpx.Client, "transport_for_url", lambda self, url: _PytestSyncTransport(mock),
     )
     # Mock asynchronous requests
     monkeypatch.setattr(
         httpx.AsyncClient,
-        "dispatcher_for_url",
-        lambda self, url: _PytestAsyncDispatcher(mock),
+        "transport_for_url",
+        lambda self, url: _PytestAsyncTransport(mock),
     )
     yield mock
     mock.assert_and_reset()
 
 
-# TODO Allow to assert requests content / files / whatever
+def to_response(
+    status_code: int = 200,
+    http_version: str = "HTTP/1.1",
+    headers: dict = None,
+    data=None,
+    files=None,
+    json: Any = None,
+    boundary: bytes = None,
+) -> Response:
+    """
+    Convert to a valid httpcore response.
+
+    :param status_code: HTTP status code of the response. Default to 200 (OK).
+    :param http_version: HTTP protocol version of the response. Default to HTTP/1.1
+    :param headers: HTTP headers of the response. Default to no headers.
+    :param data: HTTP body of the response, can be an iterator to stream content, bytes, str of the full body or
+    a dictionary in case of a multipart.
+    :param files: Multipart files.
+    :param json: HTTP body of the response (if JSON should be used as content type) if data is not provided.
+    :param boundary: Multipart boundary if files is provided.
+    """
+    return (
+        http_version.encode(),
+        status_code,
+        b"",
+        [(header.encode(), value.encode()) for header, value in headers.items()]
+        if headers
+        else [],
+        encode(data=data, files=files, json=json, boundary=boundary),
+    )
