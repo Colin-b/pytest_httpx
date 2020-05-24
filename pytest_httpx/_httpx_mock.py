@@ -1,26 +1,29 @@
 import re
 from typing import List, Union, Optional, Callable, Tuple, Pattern, Any, Dict
 
+import httpcore
 import httpx
 import pytest
-from httpcore import (
-    SyncHTTPTransport,
-    AsyncHTTPTransport,
-    SyncByteStream,
-    AsyncByteStream,
-)
-from httpx._content_streams import encode, ContentStream
+
+# TODO Stop using internals from httpx, see https://github.com/encode/httpx/issues/872
+from httpx._content_streams import encode
+
 
 # Those types are internally defined within httpcore._types
 URL = Tuple[bytes, bytes, Optional[int], bytes]
 Headers = List[Tuple[bytes, bytes]]
 TimeoutDict = Dict[str, Optional[float]]
 
-Response = Tuple[bytes, int, bytes, List[Tuple[bytes, bytes]], ContentStream]
+Response = Tuple[
+    bytes, int, bytes, Headers, Union[httpcore.SyncByteStream, httpcore.AsyncByteStream]
+]
 
 
 def to_request(
-    method: bytes, url: URL, headers: Headers = None, stream: SyncByteStream = None,
+    method: bytes,
+    url: URL,
+    headers: Headers = None,
+    stream: Union[httpcore.SyncByteStream, httpcore.AsyncByteStream] = None,
 ) -> httpx.Request:
     scheme, host, port, path = url
     port = f":{port}" if port not in [80, 443] else ""
@@ -153,7 +156,7 @@ class HTTPXMock:
         method: bytes,
         url: URL,
         headers: Headers = None,
-        stream: SyncByteStream = None,
+        stream: Union[httpcore.SyncByteStream, httpcore.AsyncByteStream] = None,
         timeout: TimeoutDict = None,
     ) -> Response:
         request = to_request(method, url, headers, stream)
@@ -267,23 +270,23 @@ class HTTPXMock:
         ), f"The following callbacks are registered but not executed: {callbacks_not_executed}"
 
 
-class _PytestSyncTransport(SyncHTTPTransport):
+class _PytestSyncTransport(httpcore.SyncHTTPTransport):
     def __init__(self, mock: HTTPXMock):
         self.mock = mock
 
     def request(
         self, *args, **kwargs
-    ) -> Tuple[bytes, int, bytes, List[Tuple[bytes, bytes]], SyncByteStream]:
+    ) -> Tuple[bytes, int, bytes, List[Tuple[bytes, bytes]], httpcore.SyncByteStream]:
         return self.mock._handle_request(*args, **kwargs)
 
 
-class _PytestAsyncTransport(AsyncHTTPTransport):
+class _PytestAsyncTransport(httpcore.AsyncHTTPTransport):
     def __init__(self, mock: HTTPXMock):
         self.mock = mock
 
     async def request(
         self, *args, **kwargs
-    ) -> Tuple[bytes, int, bytes, List[Tuple[bytes, bytes]], AsyncByteStream]:
+    ) -> Tuple[bytes, int, bytes, List[Tuple[bytes, bytes]], httpcore.AsyncByteStream]:
         return self.mock._handle_request(*args, **kwargs)
 
 
