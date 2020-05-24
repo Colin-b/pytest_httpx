@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.3.0] - 2020-05-24
 ### Changed
 - Requires [`httpx`](https://www.python-httpx.org)==0.13.*
+- requires [`pytest`](https://docs.pytest.org/en/latest/) 5.4.0 (at least)
 - callbacks must now return a tuple as per `httpcore` specifications. Refer to documentation for more details.
 - callbacks timeout parameter is now a dict as per `httpcore` specifications.
 
