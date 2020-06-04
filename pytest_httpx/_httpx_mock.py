@@ -290,23 +290,6 @@ class _PytestAsyncTransport(httpcore.AsyncHTTPTransport):
         return self.mock._handle_request(*args, **kwargs)
 
 
-@pytest.fixture
-def httpx_mock(monkeypatch) -> HTTPXMock:
-    mock = HTTPXMock()
-    # Mock synchronous requests
-    monkeypatch.setattr(
-        httpx.Client, "transport_for_url", lambda self, url: _PytestSyncTransport(mock),
-    )
-    # Mock asynchronous requests
-    monkeypatch.setattr(
-        httpx.AsyncClient,
-        "transport_for_url",
-        lambda self, url: _PytestAsyncTransport(mock),
-    )
-    yield mock
-    mock.assert_and_reset()
-
-
 def to_response(
     status_code: int = 200,
     http_version: str = "HTTP/1.1",
