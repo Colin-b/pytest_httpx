@@ -1,10 +1,9 @@
 import re
-from typing import Optional
 
-import pytest
 import httpx
+import pytest
 
-from pytest_httpx import httpx_mock, HTTPXMock, to_response
+from pytest_httpx import HTTPXMock, to_response
 
 
 def test_without_response(httpx_mock: HTTPXMock):
@@ -584,18 +583,28 @@ def test_callback_matching_method(httpx_mock: HTTPXMock):
         assert response.json() == ["content"]
 
 
-@pytest.mark.xfail(
-    raises=AssertionError,
-    reason="Single request cannot be returned if there is more than one matching.",
-)
-def test_request_retrieval_with_more_than_one(httpx_mock: HTTPXMock):
-    httpx_mock.add_response()
-
-    with httpx.Client() as client:
-        client.get("http://test_url", headers={"X-TEST": "test header 1"})
-        client.get("http://test_url", headers={"X-TEST": "test header 2"})
-
-    httpx_mock.get_request(url=httpx.URL("http://test_url"))
+def test_request_retrieval_with_more_than_one(testdir):
+    """
+    Single request cannot be returned if there is more than one matching.
+    """
+    testdir.makepyfile("""
+        import httpx
+        
+        
+        def test_request_retrieval_with_more_than_one(httpx_mock):
+            httpx_mock.add_response()
+        
+            with httpx.Client() as client:
+                client.get("http://test_url", headers={"X-TEST": "test header 1"})
+                client.get("http://test_url", headers={"X-TEST": "test header 2"})
+        
+            httpx_mock.get_request(url=httpx.URL("http://test_url"))
+    """)
+    result = testdir.runpytest()
+    result.assert_outcomes(failed=1)
+    result.stdout.fnmatch_lines([
+        '*AssertionError: More than one request (2) matched, use get_requests instead.'
+    ])
 
 
 def test_headers_matching(httpx_mock: HTTPXMock):
