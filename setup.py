@@ -35,6 +35,7 @@ setup(
     ],
     keywords=["pytest", "testing", "mock", "httpx"],
     packages=find_packages(exclude=["tests*"]),
+    entry_points={'pytest11': ['pytest_httpx = pytest_httpx']},
     install_requires=["httpx==0.13.*", "pytest>=5.4.*,<6.*"],
     extras_require={
         "testing": [

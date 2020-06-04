@@ -30,12 +30,10 @@ Once installed, `httpx_mock` [`pytest`](https://docs.pytest.org/en/latest/) fixt
 
 You can register responses for both sync and async [`HTTPX`](https://www.python-httpx.org) requests.
 
-`httpx_mock` fixture is available within `pytest_httpx`.
 
 ```python
 import pytest
 import httpx
-from pytest_httpx import httpx_mock
 
 
 def test_something(httpx_mock):
@@ -73,7 +71,7 @@ Matching is performed on the full URL, query parameters included.
 
 ```python
 import httpx
-from pytest_httpx import httpx_mock, HTTPXMock
+from pytest_httpx import HTTPXMock
 
 
 def test_url(httpx_mock: HTTPXMock):
@@ -94,7 +92,7 @@ Matching is performed on equality.
 
 ```python
 import httpx
-from pytest_httpx import httpx_mock, HTTPXMock
+from pytest_httpx import HTTPXMock
 
 
 def test_post(httpx_mock: HTTPXMock):
@@ -141,7 +139,7 @@ Matching is performed on equality for each provided header.
 
 ```python
 import httpx
-from pytest_httpx import httpx_mock, HTTPXMock
+from pytest_httpx import HTTPXMock
 
 
 def test_headers_matching(httpx_mock: HTTPXMock):
@@ -159,7 +157,7 @@ Matching is performed on equality.
 
 ```python
 import httpx
-from pytest_httpx import httpx_mock, HTTPXMock
+from pytest_httpx import HTTPXMock
 
 
 def test_content_matching(httpx_mock: HTTPXMock):
@@ -175,7 +173,7 @@ Use `json` parameter to add a JSON response using python values.
 
 ```python
 import httpx
-from pytest_httpx import httpx_mock, HTTPXMock
+from pytest_httpx import HTTPXMock
 
 
 def test_json(httpx_mock: HTTPXMock):
@@ -192,7 +190,7 @@ Use `data` parameter to reply with a custom body by providing bytes or UTF-8 enc
 
 ```python
 import httpx
-from pytest_httpx import httpx_mock, HTTPXMock
+from pytest_httpx import HTTPXMock
 
 
 def test_str_body(httpx_mock: HTTPXMock):
@@ -218,7 +216,7 @@ You can specify `boundary` parameter to specify the multipart boundary to use.
 
 ```python
 import httpx
-from pytest_httpx import httpx_mock, HTTPXMock
+from pytest_httpx import HTTPXMock
 
 
 def test_multipart_body(httpx_mock: HTTPXMock):
@@ -245,7 +243,7 @@ Use `status_code` parameter to specify the HTTP status code of the response.
 
 ```python
 import httpx
-from pytest_httpx import httpx_mock, HTTPXMock
+from pytest_httpx import HTTPXMock
 
 
 def test_status_code(httpx_mock: HTTPXMock):
@@ -262,7 +260,7 @@ Use `headers` parameter to specify the extra headers of the response.
 
 ```python
 import httpx
-from pytest_httpx import httpx_mock, HTTPXMock
+from pytest_httpx import HTTPXMock
 
 
 def test_headers(httpx_mock: HTTPXMock):
@@ -279,7 +277,7 @@ Use `http_version` parameter to specify the HTTP protocol version of the respons
 
 ```python
 import httpx
-from pytest_httpx import httpx_mock, HTTPXMock
+from pytest_httpx import HTTPXMock
 
 
 def test_http_version(httpx_mock: HTTPXMock):
@@ -306,7 +304,7 @@ Callback should return a httpcore response (as a tuple), you can use `pytest_htt
 
 ```python
 import httpx
-from pytest_httpx import httpx_mock, HTTPXMock, to_response
+from pytest_httpx import HTTPXMock, to_response
 
 
 def test_dynamic_response(httpx_mock: HTTPXMock):
@@ -332,7 +330,7 @@ This can be useful if you want to assert that your code handles HTTPX exceptions
 ```python
 import httpx
 import pytest
-from pytest_httpx import httpx_mock, HTTPXMock
+from pytest_httpx import HTTPXMock
 
 
 def test_exception_raising(httpx_mock: HTTPXMock):
@@ -385,7 +383,7 @@ Matching is performed on equality.
 
 ```python
 import httpx
-from pytest_httpx import httpx_mock, HTTPXMock
+from pytest_httpx import HTTPXMock
 
 
 def test_many_requests(httpx_mock: HTTPXMock):
