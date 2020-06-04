@@ -48,12 +48,8 @@ Before creating an issue please make sure that it was not already reported.
     * To add the [pre-commit](https://pre-commit.com) hook, after the installation run: **pre-commit install**
 6) Add at least one [`pytest`](http://doc.pytest.org/en/latest/index.html) test case.
     * Unless it is an internal refactoring request or a documentation update.
-7) Increment [version number](https://semver.org) and add related [changelog entry](https://keepachangelog.com/en/1.0.0/).
+7) Add related [changelog entry](https://keepachangelog.com/en/1.0.0/).
     * Unless it is a documentation update.
-
-##### Changelog entry
-
-Once the changelog entry is added, please don't forget to also add the link to the proper tag at the end of the changelog.
 
 #### Enter pull request
 
