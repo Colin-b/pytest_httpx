@@ -249,27 +249,31 @@ class HTTPXMock:
         ), f"More than one request ({len(requests)}) matched, use get_requests instead."
         return requests[0] if requests else None
 
-    def assert_and_reset(self):
-        self._assert_responses_sent()
-        self._assert_callbacks_executed()
+    def reset(self, assert_all_responses_were_requested: bool):
+        responses_not_called = self._reset_responses()
+        callbacks_not_executed = self._reset_callbacks()
 
-    def _assert_responses_sent(self):
+        if assert_all_responses_were_requested:
+            assert (
+                not responses_not_called
+            ), f"The following responses are mocked but not requested: {responses_not_called}"
+            assert (
+                not callbacks_not_executed
+            ), f"The following callbacks are registered but not executed: {callbacks_not_executed}"
+
+    def _reset_responses(self):
         responses_not_called = [
             response for matcher, response in self._responses if not matcher.nb_calls
         ]
         self._responses.clear()
-        assert (
-            not responses_not_called
-        ), f"The following responses are mocked but not requested: {responses_not_called}"
+        return responses_not_called
 
-    def _assert_callbacks_executed(self):
+    def _reset_callbacks(self):
         callbacks_not_executed = [
             callback for matcher, callback in self._callbacks if not matcher.nb_calls
         ]
         self._callbacks.clear()
-        assert (
-            not callbacks_not_executed
-        ), f"The following callbacks are registered but not executed: {callbacks_not_executed}"
+        return callbacks_not_executed
 
 
 class _PytestSyncTransport(httpcore.SyncHTTPTransport):

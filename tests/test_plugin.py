@@ -35,6 +35,26 @@ def test_httpx_mock_unused_response(testdir):
     )
 
 
+def test_httpx_mock_unused_response_without_assertion(testdir):
+    """
+    Unused responses should not fail test case if assert_all_responses_were_requested fixture is set to False.
+    """
+    testdir.makepyfile(
+        """
+        import pytest
+        
+        @pytest.fixture
+        def assert_all_responses_were_requested() -> bool:
+            return False
+
+        def test_httpx_mock_unused_response_without_assertion(httpx_mock):
+            httpx_mock.add_response()
+    """
+    )
+    result = testdir.runpytest()
+    result.assert_outcomes(passed=1)
+
+
 def test_httpx_mock_unused_callback(testdir):
     """
     Unused callbacks should fail test case.
@@ -54,3 +74,27 @@ def test_httpx_mock_unused_callback(testdir):
     result.stdout.fnmatch_lines(
         ["*AssertionError: The following callbacks are registered but not executed: *"]
     )
+
+
+def test_httpx_mock_unused_callback_without_assertion(testdir):
+    """
+    Unused callbacks should not fail test case if assert_all_responses_were_requested fixture is set to False.
+    """
+    testdir.makepyfile(
+        """
+        import pytest
+        
+        @pytest.fixture
+        def assert_all_responses_were_requested() -> bool:
+            return False
+
+        def test_httpx_mock_unused_callback_without_assertion(httpx_mock):
+            def unused(*args, **kwargs):
+                pass
+        
+            httpx_mock.add_callback(unused)
+
+    """
+    )
+    result = testdir.runpytest()
+    result.assert_outcomes(passed=1)
