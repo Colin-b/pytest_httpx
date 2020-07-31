@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2020-07-31
+### Changed
+- requires [`pytest`](https://docs.pytest.org/en/latest/) 6.
+
 ## [0.4.0] - 2020-06-05
 ### Changed
 - `httpx_mock` [`pytest`](https://docs.pytest.org/en/latest/) fixture does not need to be explicitly imported anymore (many thanks to [`Thomas LÉVEIL`](https://github.com/thomasleveil)).
@@ -73,7 +77,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - First release, should be considered as unstable for now as design might change.
 
-[Unreleased]: https://github.com/Colin-b/pytest_httpx/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/Colin-b/pytest_httpx/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/Colin-b/pytest_httpx/compare/v0.2.0...v0.2.1
