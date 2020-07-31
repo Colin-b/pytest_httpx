@@ -217,6 +217,35 @@ def test_bytes_body(httpx_mock: HTTPXMock):
     
 ```
 
+### Reply by streaming data
+
+Use `data` parameter to stream chunks that you specify.
+As long as your data is an iterable it will stream your data.
+
+```python
+import httpx
+import pytest
+from pytest_httpx import HTTPXMock
+
+
+def test_sync_streaming(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(data=[b"part 1", b"part 2"])
+
+    with httpx.Client() as client:
+        with client.stream(method="GET", url="http://test_url") as response:
+            assert list(response.iter_raw()) == [b"part 1", b"part 2"]
+
+
+@pytest.mark.asyncio
+async def test_async_streaming(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(data=[b"part 1", b"part 2"])
+
+    async with httpx.AsyncClient() as client:
+        async with client.stream(method="GET", url="http://test_url") as response:
+            assert list(response.iter_raw()) == [b"part 1", b"part 2"]
+    
+```
+
 ### Add multipart response
 
 Use `files` parameter (and optionally `data` parameter as a dictionary) to send multipart response.

@@ -60,6 +60,22 @@ def test_with_one_response(httpx_mock: HTTPXMock):
         assert response.content == b"test content"
 
 
+def test_response_with_string_body(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(url="http://test_url", data="test content")
+
+    with httpx.Client() as client:
+        response = client.get("http://test_url")
+        assert response.content == b"test content"
+
+
+def test_response_streaming(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(url="http://test_url", data=[b"part 1", b"part 2"])
+
+    with httpx.Client() as client:
+        with client.stream(method="GET", url="http://test_url") as response:
+            assert list(response.iter_raw()) == [b"part 1", b"part 2"]
+
+
 def test_with_many_responses(httpx_mock: HTTPXMock):
     httpx_mock.add_response(url="http://test_url", data=b"test content 1")
     httpx_mock.add_response(url="http://test_url", data=b"test content 2")

@@ -66,6 +66,24 @@ async def test_with_one_response(httpx_mock: HTTPXMock):
 
 
 @pytest.mark.asyncio
+async def test_response_with_string_body(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(url="http://test_url", data="test content")
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get("http://test_url")
+        assert response.content == b"test content"
+
+
+@pytest.mark.asyncio
+async def test_response_streaming(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(url="http://test_url", data=[b"part 1", b"part 2"])
+
+    async with httpx.AsyncClient() as client:
+        async with client.stream(method="GET", url="http://test_url") as response:
+            assert list(response.iter_raw()) == [b"part 1", b"part 2"]
+
+
+@pytest.mark.asyncio
 async def test_with_many_responses(httpx_mock: HTTPXMock):
     httpx_mock.add_response(url="http://test_url", data=b"test content 1")
     httpx_mock.add_response(url="http://test_url", data=b"test content 2")
