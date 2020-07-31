@@ -10,9 +10,6 @@ class ByteStream(httpcore.AsyncByteStream, httpcore.SyncByteStream):
         httpcore.SyncByteStream.__init__(self)
         self.data = data
 
-    def can_replay(self) -> bool:
-        return True
-
     def __iter__(self) -> Iterator[bytes]:
         yield self.data
 
@@ -24,9 +21,6 @@ class IteratorStream(httpcore.AsyncByteStream, httpcore.SyncByteStream):
     def __init__(self, iterator):
         httpcore.AsyncByteStream.__init__(self, aiterator=iterator)
         httpcore.SyncByteStream.__init__(self, iterator=iterator)
-
-    def can_replay(self) -> bool:
-        return False
 
 
 def stream(
