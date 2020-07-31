@@ -35,12 +35,12 @@ setup(
     ],
     keywords=["pytest", "testing", "mock", "httpx"],
     packages=find_packages(exclude=["tests*"]),
-    entry_points={'pytest11': ['pytest_httpx = pytest_httpx']},
-    install_requires=["httpx==0.13.*", "pytest>=5.4.*,<6.*"],
+    entry_points={"pytest11": ["pytest_httpx = pytest_httpx"]},
+    install_requires=["httpx==0.13.*", "pytest==6.*"],
     extras_require={
         "testing": [
             # Used to run async test functions
-            "pytest-asyncio==0.12.*",
+            "pytest-asyncio==0.14.*",
             # Used to check coverage
             "pytest-cov==2.*",
         ]

@@ -5,7 +5,7 @@
 <a href="https://travis-ci.com/Colin-b/pytest_httpx"><img alt="Build status" src="https://api.travis-ci.com/Colin-b/pytest_httpx.svg?branch=master"></a>
 <a href="https://travis-ci.com/Colin-b/pytest_httpx"><img alt="Coverage" src="https://img.shields.io/badge/coverage-100%25-brightgreen"></a>
 <a href="https://github.com/psf/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
-<a href="https://travis-ci.com/Colin-b/pytest_httpx"><img alt="Number of tests" src="https://img.shields.io/badge/tests-72 passed-blue"></a>
+<a href="https://travis-ci.com/Colin-b/pytest_httpx"><img alt="Number of tests" src="https://img.shields.io/badge/tests-79 passed-blue"></a>
 <a href="https://pypi.org/project/pytest-httpx/"><img alt="Number of downloads" src="https://img.shields.io/pypi/dm/pytest_httpx"></a>
 </p>
 
@@ -30,7 +30,6 @@ Once installed, `httpx_mock` [`pytest`](https://docs.pytest.org/en/latest/) fixt
 
 You can register responses for both sync and async [`HTTPX`](https://www.python-httpx.org) requests.
 
-
 ```python
 import pytest
 import httpx
@@ -52,6 +51,16 @@ async def test_something_async(httpx_mock):
 ```
 
 If all registered responses are not sent back during test execution, the test case will fail at teardown.
+
+This behavior can be disabled thanks to the `assert_all_responses_were_requested` fixture:
+
+```python
+import pytest
+
+@pytest.fixture
+def assert_all_responses_were_requested() -> bool:
+    return False
+```
 
 Default response is a HTTP/1.1 200 (OK) without any body.
 
@@ -208,9 +217,38 @@ def test_bytes_body(httpx_mock: HTTPXMock):
     
 ```
 
+### Reply by streaming data
+
+Use `data` parameter to stream chunks that you specify.
+As long as your data is an iterable it will stream your data.
+
+```python
+import httpx
+import pytest
+from pytest_httpx import HTTPXMock
+
+
+def test_sync_streaming(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(data=[b"part 1", b"part 2"])
+
+    with httpx.Client() as client:
+        with client.stream(method="GET", url="http://test_url") as response:
+            assert list(response.iter_raw()) == [b"part 1", b"part 2"]
+
+
+@pytest.mark.asyncio
+async def test_async_streaming(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(data=[b"part 1", b"part 2"])
+
+    async with httpx.AsyncClient() as client:
+        async with client.stream(method="GET", url="http://test_url") as response:
+            assert list(response.iter_raw()) == [b"part 1", b"part 2"]
+    
+```
+
 ### Add multipart response
 
-Use `data` parameter as a dictionary or `files` parameter (or both) to send multipart response.
+Use `files` parameter (and optionally `data` parameter as a dictionary) to send multipart response.
 
 You can specify `boundary` parameter to specify the multipart boundary to use.
 
@@ -297,6 +335,16 @@ Callback should expect at least two parameters:
  * timeout: The [timeouts](https://www.python-httpx.org/advanced/#timeout-configuration) linked to the request.
 
 If all callbacks are not executed during test execution, the test case will fail at teardown.
+
+This behavior can be disabled thanks to the `assert_all_responses_were_requested` fixture:
+
+```python
+import pytest
+
+@pytest.fixture
+def assert_all_responses_were_requested() -> bool:
+    return False
+```
 
 ### Dynamic responses
 
