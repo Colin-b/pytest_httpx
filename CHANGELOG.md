@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - requires [`pytest`](https://docs.pytest.org/en/latest/) 6.
 
+### Removed
+- It is not possible to provide an URL encoded response anymore by providing a dictionary in `data` parameter.
+
 ## [0.4.0] - 2020-06-05
 ### Changed
 - `httpx_mock` [`pytest`](https://docs.pytest.org/en/latest/) fixture does not need to be explicitly imported anymore (many thanks to [`Thomas LÉVEIL`](https://github.com/thomasleveil)).

@@ -243,7 +243,7 @@ def test_callback_with_pattern_in_url(httpx_mock: HTTPXMock):
         return to_response(json={"url": str(request.url)})
 
     def custom_response2(request: httpx.Request, *args, **kwargs):
-        return to_response(http_version="HTTP/2.0", json={"url": str(request.url)},)
+        return to_response(http_version="HTTP/2.0", json={"url": str(request.url)})
 
     httpx_mock.add_callback(custom_response, url=re.compile(".*test.*"))
     httpx_mock.add_callback(custom_response2, url="http://unmatched")
@@ -331,7 +331,6 @@ def test_with_headers(httpx_mock: HTTPXMock):
 
 
 def test_multipart_body(httpx_mock: HTTPXMock):
-    httpx_mock.add_response(url="http://test_url", data={"key1": "value1"})
     httpx_mock.add_response(
         url="http://test_url",
         files={"file1": "content of file 1"},
@@ -345,9 +344,6 @@ def test_multipart_body(httpx_mock: HTTPXMock):
     )
 
     with httpx.Client() as client:
-        response = client.get("http://test_url")
-        assert response.text == "key1=value1"
-
         response = client.get("http://test_url")
         assert (
             response.text
@@ -587,7 +583,8 @@ def test_request_retrieval_with_more_than_one(testdir):
     """
     Single request cannot be returned if there is more than one matching.
     """
-    testdir.makepyfile("""
+    testdir.makepyfile(
+        """
         import httpx
         
         
@@ -599,12 +596,15 @@ def test_request_retrieval_with_more_than_one(testdir):
                 client.get("http://test_url", headers={"X-TEST": "test header 2"})
         
             httpx_mock.get_request(url=httpx.URL("http://test_url"))
-    """)
+    """
+    )
     result = testdir.runpytest()
     result.assert_outcomes(failed=1)
-    result.stdout.fnmatch_lines([
-        '*AssertionError: More than one request (2) matched, use get_requests instead.'
-    ])
+    result.stdout.fnmatch_lines(
+        [
+            "*AssertionError: More than one request (2) matched, use get_requests instead."
+        ]
+    )
 
 
 def test_headers_matching(httpx_mock: HTTPXMock):

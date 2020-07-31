@@ -3,10 +3,8 @@ from typing import List, Union, Optional, Callable, Tuple, Pattern, Any, Dict
 
 import httpcore
 import httpx
-import pytest
 
-# TODO Stop using internals from httpx, see https://github.com/encode/httpx/issues/872
-from httpx._content_streams import encode
+from pytest_httpx._httpx_internals import stream
 
 
 # Those types are internally defined within httpcore._types
@@ -125,7 +123,8 @@ class HTTPXMock:
         :param files: Multipart files.
         :param json: HTTP body of the response (if JSON should be used as content type) if data is not provided.
         :param boundary: Multipart boundary if files is provided.
-        :param url: Full URL identifying the request(s) to match. Can be a str, a re.Pattern instance or a httpx.URL instance.
+        :param url: Full URL identifying the request(s) to match.
+        Can be a str, a re.Pattern instance or a httpx.URL instance.
         :param method: HTTP method identifying the request(s) to match.
         :param match_headers: HTTP headers identifying the request(s) to match. Must be a dictionary.
         :param match_content: Full HTTP body identifying the request(s) to match. Must be bytes.
@@ -144,7 +143,8 @@ class HTTPXMock:
          * request: The received httpx.Request.
          * timeout: The timeout linked to the request.
         It should return a valid httpcore response tuple, you can use pytest_httpx.to_response function to create one.
-        :param url: Full URL identifying the request(s) to match. Can be a str, a re.Pattern instance or a httpx.URL instance.
+        :param url: Full URL identifying the request(s) to match.
+        Can be a str, a re.Pattern instance or a httpx.URL instance.
         :param method: HTTP method identifying the request(s) to match.
         :param match_headers: HTTP headers identifying the request(s) to match. Must be a dictionary.
         :param match_content: Full HTTP body identifying the request(s) to match. Must be bytes.
@@ -223,7 +223,8 @@ class HTTPXMock:
         """
         Return all requests sent that match (empty list if no requests were matched).
 
-        :param url: Full URL identifying the requests to retrieve. Can be a str, a re.Pattern instance or a httpx.URL instance.
+        :param url: Full URL identifying the requests to retrieve.
+        Can be a str, a re.Pattern instance or a httpx.URL instance.
         :param method: HTTP method identifying the requests to retrieve. Must be a upper cased string value.
         :param match_headers: HTTP headers identifying the requests to retrieve. Must be a dictionary.
         :param match_content: Full HTTP body identifying the requests to retrieve. Must be bytes.
@@ -235,7 +236,8 @@ class HTTPXMock:
         """
         Return the single request that match (or None).
 
-        :param url: Full URL identifying the request to retrieve. Can be a str, a re.Pattern instance or a httpx.URL instance.
+        :param url: Full URL identifying the request to retrieve.
+        Can be a str, a re.Pattern instance or a httpx.URL instance.
         :param method: HTTP method identifying the request to retrieve. Must be a upper cased string value.
         :param match_headers: HTTP headers identifying the request to retrieve. Must be a dictionary.
         :param match_content: Full HTTP body identifying the request to retrieve. Must be bytes.
@@ -311,12 +313,10 @@ def to_response(
     :param json: HTTP body of the response (if JSON should be used as content type) if data is not provided.
     :param boundary: Multipart boundary if files is provided.
     """
-    return (
-        http_version.encode(),
-        status_code,
-        b"",
+    headers = (
         [(header.encode(), value.encode()) for header, value in headers.items()]
         if headers
-        else [],
-        encode(data=data, files=files, json=json, boundary=boundary),
+        else []
     )
+    body = stream(data=data, files=files, json=json, boundary=boundary)
+    return (http_version.encode(), status_code, b"", headers, body)

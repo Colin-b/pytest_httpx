@@ -12,8 +12,8 @@ async def test_without_response(httpx_mock: HTTPXMock):
         async with httpx.AsyncClient() as client:
             await client.get("http://test_url")
     assert (
-            str(exception_info.value)
-            == "No mock can be found for GET request on http://test_url."
+        str(exception_info.value)
+        == "No mock can be found for GET request on http://test_url."
     )
 
 
@@ -358,7 +358,6 @@ async def test_with_headers(httpx_mock: HTTPXMock):
 
 @pytest.mark.asyncio
 async def test_multipart_body(httpx_mock: HTTPXMock):
-    httpx_mock.add_response(url="http://test_url", data={"key1": "value1"})
     httpx_mock.add_response(
         url="http://test_url",
         files={"file1": "content of file 1"},
@@ -373,18 +372,15 @@ async def test_multipart_body(httpx_mock: HTTPXMock):
 
     async with httpx.AsyncClient() as client:
         response = await client.get("http://test_url")
-        assert response.text == "key1=value1"
-
-        response = await client.get("http://test_url")
         assert (
-                response.text
-                == '--2256d3a36d2a61a1eba35a22bee5c74a\r\nContent-Disposition: form-data; name="file1"; filename="upload"\r\nContent-Type: application/octet-stream\r\n\r\ncontent of file 1\r\n--2256d3a36d2a61a1eba35a22bee5c74a--\r\n'
+            response.text
+            == '--2256d3a36d2a61a1eba35a22bee5c74a\r\nContent-Disposition: form-data; name="file1"; filename="upload"\r\nContent-Type: application/octet-stream\r\n\r\ncontent of file 1\r\n--2256d3a36d2a61a1eba35a22bee5c74a--\r\n'
         )
 
         response = await client.get("http://test_url")
         assert (
-                response.text
-                == """--2256d3a36d2a61a1eba35a22bee5c74a\r
+            response.text
+            == """--2256d3a36d2a61a1eba35a22bee5c74a\r
 Content-Disposition: form-data; name="key1"\r
 \r
 value1\r
@@ -424,32 +420,32 @@ async def test_requests_retrieval(httpx_mock: HTTPXMock):
         await client.delete("http://test_url", headers={"X-Test": "test header 4"})
 
     assert (
-            httpx_mock.get_request(url=httpx.URL("http://test_url"), method="PATCH").read()
-            == b"sent content 5"
+        httpx_mock.get_request(url=httpx.URL("http://test_url"), method="PATCH").read()
+        == b"sent content 5"
     )
     assert (
-            httpx_mock.get_request(url=httpx.URL("http://test_url"), method="HEAD").read()
-            == b""
+        httpx_mock.get_request(url=httpx.URL("http://test_url"), method="HEAD").read()
+        == b""
     )
     assert (
-            httpx_mock.get_request(url=httpx.URL("http://test_url"), method="PUT").read()
-            == b"sent content 3"
+        httpx_mock.get_request(url=httpx.URL("http://test_url"), method="PUT").read()
+        == b"sent content 3"
     )
     assert (
-            httpx_mock.get_request(url=httpx.URL("http://test_url"), method="GET").headers[
-                "x-test"
-            ]
-            == "test header 1"
+        httpx_mock.get_request(url=httpx.URL("http://test_url"), method="GET").headers[
+            "x-test"
+        ]
+        == "test header 1"
     )
     assert (
-            httpx_mock.get_request(url=httpx.URL("http://test_url"), method="POST").read()
-            == b"sent content 2"
+        httpx_mock.get_request(url=httpx.URL("http://test_url"), method="POST").read()
+        == b"sent content 2"
     )
     assert (
-            httpx_mock.get_request(
-                url=httpx.URL("http://test_url"), method="DELETE"
-            ).headers["x-test"]
-            == "test header 4"
+        httpx_mock.get_request(
+            url=httpx.URL("http://test_url"), method="DELETE"
+        ).headers["x-test"]
+        == "test header 4"
     )
 
 
@@ -584,7 +580,7 @@ async def test_callback_raising_exception(httpx_mock: HTTPXMock):
 @pytest.mark.asyncio
 async def test_callback_returning_response(httpx_mock: HTTPXMock):
     def custom_response(request: httpx.Request, *args, **kwargs):
-        return to_response(json={"url": str(request.url)}, )
+        return to_response(json={"url": str(request.url)})
 
     httpx_mock.add_callback(custom_response, url="http://test_url")
 
@@ -596,7 +592,7 @@ async def test_callback_returning_response(httpx_mock: HTTPXMock):
 @pytest.mark.asyncio
 async def test_callback_executed_twice(httpx_mock: HTTPXMock):
     def custom_response(*args, **kwargs):
-        return to_response(json=["content"], )
+        return to_response(json=["content"])
 
     httpx_mock.add_callback(custom_response)
 
@@ -627,7 +623,8 @@ def test_request_retrieval_with_more_than_one(testdir):
     """
     Single request cannot be returned if there is more than one matching.
     """
-    testdir.makepyfile("""
+    testdir.makepyfile(
+        """
         import pytest
         import httpx
         
@@ -641,12 +638,15 @@ def test_request_retrieval_with_more_than_one(testdir):
                 await client.get("http://test_url", headers={"X-TEST": "test header 2"})
         
             httpx_mock.get_request(url=httpx.URL("http://test_url"))
-    """)
+    """
+    )
     result = testdir.runpytest()
     result.assert_outcomes(failed=1)
-    result.stdout.fnmatch_lines([
-        '*AssertionError: More than one request (2) matched, use get_requests instead.'
-    ])
+    result.stdout.fnmatch_lines(
+        [
+            "*AssertionError: More than one request (2) matched, use get_requests instead."
+        ]
+    )
 
 
 @pytest.mark.asyncio
@@ -674,8 +674,8 @@ async def test_headers_not_matching(httpx_mock: HTTPXMock):
         with pytest.raises(httpx.HTTPError) as exception_info:
             await client.get("http://test_url")
         assert (
-                str(exception_info.value)
-                == "No mock can be found for GET request on http://test_url."
+            str(exception_info.value)
+            == "No mock can be found for GET request on http://test_url."
         )
 
     # Clean up responses to avoid assertion failure
@@ -699,8 +699,8 @@ async def test_content_not_matching(httpx_mock: HTTPXMock):
         with pytest.raises(httpx.HTTPError) as exception_info:
             await client.post("http://test_url", data=b"This is the body2")
         assert (
-                str(exception_info.value)
-                == "No mock can be found for POST request on http://test_url."
+            str(exception_info.value)
+            == "No mock can be found for POST request on http://test_url."
         )
 
     # Clean up responses to avoid assertion failure

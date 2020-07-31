@@ -210,7 +210,7 @@ def test_bytes_body(httpx_mock: HTTPXMock):
 
 ### Add multipart response
 
-Use `data` parameter as a dictionary or `files` parameter (or both) to send multipart response.
+Use `files` parameter (and optionally `data` parameter as a dictionary) to send multipart response.
 
 You can specify `boundary` parameter to specify the multipart boundary to use.
 
