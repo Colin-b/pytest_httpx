@@ -1,26 +1,13 @@
-from typing import Union, Any, Iterator, AsyncIterator
+from typing import Union, Any
 from json import dumps
 
 import httpcore
 
 
-class ByteStream(httpcore.AsyncByteStream, httpcore.SyncByteStream):
-    def __init__(self, data: bytes):
-        httpcore.AsyncByteStream.__init__(self)
-        httpcore.SyncByteStream.__init__(self)
-        self.data = data
-
-    def __iter__(self) -> Iterator[bytes]:
-        yield self.data
-
-    async def __aiter__(self) -> AsyncIterator[bytes]:
-        yield self.data
-
-
-class IteratorStream(httpcore.AsyncByteStream, httpcore.SyncByteStream):
+class IteratorStream(httpcore.AsyncIteratorByteStream, httpcore.IteratorByteStream):
     def __init__(self, iterator):
-        httpcore.AsyncByteStream.__init__(self, aiterator=iterator)
-        httpcore.SyncByteStream.__init__(self, iterator=iterator)
+        httpcore.AsyncIteratorByteStream.__init__(self, aiterator=iterator)
+        httpcore.IteratorByteStream.__init__(self, iterator=iterator)
 
 
 def stream(
@@ -41,6 +28,6 @@ def stream(
         data = b""
 
     if isinstance(data, bytes):
-        return ByteStream(data)
+        return httpcore.PlainByteStream(data)
 
     return IteratorStream(data)

@@ -585,8 +585,8 @@ async def test_requests_json_body(httpx_mock: HTTPXMock):
 
 @pytest.mark.asyncio
 async def test_callback_raising_exception(httpx_mock: HTTPXMock):
-    def raise_timeout(*args, **kwargs):
-        raise httpx.ReadTimeout()
+    def raise_timeout(request, timeout):
+        raise httpx.ReadTimeout(f"Unable to read within {timeout}", request=request)
 
     httpx_mock.add_callback(raise_timeout, url="http://test_url")
 

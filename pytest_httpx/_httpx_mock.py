@@ -24,7 +24,7 @@ def to_request(
     stream: Union[httpcore.SyncByteStream, httpcore.AsyncByteStream] = None,
 ) -> httpx.Request:
     scheme, host, port, path = url
-    port = f":{port}" if port not in [80, 443] else ""
+    port = f":{port}" if port not in [80, 443, None] else ""
     path = path.decode() if path != b"/" else ""
     if path.startswith("/?"):
         path = path[1:]

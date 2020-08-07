@@ -152,7 +152,7 @@ from pytest_httpx import HTTPXMock
 
 
 def test_headers_matching(httpx_mock: HTTPXMock):
-    httpx_mock.add_response(match_headers={'user-agent': 'python-httpx/0.11.1'})
+    httpx_mock.add_response(match_headers={'user-agent': 'python-httpx/0.14.0'})
 
     with httpx.Client() as client:
         response = client.get("http://test_url")
@@ -382,8 +382,8 @@ from pytest_httpx import HTTPXMock
 
 
 def test_exception_raising(httpx_mock: HTTPXMock):
-    def raise_timeout(*args, **kwargs):
-        raise httpx.ReadTimeout()
+    def raise_timeout(request, timeout):
+        raise httpx.ReadTimeout(f"Unable to read within {timeout}", request=request)
 
     httpx_mock.add_callback(raise_timeout)
     
