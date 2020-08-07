@@ -20,12 +20,12 @@ def httpx_mock(monkeypatch, assert_all_responses_were_requested: bool) -> HTTPXM
     mock = HTTPXMock()
     # Mock synchronous requests
     monkeypatch.setattr(
-        httpx.Client, "transport_for_url", lambda self, url: _PytestSyncTransport(mock)
+        httpx.Client, "_transport_for_url", lambda self, url: _PytestSyncTransport(mock)
     )
     # Mock asynchronous requests
     monkeypatch.setattr(
         httpx.AsyncClient,
-        "transport_for_url",
+        "_transport_for_url",
         lambda self, url: _PytestAsyncTransport(mock),
     )
     yield mock
