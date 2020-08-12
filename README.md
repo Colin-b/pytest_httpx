@@ -393,6 +393,21 @@ def test_exception_raising(httpx_mock: HTTPXMock):
 
 ```
 
+Note that default behavior is to send an `httpx.TimeoutException` in case no response can be found. You can then test this kind of exception this way:
+
+```python
+import httpx
+import pytest
+from pytest_httpx import HTTPXMock
+
+
+def test_timeout(httpx_mock: HTTPXMock):
+    with httpx.Client() as client:
+        with pytest.raises(httpx.TimeoutException):
+            client.get("http://test_url")
+
+```
+
 ### How callback is selected
 
 In case more than one callback match request, the first one not yet executed (according to the registration order) will be executed.

@@ -94,6 +94,18 @@ class _RequestMatcher:
 
         return request.read() == self.content
 
+    def __str__(self) -> str:
+        matcher_description = f"Match {self.method or 'all'} requests"
+        if self.url:
+            matcher_description += f" on {self.url}"
+        if self.headers:
+            matcher_description += f" with {self.headers} headers"
+            if self.content is not None:
+                matcher_description += f" and {self.content} body"
+        elif self.content is not None:
+            matcher_description += f" with {self.content} body"
+        return matcher_description
+
 
 class HTTPXMock:
     def __init__(self):
@@ -170,10 +182,43 @@ class HTTPXMock:
         if callback:
             return callback(request=request, timeout=timeout)
 
-        raise httpx.HTTPError(
-            f"No mock can be found for {request.method} request on {request.url}.",
-            request=request,
+        raise httpx.TimeoutException(
+            self._explain_that_no_response_was_found(request), request=request
         )
+
+    def _explain_that_no_response_was_found(self, request: httpx.Request) -> str:
+        expect_headers = set(
+            [
+                header
+                for matcher, _ in self._responses + self._callbacks
+                if matcher.headers
+                for header in matcher.headers
+            ]
+        )
+        expect_body = any(
+            [
+                matcher.content is not None
+                for matcher, _ in self._responses + self._callbacks
+            ]
+        )
+
+        request_description = f"{request.method} request on {request.url}"
+        if expect_headers:
+            request_description += f" with {dict({name: value for name, value in request.headers.items() if name in expect_headers})} headers"
+            if expect_body:
+                request_description += f" and {request.read()} body"
+        elif expect_body:
+            request_description += f" with {request.read()} body"
+
+        matchers_description = "\n".join(
+            [str(matcher) for matcher, _ in self._responses + self._callbacks]
+        )
+
+        message = f"No response can be found for {request_description}"
+        if matchers_description:
+            message += f" amongst:\n{matchers_description}"
+
+        return message
 
     def _get_response(self, request: httpx.Request) -> Optional[Response]:
         responses = [
