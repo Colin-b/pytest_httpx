@@ -25,6 +25,9 @@ Once installed, `httpx_mock` [`pytest`](https://docs.pytest.org/en/latest/) fixt
 - [Add dynamic responses](#dynamic-responses)
 - [Raising exceptions](#raising-exceptions)
 - [Check requests](#check-sent-requests)
+- [Migrating](#migrating-to-pytest-httpx)
+  - [responses](#from-responses)
+  - [aioresponses](#from-aioresponses)
 
 ## Add responses
 
@@ -497,3 +500,109 @@ Matching is performed on equality for each provided header.
 Use `match_content` parameter to specify the full HTTP body executing the callback.
 
 Matching is performed on equality.
+
+## Migrating to pytest-httpx
+
+Here is how to migrate from well-known testing libraries to `pytest-httpx`.
+
+### From responses
+
+| Feature | responses | pytest-httpx |
+|:--------|:----------|:-------------|
+| Add a response | `responses.add()` | `httpx_mock.add_response()` |
+| Add a callback | `responses.add_callback()` | `httpx_mock.add_callback()` |
+| Retrieve requests | `responses.calls` | `httpx_mock.get_requests()` |
+
+#### Add a response or a callback
+
+Undocumented parameters means that they are unchanged between `responses` and `pytest-httpx`.
+Below is a list of parameters that will require a change in your code.
+
+| Parameter | responses | pytest-httpx |
+|:--------|:----------|:-------------|
+| method | `method=responses.GET` | `method="GET"` |
+| body (as bytes) | `body=b"sample"` | `data=b"sample"` |
+| body (as str) | `body="sample"` | `data="sample"` |
+| status code | `status=201` | `status_code=201` |
+| headers | `adding_headers={"name": "value"}` | `headers={"name": "value"}` |
+| content-type header | `content_type="application/custom"` | `headers={"content-type": "application/custom"}` |
+| Match the full query | `match_querystring=True` | The full query is always matched when providing the `url` parameter. |
+
+Sample adding a response with `responses`:
+```python
+from responses import RequestsMock
+
+def test_response(responses: RequestsMock):
+    responses.add(
+        method=responses.GET,
+        url="http://test_url",
+        body=b"This is the response content",
+        status=400,
+    )
+
+```
+
+Sample adding the same response with `pytest-httpx`:
+```python
+from pytest_httpx import HTTPXMock
+
+def test_response(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(
+        method="GET",
+        url="http://test_url",
+        data=b"This is the response content",
+        status_code=400,
+    )
+
+```
+
+### From aioresponses
+
+| Feature | aioresponses | pytest-httpx |
+|:--------|:----------|:-------------|
+| Add a response | `aioresponses.method()` | `httpx_mock.add_response(method="METHOD")` |
+| Add a callback | `aioresponses.method()` | `httpx_mock.add_callback(method="METHOD")` |
+
+#### Add a response or a callback
+
+Undocumented parameters means that they are unchanged between `responses` and `pytest-httpx`.
+Below is a list of parameters that will require a change in your code.
+
+| Parameter | responses | pytest-httpx |
+|:--------|:----------|:-------------|
+| body (as bytes) | `body=b"sample"` | `data=b"sample"` |
+| body (as str) | `body="sample"` | `data="sample"` |
+| body (as JSON) | `payload=["sample"]` | `json=["sample"]` |
+| status code | `status=201` | `status_code=201` |
+
+Sample adding a response with `aioresponses`:
+```python
+from aioresponses import aioresponses
+
+
+@pytest.fixture
+def mock_aioresponse():
+    with aioresponses() as m:
+        yield m
+
+
+def test_response(mock_aioresponse):
+    mock_aioresponse.get(
+        url="http://test_url",
+        body=b"This is the response content",
+        status=400,
+    )
+
+```
+
+Sample adding the same response with `pytest-httpx`:
+```python
+def test_response(httpx_mock):
+    httpx_mock.add_response(
+        method="GET",
+        url="http://test_url",
+        data=b"This is the response content",
+        status_code=400,
+    )
+
+```
