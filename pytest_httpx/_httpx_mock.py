@@ -46,7 +46,7 @@ class _RequestMatcher:
     ):
         self.nb_calls = 0
         self.url = url
-        self.method = method
+        self.method = method.upper() if method else method
         self.headers = match_headers
         self.content = match_content
 
@@ -77,7 +77,7 @@ class _RequestMatcher:
         if not self.method:
             return True
 
-        return request.method == self.method.upper()
+        return request.method == self.method
 
     def _headers_match(self, request: httpx.Request) -> bool:
         if not self.headers:
@@ -368,4 +368,4 @@ def to_response(
         else []
     )
     body = stream(data=data, files=files, json=json, boundary=boundary)
-    return (http_version.encode(), status_code, b"", headers, body)
+    return http_version.encode(), status_code, b"", headers, body
