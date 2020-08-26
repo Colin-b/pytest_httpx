@@ -31,7 +31,10 @@ def test_httpx_mock_unused_response(testdir):
     result = testdir.runpytest()
     result.assert_outcomes(errors=1, passed=1)
     result.stdout.fnmatch_lines(
-        ["*AssertionError: The following responses are mocked but not requested: *"]
+        [
+            "*AssertionError: The following responses are mocked but not requested:",
+            "*Match all requests",
+        ]
     )
 
 
@@ -72,7 +75,10 @@ def test_httpx_mock_unused_callback(testdir):
     result = testdir.runpytest()
     result.assert_outcomes(errors=1, passed=1)
     result.stdout.fnmatch_lines(
-        ["*AssertionError: The following callbacks are registered but not executed: *"]
+        [
+            "*AssertionError: The following responses are mocked but not requested:",
+            "*Match all requests",
+        ]
     )
 
 
