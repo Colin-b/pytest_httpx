@@ -98,3 +98,70 @@ def test_httpx_mock_unused_callback_without_assertion(testdir):
     )
     result = testdir.runpytest()
     result.assert_outcomes(passed=1)
+
+
+def test_httpx_mock_non_mocked_hosts_sync(testdir):
+    """
+    Non mocked hosts should go through while other requests should be mocked.
+    """
+    testdir.makepyfile(
+        """
+        import httpx
+        import pytest
+        
+        @pytest.fixture
+        def non_mocked_hosts() -> list:
+            return ["localhost"]
+
+        def test_httpx_mock_non_mocked_hosts_sync(httpx_mock):
+            httpx_mock.add_response()
+            
+            with httpx.Client() as client:
+                # Mocked request
+                client.get("http://foo.tld")
+            
+                # Non mocked request
+                with pytest.raises(httpx.ConnectError):
+                    client.get("http://localhost:5005")
+            
+            # Assert that a single request was mocked
+            assert len(httpx_mock.get_requests()) == 1
+            
+    """
+    )
+    result = testdir.runpytest()
+    result.assert_outcomes(passed=1)
+
+
+def test_httpx_mock_non_mocked_hosts_async(testdir):
+    """
+    Non mocked hosts should go through while other requests should be mocked.
+    """
+    testdir.makepyfile(
+        """
+        import httpx
+        import pytest
+        
+        @pytest.fixture
+        def non_mocked_hosts() -> list:
+            return ["localhost"]
+
+        @pytest.mark.asyncio
+        async def test_httpx_mock_non_mocked_hosts_async(httpx_mock):
+            httpx_mock.add_response()
+            
+            async with httpx.AsyncClient() as client:
+                # Mocked request
+                await client.get("http://foo.tld")
+            
+                # Non mocked request
+                with pytest.raises(httpx.ConnectError):
+                    await client.get("http://localhost:5005")
+            
+            # Assert that a single request was mocked
+            assert len(httpx_mock.get_requests()) == 1
+            
+    """
+    )
+    result = testdir.runpytest()
+    result.assert_outcomes(passed=1)
