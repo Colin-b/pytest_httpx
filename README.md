@@ -5,7 +5,7 @@
 <a href="https://travis-ci.com/Colin-b/pytest_httpx"><img alt="Build status" src="https://api.travis-ci.com/Colin-b/pytest_httpx.svg?branch=master"></a>
 <a href="https://travis-ci.com/Colin-b/pytest_httpx"><img alt="Coverage" src="https://img.shields.io/badge/coverage-100%25-brightgreen"></a>
 <a href="https://github.com/psf/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
-<a href="https://travis-ci.com/Colin-b/pytest_httpx"><img alt="Number of tests" src="https://img.shields.io/badge/tests-121 passed-blue"></a>
+<a href="https://travis-ci.com/Colin-b/pytest_httpx"><img alt="Number of tests" src="https://img.shields.io/badge/tests-123 passed-blue"></a>
 <a href="https://pypi.org/project/pytest-httpx/"><img alt="Number of downloads" src="https://img.shields.io/pypi/dm/pytest_httpx"></a>
 </p>
 
@@ -25,6 +25,7 @@ Once installed, `httpx_mock` [`pytest`](https://docs.pytest.org/en/latest/) fixt
 - [Add dynamic responses](#dynamic-responses)
 - [Raising exceptions](#raising-exceptions)
 - [Check requests](#check-sent-requests)
+- [Do not mock some requests](#do-not-mock-some-requests)
 - [Migrating](#migrating-to-pytest-httpx)
   - [responses](#from-responses)
   - [aioresponses](#from-aioresponses)
@@ -500,6 +501,44 @@ Matching is performed on equality for each provided header.
 Use `match_content` parameter to specify the full HTTP body executing the callback.
 
 Matching is performed on equality.
+
+## Do not mock some requests
+
+By default, `pytest-httpx` will mock every request.
+
+But, for instance, in case you want to write integration tests with other servers, you might want to let some requests go through.
+
+To do so, you can use the `non_mocked_hosts` fixture:
+
+```python
+import pytest
+
+@pytest.fixture
+def non_mocked_hosts() -> list:
+    return ["my_local_test_host", "my_other_test_host"]
+```
+
+Every other requested hosts will be mocked as in the following example
+
+```python
+import pytest
+import httpx
+
+@pytest.fixture
+def non_mocked_hosts() -> list:
+    return ["my_local_test_host"]
+
+
+def test_partial_mock(httpx_mock):
+    httpx_mock.add_response()
+
+    with httpx.Client() as client:
+        # This request will NOT be mocked
+        response1 = client.get("https://www.my_local_test_host/sub?param=value")
+        # This request will be mocked
+        response2 = client.get("http://test_url")
+```
+
 
 ## Migrating to pytest-httpx
 

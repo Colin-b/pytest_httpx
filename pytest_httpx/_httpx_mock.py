@@ -295,27 +295,25 @@ class HTTPXMock:
         return requests[0] if requests else None
 
     def reset(self, assert_all_responses_were_requested: bool):
-        responses_not_called = self._reset_responses()
-        callbacks_not_executed = self._reset_callbacks()
+        not_called = self._reset_responses() + self._reset_callbacks()
 
         if assert_all_responses_were_requested:
-            assert (
-                not responses_not_called
-            ), f"The following responses are mocked but not requested: {responses_not_called}"
-            assert (
-                not callbacks_not_executed
-            ), f"The following callbacks are registered but not executed: {callbacks_not_executed}"
+            matchers_description = "\n".join([str(matcher) for matcher in not_called])
 
-    def _reset_responses(self):
+            assert (
+                not not_called
+            ), f"The following responses are mocked but not requested:\n{matchers_description}"
+
+    def _reset_responses(self) -> List[_RequestMatcher]:
         responses_not_called = [
-            response for matcher, response in self._responses if not matcher.nb_calls
+            matcher for matcher, _ in self._responses if not matcher.nb_calls
         ]
         self._responses.clear()
         return responses_not_called
 
-    def _reset_callbacks(self):
+    def _reset_callbacks(self) -> List[_RequestMatcher]:
         callbacks_not_executed = [
-            callback for matcher, callback in self._callbacks if not matcher.nb_calls
+            matcher for matcher, _ in self._callbacks if not matcher.nb_calls
         ]
         self._callbacks.clear()
         return callbacks_not_executed
