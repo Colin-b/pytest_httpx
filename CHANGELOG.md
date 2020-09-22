@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] - 2020-09-22
+### Changed
+- Requires [`httpx`](https://www.python-httpx.org)==0.15.*
+- Callbacks are now called with `ext` dictionary instead of `timeout`. To follow `httpcore` design changes. You can still retrieve timeout by using ```ext['timeout']```
+
 ## [0.8.0] - 2020-08-26
 ### Added
 - `non_mocked_hosts` fixture allowing to avoid mocking requests sent on some specific hosts.
@@ -99,7 +104,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - First release, should be considered as unstable for now as design might change.
 
-[Unreleased]: https://github.com/Colin-b/pytest_httpx/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/Colin-b/pytest_httpx/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.5.0...v0.6.0

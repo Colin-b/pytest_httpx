@@ -336,7 +336,7 @@ You can perform custom manipulation upon request reception by registering callba
 
 Callback should expect at least two parameters:
  * request: The received [`httpx.Request`](https://www.python-httpx.org/api/#request).
- * timeout: The [timeouts](https://www.python-httpx.org/advanced/#timeout-configuration) linked to the request.
+ * ext: The extensions (including the [timeouts](https://www.python-httpx.org/advanced/#timeout-configuration)) linked to the request.
 
 If all callbacks are not executed during test execution, the test case will fail at teardown.
 
@@ -352,7 +352,7 @@ def assert_all_responses_were_requested() -> bool:
 
 ### Dynamic responses
 
-Callback should return a httpcore response (as a tuple), you can use `pytest_httpx.to_response` function to create such a tuple.
+Callback should return a `httpcore` response (as a tuple), you can use `pytest_httpx.to_response` function to create such a tuple.
 
 ```python
 import httpx
@@ -386,8 +386,8 @@ from pytest_httpx import HTTPXMock
 
 
 def test_exception_raising(httpx_mock: HTTPXMock):
-    def raise_timeout(request, timeout):
-        raise httpx.ReadTimeout(f"Unable to read within {timeout}", request=request)
+    def raise_timeout(request, ext: dict):
+        raise httpx.ReadTimeout(f"Unable to read within {ext['timeout']}", request=request)
 
     httpx_mock.add_callback(raise_timeout)
     
@@ -422,7 +422,7 @@ You can add criteria so that callback will be sent only in case of a more specif
 
 #### Matching on URL
 
-`url` parameter can either be a string, a python [re.Pattern](https://docs.python.org/3/library/re.html) instance or a [httpx.URL](https://www.python-httpx.org/api/#url) instance.
+`url` parameter can either be a string, a python [`re.Pattern`](https://docs.python.org/3/library/re.html) instance or a [`httpx.URL`](https://www.python-httpx.org/api/#url) instance.
 
 Matching is performed on the full URL, query parameters included.
 
@@ -616,6 +616,7 @@ Below is a list of parameters that will require a change in your code.
 
 Sample adding a response with `aioresponses`:
 ```python
+import pytest
 from aioresponses import aioresponses
 
 

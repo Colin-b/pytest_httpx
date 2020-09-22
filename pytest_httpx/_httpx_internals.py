@@ -16,7 +16,7 @@ def stream(
     if files:
         # TODO Get rid of this internal import
         # import is performed at runtime when needed to reduce impact of internal changes in httpx
-        from httpx._content_streams import MultipartStream
+        from httpx._multipart import MultipartStream
 
         return MultipartStream(data=data or {}, files=files, boundary=boundary)
 
