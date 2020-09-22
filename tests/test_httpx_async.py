@@ -619,14 +619,17 @@ async def test_requests_json_body(httpx_mock: HTTPXMock):
 
 @pytest.mark.asyncio
 async def test_callback_raising_exception(httpx_mock: HTTPXMock):
-    def raise_timeout(request, timeout):
-        raise httpx.ReadTimeout(f"Unable to read within {timeout}", request=request)
+    def raise_timeout(request, ext):
+        raise httpx.ReadTimeout(
+            f"Unable to read within {ext['timeout']['read']}", request=request
+        )
 
     httpx_mock.add_callback(raise_timeout, url="http://test_url")
 
     async with httpx.AsyncClient() as client:
-        with pytest.raises(httpx.ReadTimeout):
+        with pytest.raises(httpx.ReadTimeout) as exception_info:
             await client.get("http://test_url")
+        assert str(exception_info.value) == "Unable to read within 5.0"
 
 
 @pytest.mark.asyncio

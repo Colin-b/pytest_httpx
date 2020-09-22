@@ -386,8 +386,8 @@ from pytest_httpx import HTTPXMock
 
 
 def test_exception_raising(httpx_mock: HTTPXMock):
-    def raise_timeout(request, timeout):
-        raise httpx.ReadTimeout(f"Unable to read within {timeout}", request=request)
+    def raise_timeout(request, ext: dict):
+        raise httpx.ReadTimeout(f"Unable to read within {ext['timeout']}", request=request)
 
     httpx_mock.add_callback(raise_timeout)
     
@@ -616,6 +616,7 @@ Below is a list of parameters that will require a change in your code.
 
 Sample adding a response with `aioresponses`:
 ```python
+import pytest
 from aioresponses import aioresponses
 
 

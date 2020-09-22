@@ -13,7 +13,7 @@ Headers = List[Tuple[bytes, bytes]]
 TimeoutDict = Dict[str, Optional[float]]
 
 Response = Tuple[
-    bytes, int, bytes, Headers, Union[httpcore.SyncByteStream, httpcore.AsyncByteStream]
+    int, Headers, Union[httpcore.SyncByteStream, httpcore.AsyncByteStream], dict
 ]
 
 
@@ -153,7 +153,7 @@ class HTTPXMock:
         :param callback: The callable that will be called upon reception of the matched request.
         It must expect at least 2 parameters:
          * request: The received httpx.Request.
-         * timeout: The timeout linked to the request.
+         * ext: The extensions linked to the request (such as timeout).
         It should return a valid httpcore response tuple, you can use pytest_httpx.to_response function to create one.
         :param url: Full URL identifying the request(s) to match.
         Can be a str, a re.Pattern instance or a httpx.URL instance.
@@ -169,7 +169,7 @@ class HTTPXMock:
         url: URL,
         headers: Headers = None,
         stream: Union[httpcore.SyncByteStream, httpcore.AsyncByteStream] = None,
-        timeout: TimeoutDict = None,
+        ext: dict = None,
     ) -> Response:
         request = to_request(method, url, headers, stream)
         self._requests.append(request)
@@ -180,7 +180,7 @@ class HTTPXMock:
 
         callback = self._get_callback(request)
         if callback:
-            return callback(request=request, timeout=timeout)
+            return callback(request=request, ext=ext)
 
         raise httpx.TimeoutException(
             self._explain_that_no_response_was_found(request), request=request
@@ -325,7 +325,7 @@ class _PytestSyncTransport(httpcore.SyncHTTPTransport):
 
     def request(
         self, *args, **kwargs
-    ) -> Tuple[bytes, int, bytes, List[Tuple[bytes, bytes]], httpcore.SyncByteStream]:
+    ) -> Tuple[int, List[Tuple[bytes, bytes]], httpcore.SyncByteStream, dict]:
         return self.mock._handle_request(*args, **kwargs)
 
 
@@ -333,9 +333,9 @@ class _PytestAsyncTransport(httpcore.AsyncHTTPTransport):
     def __init__(self, mock: HTTPXMock):
         self.mock = mock
 
-    async def request(
+    async def arequest(
         self, *args, **kwargs
-    ) -> Tuple[bytes, int, bytes, List[Tuple[bytes, bytes]], httpcore.AsyncByteStream]:
+    ) -> Tuple[int, List[Tuple[bytes, bytes]], httpcore.AsyncByteStream, dict]:
         return self.mock._handle_request(*args, **kwargs)
 
 
@@ -366,4 +366,4 @@ def to_response(
         else []
     )
     body = stream(data=data, files=files, json=json, boundary=boundary)
-    return http_version.encode(), status_code, b"", headers, body
+    return status_code, headers, body, {"http_version": http_version}
