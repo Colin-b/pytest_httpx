@@ -448,6 +448,13 @@ Matching is performed on equality.
 
 ## Check sent requests
 
+The best way to ensure the content of your requests is still to use the [`match_headers`] and / or [`match_content`] parameters when adding a response.
+In the same spirit, ensuring that no request was issued does not necessarily requires any code.
+
+In any case, you always have the ability to retrieve the requests that were issued.
+
+As in the following samples:
+
 ```python
 import httpx
 from pytest_httpx import HTTPXMock
@@ -470,6 +477,10 @@ def test_single_request(httpx_mock: HTTPXMock):
         response = client.get("http://test_url")
 
     request = httpx_mock.get_request()
+
+
+def test_no_request(httpx_mock: HTTPXMock):
+    assert not httpx_mock.get_request()
 ```
 
 ### How requests are selected
@@ -538,7 +549,6 @@ def test_partial_mock(httpx_mock):
         # This request will be mocked
         response2 = client.get("http://test_url")
 ```
-
 
 ## Migrating to pytest-httpx
 
