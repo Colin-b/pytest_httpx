@@ -369,9 +369,10 @@ def to_response(
         text=None,
         # TODO Allow to provide html
         html=None,
-        # TODO Set json (it should add headers)
-        json=None,
-        stream=stream(data=data, files=files, json=json, boundary=boundary),
+        json=json,
+        stream=stream(data=data, files=files, boundary=boundary)
+        if json is None
+        else None,
         ext={"http_version": http_version},
     )
     return response.status_code, response.headers.raw, response.stream, response.ext

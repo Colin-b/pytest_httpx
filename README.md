@@ -197,6 +197,8 @@ def test_json(httpx_mock: HTTPXMock):
     
 ```
 
+Note that the `content-type` header will be set to `application/json` by default in the response.
+
 ### Reply with custom body
 
 Use `data` parameter to reply with a custom body by providing bytes or UTF-8 encoded string.

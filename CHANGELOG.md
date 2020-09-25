@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Update documentation to reflect the latest way of sending bytes using `httpx`. Via `content` parameter instead of `data`.
 - Code now follow `black==20.8b1` formatting instead of the git master version.
+- Sending a JSON response using `json` parameter will now set the `application/json` content-type header by default.
 
 ## [0.9.0] - 2020-09-22
 ### Changed

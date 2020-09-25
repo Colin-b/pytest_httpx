@@ -11,7 +11,7 @@ class IteratorStream(httpcore.AsyncIteratorByteStream, httpcore.IteratorByteStre
 
 
 def stream(
-    data, files, json: Any, boundary: bytes
+    data, files, boundary: bytes
 ) -> Union[httpcore.AsyncByteStream, httpcore.SyncByteStream]:
     if files:
         # TODO Get rid of this internal import
@@ -20,9 +20,7 @@ def stream(
 
         return MultipartStream(data=data or {}, files=files, boundary=boundary)
 
-    if json is not None:
-        data = dumps(json).encode("utf-8")
-    elif isinstance(data, str):
+    if isinstance(data, str):
         data = data.encode("utf-8")
     elif data is None:
         data = b""

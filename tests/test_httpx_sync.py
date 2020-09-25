@@ -569,12 +569,15 @@ def test_requests_json_body(httpx_mock: HTTPXMock):
     with httpx.Client() as client:
         response = client.post("http://test_url")
         assert response.json() == {"key 1": "value 1", "key 2": "value 2"}
+        assert response.headers["content-type"] == "application/json"
 
         response = client.get("http://test_url")
         assert response.json() == ["list content 1", "list content 2"]
+        assert response.headers["content-type"] == "application/json"
 
         response = client.put("http://test_url")
         assert response.json() == "string value"
+        assert response.headers["content-type"] == "application/json"
 
 
 def test_callback_raising_exception(httpx_mock: HTTPXMock):
@@ -600,6 +603,7 @@ def test_callback_returning_response(httpx_mock: HTTPXMock):
     with httpx.Client() as client:
         response = client.get("http://test_url")
         assert response.json() == {"url": "http://test_url"}
+        assert response.headers["content-type"] == "application/json"
 
 
 def test_callback_executed_twice(httpx_mock: HTTPXMock):
@@ -611,9 +615,11 @@ def test_callback_executed_twice(httpx_mock: HTTPXMock):
     with httpx.Client() as client:
         response = client.get("http://test_url")
         assert response.json() == ["content"]
+        assert response.headers["content-type"] == "application/json"
 
         response = client.post("http://test_url")
         assert response.json() == ["content"]
+        assert response.headers["content-type"] == "application/json"
 
 
 def test_callback_matching_method(httpx_mock: HTTPXMock):
@@ -625,9 +631,11 @@ def test_callback_matching_method(httpx_mock: HTTPXMock):
     with httpx.Client() as client:
         response = client.get("http://test_url")
         assert response.json() == ["content"]
+        assert response.headers["content-type"] == "application/json"
 
         response = client.get("http://test_url2")
         assert response.json() == ["content"]
+        assert response.headers["content-type"] == "application/json"
 
 
 def test_request_retrieval_with_more_than_one(testdir):
