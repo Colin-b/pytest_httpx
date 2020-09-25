@@ -156,7 +156,7 @@ from pytest_httpx import HTTPXMock
 
 
 def test_headers_matching(httpx_mock: HTTPXMock):
-    httpx_mock.add_response(match_headers={'user-agent': 'python-httpx/0.14.0'})
+    httpx_mock.add_response(match_headers={'user-agent': 'python-httpx/0.15.4'})
 
     with httpx.Client() as client:
         response = client.get("http://test_url")
@@ -177,7 +177,7 @@ def test_content_matching(httpx_mock: HTTPXMock):
     httpx_mock.add_response(match_content=b"This is the body")
 
     with httpx.Client() as client:
-        response = client.post("http://test_url", data=b"This is the body")
+        response = client.post("http://test_url", content=b"This is the body")
 ```
 
 ### Add JSON response

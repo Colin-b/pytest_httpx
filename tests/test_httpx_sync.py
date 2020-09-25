@@ -432,11 +432,11 @@ def test_requests_retrieval(httpx_mock: HTTPXMock):
     )
 
     with httpx.Client() as client:
-        client.post("http://test_url", data=b"sent content 2")
+        client.post("http://test_url", content=b"sent content 2")
         client.get("http://test_url", headers={"X-TEST": "test header 1"})
-        client.put("http://test_url", data=b"sent content 3")
+        client.put("http://test_url", content=b"sent content 3")
         client.head("http://test_url")
-        client.patch("http://test_url", data=b"sent content 5")
+        client.patch("http://test_url", content=b"sent content 5")
         client.delete("http://test_url", headers={"X-Test": "test header 4"})
 
     assert (
@@ -694,7 +694,7 @@ def test_content_matching(httpx_mock: HTTPXMock):
     httpx_mock.add_response(match_content=b"This is the body")
 
     with httpx.Client() as client:
-        response = client.post("http://test_url", data=b"This is the body")
+        response = client.post("http://test_url", content=b"This is the body")
         assert response.read() == b""
 
 
@@ -703,7 +703,7 @@ def test_content_not_matching(httpx_mock: HTTPXMock):
 
     with httpx.Client() as client:
         with pytest.raises(httpx.TimeoutException) as exception_info:
-            client.post("http://test_url", data=b"This is the body2")
+            client.post("http://test_url", content=b"This is the body2")
         assert (
             str(exception_info.value)
             == """No response can be found for POST request on http://test_url with b'This is the body2' body amongst:
@@ -721,7 +721,7 @@ def test_headers_and_content_matching(httpx_mock: HTTPXMock):
     )
 
     with httpx.Client() as client:
-        response = client.post("http://test_url", data=b"This is the body")
+        response = client.post("http://test_url", content=b"This is the body")
         assert response.content == b""
 
 
@@ -736,7 +736,7 @@ def test_headers_not_matching_and_content_matching(httpx_mock: HTTPXMock):
 
     with httpx.Client() as client:
         with pytest.raises(httpx.TimeoutException) as exception_info:
-            client.post("http://test_url", data=b"This is the body")
+            client.post("http://test_url", content=b"This is the body")
         assert (
             str(exception_info.value)
             == f"""No response can be found for POST request on http://test_url with {{'host': 'test_url', 'user-agent': 'python-httpx/{httpx.__version__}'}} headers and b'This is the body' body amongst:
@@ -758,7 +758,7 @@ def test_headers_matching_and_content_not_matching(httpx_mock: HTTPXMock):
 
     with httpx.Client() as client:
         with pytest.raises(httpx.TimeoutException) as exception_info:
-            client.post("http://test_url", data=b"This is the body")
+            client.post("http://test_url", content=b"This is the body")
         assert (
             str(exception_info.value)
             == f"""No response can be found for POST request on http://test_url with {{'host': 'test_url', 'user-agent': 'python-httpx/{httpx.__version__}'}} headers and b'This is the body' body amongst:
@@ -780,7 +780,7 @@ def test_headers_and_content_not_matching(httpx_mock: HTTPXMock):
 
     with httpx.Client() as client:
         with pytest.raises(httpx.TimeoutException) as exception_info:
-            client.post("http://test_url", data=b"This is the body")
+            client.post("http://test_url", content=b"This is the body")
         assert (
             str(exception_info.value)
             == f"""No response can be found for POST request on http://test_url with {{'host': 'test_url', 'user-agent': 'python-httpx/{httpx.__version__}'}} headers and b'This is the body' body amongst:
@@ -799,7 +799,7 @@ def test_url_and_headers_and_content_matching(httpx_mock: HTTPXMock):
     )
 
     with httpx.Client() as client:
-        response = client.post("http://test_url", data=b"This is the body")
+        response = client.post("http://test_url", content=b"This is the body")
         assert response.content == b""
 
 
@@ -815,7 +815,7 @@ def test_headers_not_matching_and_url_and_content_matching(httpx_mock: HTTPXMock
 
     with httpx.Client() as client:
         with pytest.raises(httpx.TimeoutException) as exception_info:
-            client.post("http://test_url", data=b"This is the body")
+            client.post("http://test_url", content=b"This is the body")
         assert (
             str(exception_info.value)
             == f"""No response can be found for POST request on http://test_url with {{'host': 'test_url', 'user-agent': 'python-httpx/{httpx.__version__}'}} headers and b'This is the body' body amongst:
@@ -838,7 +838,7 @@ def test_url_and_headers_not_matching_and_content_matching(httpx_mock: HTTPXMock
 
     with httpx.Client() as client:
         with pytest.raises(httpx.TimeoutException) as exception_info:
-            client.post("http://test_url", data=b"This is the body")
+            client.post("http://test_url", content=b"This is the body")
         assert (
             str(exception_info.value)
             == f"""No response can be found for POST request on http://test_url with {{'host': 'test_url', 'user-agent': 'python-httpx/{httpx.__version__}'}} headers and b'This is the body' body amongst:
@@ -861,7 +861,7 @@ def test_url_and_headers_matching_and_content_not_matching(httpx_mock: HTTPXMock
 
     with httpx.Client() as client:
         with pytest.raises(httpx.TimeoutException) as exception_info:
-            client.post("http://test_url", data=b"This is the body")
+            client.post("http://test_url", content=b"This is the body")
         assert (
             str(exception_info.value)
             == f"""No response can be found for POST request on http://test_url with {{'host': 'test_url', 'user-agent': 'python-httpx/{httpx.__version__}'}} headers and b'This is the body' body amongst:
@@ -884,7 +884,7 @@ def test_headers_matching_and_url_and_content_not_matching(httpx_mock: HTTPXMock
 
     with httpx.Client() as client:
         with pytest.raises(httpx.TimeoutException) as exception_info:
-            client.post("http://test_url", data=b"This is the body")
+            client.post("http://test_url", content=b"This is the body")
         assert (
             str(exception_info.value)
             == f"""No response can be found for POST request on http://test_url with {{'host': 'test_url', 'user-agent': 'python-httpx/{httpx.__version__}'}} headers and b'This is the body' body amongst:
@@ -907,7 +907,7 @@ def test_url_matching_and_headers_and_content_not_matching(httpx_mock: HTTPXMock
 
     with httpx.Client() as client:
         with pytest.raises(httpx.TimeoutException) as exception_info:
-            client.post("http://test_url", data=b"This is the body")
+            client.post("http://test_url", content=b"This is the body")
         assert (
             str(exception_info.value)
             == f"""No response can be found for POST request on http://test_url with {{'host': 'test_url', 'user-agent': 'python-httpx/{httpx.__version__}'}} headers and b'This is the body' body amongst:
@@ -930,7 +930,7 @@ def test_url_and_headers_and_content_not_matching(httpx_mock: HTTPXMock):
 
     with httpx.Client() as client:
         with pytest.raises(httpx.TimeoutException) as exception_info:
-            client.post("http://test_url", data=b"This is the body")
+            client.post("http://test_url", content=b"This is the body")
         assert (
             str(exception_info.value)
             == f"""No response can be found for POST request on http://test_url with {{'host': 'test_url', 'user-agent': 'python-httpx/{httpx.__version__}'}} headers and b'This is the body' body amongst:
@@ -950,7 +950,7 @@ def test_method_and_url_and_headers_and_content_matching(httpx_mock: HTTPXMock):
     )
 
     with httpx.Client() as client:
-        response = client.post("http://test_url", data=b"This is the body")
+        response = client.post("http://test_url", content=b"This is the body")
         assert response.content == b""
 
 
@@ -969,7 +969,7 @@ def test_headers_not_matching_and_method_and_url_and_content_matching(
 
     with httpx.Client() as client:
         with pytest.raises(httpx.TimeoutException) as exception_info:
-            client.post("http://test_url", data=b"This is the body")
+            client.post("http://test_url", content=b"This is the body")
         assert (
             str(exception_info.value)
             == f"""No response can be found for POST request on http://test_url with {{'host': 'test_url', 'user-agent': 'python-httpx/{httpx.__version__}'}} headers and b'This is the body' body amongst:
@@ -995,7 +995,7 @@ def test_url_and_headers_not_matching_and_method_and_content_matching(
 
     with httpx.Client() as client:
         with pytest.raises(httpx.TimeoutException) as exception_info:
-            client.post("http://test_url", data=b"This is the body")
+            client.post("http://test_url", content=b"This is the body")
         assert (
             str(exception_info.value)
             == f"""No response can be found for POST request on http://test_url with {{'host': 'test_url', 'user-agent': 'python-httpx/{httpx.__version__}'}} headers and b'This is the body' body amongst:
@@ -1021,7 +1021,7 @@ def test_method_and_url_and_headers_matching_and_content_not_matching(
 
     with httpx.Client() as client:
         with pytest.raises(httpx.TimeoutException) as exception_info:
-            client.post("http://test_url", data=b"This is the body")
+            client.post("http://test_url", content=b"This is the body")
         assert (
             str(exception_info.value)
             == f"""No response can be found for POST request on http://test_url with {{'host': 'test_url', 'user-agent': 'python-httpx/{httpx.__version__}'}} headers and b'This is the body' body amongst:
@@ -1047,7 +1047,7 @@ def test_method_and_headers_matching_and_url_and_content_not_matching(
 
     with httpx.Client() as client:
         with pytest.raises(httpx.TimeoutException) as exception_info:
-            client.post("http://test_url", data=b"This is the body")
+            client.post("http://test_url", content=b"This is the body")
         assert (
             str(exception_info.value)
             == f"""No response can be found for POST request on http://test_url with {{'host': 'test_url', 'user-agent': 'python-httpx/{httpx.__version__}'}} headers and b'This is the body' body amongst:
@@ -1073,7 +1073,7 @@ def test_method_and_url_matching_and_headers_and_content_not_matching(
 
     with httpx.Client() as client:
         with pytest.raises(httpx.TimeoutException) as exception_info:
-            client.post("http://test_url", data=b"This is the body")
+            client.post("http://test_url", content=b"This is the body")
         assert (
             str(exception_info.value)
             == f"""No response can be found for POST request on http://test_url with {{'host': 'test_url', 'user-agent': 'python-httpx/{httpx.__version__}'}} headers and b'This is the body' body amongst:
@@ -1099,7 +1099,7 @@ def test_method_matching_and_url_and_headers_and_content_not_matching(
 
     with httpx.Client() as client:
         with pytest.raises(httpx.TimeoutException) as exception_info:
-            client.post("http://test_url", data=b"This is the body")
+            client.post("http://test_url", content=b"This is the body")
         assert (
             str(exception_info.value)
             == f"""No response can be found for POST request on http://test_url with {{'host': 'test_url', 'user-agent': 'python-httpx/{httpx.__version__}'}} headers and b'This is the body' body amongst:
@@ -1123,7 +1123,7 @@ def test_method_and_url_and_headers_and_content_not_matching(httpx_mock: HTTPXMo
 
     with httpx.Client() as client:
         with pytest.raises(httpx.TimeoutException) as exception_info:
-            client.post("http://test_url", data=b"This is the body")
+            client.post("http://test_url", content=b"This is the body")
         assert (
             str(exception_info.value)
             == f"""No response can be found for POST request on http://test_url with {{'host': 'test_url', 'user-agent': 'python-httpx/{httpx.__version__}'}} headers and b'This is the body' body amongst:
