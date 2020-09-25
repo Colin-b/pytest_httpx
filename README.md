@@ -448,7 +448,7 @@ Matching is performed on equality.
 
 ## Check sent requests
 
-The best way to ensure the content of your requests is still to use the [`match_headers`] and / or [`match_content`] parameters when adding a response.
+The best way to ensure the content of your requests is still to use the `match_headers` and / or `match_content` parameters when adding a response.
 In the same spirit, ensuring that no request was issued does not necessarily requires any code.
 
 In any case, you always have the ability to retrieve the requests that were issued.
