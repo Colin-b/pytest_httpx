@@ -331,6 +331,35 @@ def test_headers_as_httpx_headers(httpx_mock: HTTPXMock):
 
 ```
 
+#### Reply with cookies
+
+Cookies are sent in the `set-cookie` HTTP header.
+
+You can then send cookies in the response by setting the `set-cookie` header with [the value following key=value format]((https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie)).
+
+```python
+import httpx
+from pytest_httpx import HTTPXMock
+
+
+def test_cookie(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(headers={"set-cookie": "key=value"})
+
+    with httpx.Client() as client:
+        response = client.get("http://test_url")
+    assert dict(response.cookies) == {"key": "value"}
+
+
+def test_cookies(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(headers=[("set-cookie", "key=value"), ("set-cookie", "key2=value2")])
+
+    with httpx.Client() as client:
+        response = client.get("http://test_url")
+    assert dict(response.cookies) == {"key": "value", "key2": "value2"}
+
+```
+
+
 ### Add HTTP/2.0 response
 
 Use `http_version` parameter to specify the HTTP protocol version of the response.
