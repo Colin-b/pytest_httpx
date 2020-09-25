@@ -360,10 +360,18 @@ def to_response(
     :param json: HTTP body of the response (if JSON should be used as content type) if data is not provided.
     :param boundary: Multipart boundary if files is provided.
     """
-    headers = (
-        [(header.encode(), value.encode()) for header, value in headers.items()]
-        if headers
-        else []
+    response = httpx.Response(
+        status_code=status_code,
+        headers=headers,
+        # TODO Allow to provide content
+        content=None,
+        # TODO Allow to provide text
+        text=None,
+        # TODO Allow to provide html
+        html=None,
+        # TODO Set json (it should add headers)
+        json=None,
+        stream=stream(data=data, files=files, json=json, boundary=boundary),
+        ext={"http_version": http_version},
     )
-    body = stream(data=data, files=files, json=json, boundary=boundary)
-    return status_code, headers, body, {"http_version": http_version}
+    return response.status_code, response.headers.raw, response.stream, response.ext
