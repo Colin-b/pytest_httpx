@@ -1211,3 +1211,47 @@ Match PUT requests on http://test_url2 with {{'user-agent': 'python-httpx/{httpx
 
     # Clean up responses to avoid assertion failure
     httpx_mock.reset(assert_all_responses_were_requested=False)
+
+
+@pytest.mark.asyncio
+async def test_header_as_str_tuple_list(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(
+        headers=[("set-cookie", "key=value"), ("set-cookie", "key2=value2")]
+    )
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get("http://test_url")
+
+    assert dict(response.cookies) == {"key": "value", "key2": "value2"}
+
+
+@pytest.mark.asyncio
+async def test_header_as_bytes_tuple_list(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(
+        headers=[(b"set-cookie", b"key=value"), (b"set-cookie", b"key2=value2")]
+    )
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get("http://test_url")
+
+    assert dict(response.cookies) == {"key": "value", "key2": "value2"}
+
+
+@pytest.mark.asyncio
+async def test_header_as_bytes_dict(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(headers={b"set-cookie": b"key=value"})
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get("http://test_url")
+
+    assert dict(response.cookies) == {"key": "value"}
+
+
+@pytest.mark.asyncio
+async def test_header_as_httpx_headers(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(headers=httpx.Headers({"set-cookie": "key=value"}))
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get("http://test_url")
+
+    assert dict(response.cookies) == {"key": "value"}

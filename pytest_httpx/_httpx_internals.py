@@ -1,7 +1,24 @@
-from typing import Union, Any
-from json import dumps
+from typing import Union, Dict, Sequence, Tuple, Optional, List
 
 import httpcore
+
+# Those types are internally defined within httpcore._types
+URL = Tuple[bytes, bytes, Optional[int], bytes]
+Headers = List[Tuple[bytes, bytes]]
+TimeoutDict = Dict[str, Optional[float]]
+
+Response = Tuple[
+    int, Headers, Union[httpcore.SyncByteStream, httpcore.AsyncByteStream], dict
+]
+
+# Those types are internally defined within httpx._types
+HeaderTypes = Union[
+    "Headers",
+    Dict[str, str],
+    Dict[bytes, bytes],
+    Sequence[Tuple[str, str]],
+    Sequence[Tuple[bytes, bytes]],
+]
 
 
 class IteratorStream(httpcore.AsyncIteratorByteStream, httpcore.IteratorByteStream):

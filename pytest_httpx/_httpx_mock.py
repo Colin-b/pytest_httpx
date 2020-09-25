@@ -1,20 +1,10 @@
 import re
-from typing import List, Union, Optional, Callable, Tuple, Pattern, Any, Dict
+from typing import List, Union, Optional, Callable, Tuple, Pattern, Any
 
 import httpcore
 import httpx
 
-from pytest_httpx._httpx_internals import stream
-
-
-# Those types are internally defined within httpcore._types
-URL = Tuple[bytes, bytes, Optional[int], bytes]
-Headers = List[Tuple[bytes, bytes]]
-TimeoutDict = Dict[str, Optional[float]]
-
-Response = Tuple[
-    int, Headers, Union[httpcore.SyncByteStream, httpcore.AsyncByteStream], dict
-]
+from pytest_httpx._httpx_internals import stream, URL, Headers, Response, HeaderTypes
 
 
 def to_request(
@@ -117,7 +107,7 @@ class HTTPXMock:
         self,
         status_code: int = 200,
         http_version: str = "HTTP/1.1",
-        headers: dict = None,
+        headers: HeaderTypes = None,
         data=None,
         files=None,
         json: Any = None,
@@ -342,7 +332,7 @@ class _PytestAsyncTransport(httpcore.AsyncHTTPTransport):
 def to_response(
     status_code: int = 200,
     http_version: str = "HTTP/1.1",
-    headers: dict = None,
+    headers: HeaderTypes = None,
     data=None,
     files=None,
     json: Any = None,

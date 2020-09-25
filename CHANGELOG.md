@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Code now follow `black==20.8b1` formatting instead of the git master version.
 - Sending a JSON response using `json` parameter will now set the `application/json` content-type header by default.
 
+### Fixed
+- Allow to provide any supported `httpx` headers type in headers parameter for `httpx_mock.add_response` and `pytest_httpx.to_response`. Previously only dict was supported.
+
 ## [0.9.0] - 2020-09-22
 ### Changed
 - Requires [`httpx`](https://www.python-httpx.org)==0.15.*

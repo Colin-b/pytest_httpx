@@ -302,13 +302,29 @@ def test_status_code(httpx_mock: HTTPXMock):
 
 Use `headers` parameter to specify the extra headers of the response.
 
+Any valid httpx headers type is supported, you can submit headers as a dict (str or bytes), a list of 2-tuples (str or bytes) or a `httpx.Header` instance.
+
 ```python
 import httpx
 from pytest_httpx import HTTPXMock
 
 
-def test_headers(httpx_mock: HTTPXMock):
+def test_headers_as_str_dict(httpx_mock: HTTPXMock):
     httpx_mock.add_response(headers={"X-Header1": "Test value"})
+
+    with httpx.Client() as client:
+        assert client.get("http://test_url").headers["x-header1"] == "Test value"
+
+
+def test_headers_as_str_tuple_list(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(headers=[("X-Header1", "Test value")])
+
+    with httpx.Client() as client:
+        assert client.get("http://test_url").headers["x-header1"] == "Test value"
+
+
+def test_headers_as_httpx_headers(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(headers=httpx.Headers({b"X-Header1": b"Test value"}))
 
     with httpx.Client() as client:
         assert client.get("http://test_url").headers["x-header1"] == "Test value"
