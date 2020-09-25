@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - Document how to assert that no requests were issued.
+- Document how to send cookies.
 
 ### Changed
 - Update documentation to reflect the latest way of sending bytes using `httpx`. Via `content` parameter instead of `data`.
