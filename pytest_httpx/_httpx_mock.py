@@ -1,20 +1,10 @@
 import re
-from typing import List, Union, Optional, Callable, Tuple, Pattern, Any, Dict
+from typing import List, Union, Optional, Callable, Tuple, Pattern, Any
 
 import httpcore
 import httpx
 
-from pytest_httpx._httpx_internals import stream
-
-
-# Those types are internally defined within httpcore._types
-URL = Tuple[bytes, bytes, Optional[int], bytes]
-Headers = List[Tuple[bytes, bytes]]
-TimeoutDict = Dict[str, Optional[float]]
-
-Response = Tuple[
-    int, Headers, Union[httpcore.SyncByteStream, httpcore.AsyncByteStream], dict
-]
+from pytest_httpx._httpx_internals import stream, URL, Headers, Response, HeaderTypes
 
 
 def to_request(
@@ -117,7 +107,7 @@ class HTTPXMock:
         self,
         status_code: int = 200,
         http_version: str = "HTTP/1.1",
-        headers: dict = None,
+        headers: HeaderTypes = None,
         data=None,
         files=None,
         json: Any = None,
@@ -342,7 +332,7 @@ class _PytestAsyncTransport(httpcore.AsyncHTTPTransport):
 def to_response(
     status_code: int = 200,
     http_version: str = "HTTP/1.1",
-    headers: dict = None,
+    headers: HeaderTypes = None,
     data=None,
     files=None,
     json: Any = None,
@@ -360,10 +350,19 @@ def to_response(
     :param json: HTTP body of the response (if JSON should be used as content type) if data is not provided.
     :param boundary: Multipart boundary if files is provided.
     """
-    headers = (
-        [(header.encode(), value.encode()) for header, value in headers.items()]
-        if headers
-        else []
+    response = httpx.Response(
+        status_code=status_code,
+        headers=headers,
+        # TODO Allow to provide content
+        content=None,
+        # TODO Allow to provide text
+        text=None,
+        # TODO Allow to provide html
+        html=None,
+        json=json,
+        stream=stream(data=data, files=files, boundary=boundary)
+        if json is None
+        else None,
+        ext={"http_version": http_version},
     )
-    body = stream(data=data, files=files, json=json, boundary=boundary)
-    return status_code, headers, body, {"http_version": http_version}
+    return response.status_code, response.headers.raw, response.stream, response.ext

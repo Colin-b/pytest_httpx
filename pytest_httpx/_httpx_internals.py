@@ -1,7 +1,24 @@
-from typing import Union, Any
-from json import dumps
+from typing import Union, Dict, Sequence, Tuple, Optional, List
 
 import httpcore
+
+# Those types are internally defined within httpcore._types
+URL = Tuple[bytes, bytes, Optional[int], bytes]
+Headers = List[Tuple[bytes, bytes]]
+TimeoutDict = Dict[str, Optional[float]]
+
+Response = Tuple[
+    int, Headers, Union[httpcore.SyncByteStream, httpcore.AsyncByteStream], dict
+]
+
+# Those types are internally defined within httpx._types
+HeaderTypes = Union[
+    "Headers",
+    Dict[str, str],
+    Dict[bytes, bytes],
+    Sequence[Tuple[str, str]],
+    Sequence[Tuple[bytes, bytes]],
+]
 
 
 class IteratorStream(httpcore.AsyncIteratorByteStream, httpcore.IteratorByteStream):
@@ -11,7 +28,7 @@ class IteratorStream(httpcore.AsyncIteratorByteStream, httpcore.IteratorByteStre
 
 
 def stream(
-    data, files, json: Any, boundary: bytes
+    data, files, boundary: bytes
 ) -> Union[httpcore.AsyncByteStream, httpcore.SyncByteStream]:
     if files:
         # TODO Get rid of this internal import
@@ -20,9 +37,7 @@ def stream(
 
         return MultipartStream(data=data or {}, files=files, boundary=boundary)
 
-    if json is not None:
-        data = dumps(json).encode("utf-8")
-    elif isinstance(data, str):
+    if isinstance(data, str):
         data = data.encode("utf-8")
     elif data is None:
         data = b""

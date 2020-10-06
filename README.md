@@ -5,7 +5,7 @@
 <a href="https://travis-ci.com/Colin-b/pytest_httpx"><img alt="Build status" src="https://api.travis-ci.com/Colin-b/pytest_httpx.svg?branch=master"></a>
 <a href="https://travis-ci.com/Colin-b/pytest_httpx"><img alt="Coverage" src="https://img.shields.io/badge/coverage-100%25-brightgreen"></a>
 <a href="https://github.com/psf/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
-<a href="https://travis-ci.com/Colin-b/pytest_httpx"><img alt="Number of tests" src="https://img.shields.io/badge/tests-123 passed-blue"></a>
+<a href="https://travis-ci.com/Colin-b/pytest_httpx"><img alt="Number of tests" src="https://img.shields.io/badge/tests-131 passed-blue"></a>
 <a href="https://pypi.org/project/pytest-httpx/"><img alt="Number of downloads" src="https://img.shields.io/pypi/dm/pytest_httpx"></a>
 </p>
 
@@ -156,7 +156,7 @@ from pytest_httpx import HTTPXMock
 
 
 def test_headers_matching(httpx_mock: HTTPXMock):
-    httpx_mock.add_response(match_headers={'user-agent': 'python-httpx/0.14.0'})
+    httpx_mock.add_response(match_headers={'user-agent': 'python-httpx/0.16.0'})
 
     with httpx.Client() as client:
         response = client.get("http://test_url")
@@ -177,7 +177,7 @@ def test_content_matching(httpx_mock: HTTPXMock):
     httpx_mock.add_response(match_content=b"This is the body")
 
     with httpx.Client() as client:
-        response = client.post("http://test_url", data=b"This is the body")
+        response = client.post("http://test_url", content=b"This is the body")
 ```
 
 ### Add JSON response
@@ -196,6 +196,8 @@ def test_json(httpx_mock: HTTPXMock):
         assert client.get("http://test_url").json() == [{"key1": "value1", "key2": "value2"}]
     
 ```
+
+Note that the `content-type` header will be set to `application/json` by default in the response.
 
 ### Reply with custom body
 
@@ -300,18 +302,63 @@ def test_status_code(httpx_mock: HTTPXMock):
 
 Use `headers` parameter to specify the extra headers of the response.
 
+Any valid httpx headers type is supported, you can submit headers as a dict (str or bytes), a list of 2-tuples (str or bytes) or a `httpx.Header` instance.
+
 ```python
 import httpx
 from pytest_httpx import HTTPXMock
 
 
-def test_headers(httpx_mock: HTTPXMock):
+def test_headers_as_str_dict(httpx_mock: HTTPXMock):
     httpx_mock.add_response(headers={"X-Header1": "Test value"})
 
     with httpx.Client() as client:
         assert client.get("http://test_url").headers["x-header1"] == "Test value"
 
+
+def test_headers_as_str_tuple_list(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(headers=[("X-Header1", "Test value")])
+
+    with httpx.Client() as client:
+        assert client.get("http://test_url").headers["x-header1"] == "Test value"
+
+
+def test_headers_as_httpx_headers(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(headers=httpx.Headers({b"X-Header1": b"Test value"}))
+
+    with httpx.Client() as client:
+        assert client.get("http://test_url").headers["x-header1"] == "Test value"
+
 ```
+
+#### Reply with cookies
+
+Cookies are sent in the `set-cookie` HTTP header.
+
+You can then send cookies in the response by setting the `set-cookie` header with [the value following key=value format]((https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie)).
+
+```python
+import httpx
+from pytest_httpx import HTTPXMock
+
+
+def test_cookie(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(headers={"set-cookie": "key=value"})
+
+    with httpx.Client() as client:
+        response = client.get("http://test_url")
+    assert dict(response.cookies) == {"key": "value"}
+
+
+def test_cookies(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(headers=[("set-cookie", "key=value"), ("set-cookie", "key2=value2")])
+
+    with httpx.Client() as client:
+        response = client.get("http://test_url")
+    assert dict(response.cookies) == {"key": "value", "key2": "value2"}
+
+```
+
 
 ### Add HTTP/2.0 response
 
@@ -448,6 +495,13 @@ Matching is performed on equality.
 
 ## Check sent requests
 
+The best way to ensure the content of your requests is still to use the `match_headers` and / or `match_content` parameters when adding a response.
+In the same spirit, ensuring that no request was issued does not necessarily requires any code.
+
+In any case, you always have the ability to retrieve the requests that were issued.
+
+As in the following samples:
+
 ```python
 import httpx
 from pytest_httpx import HTTPXMock
@@ -470,6 +524,10 @@ def test_single_request(httpx_mock: HTTPXMock):
         response = client.get("http://test_url")
 
     request = httpx_mock.get_request()
+
+
+def test_no_request(httpx_mock: HTTPXMock):
+    assert not httpx_mock.get_request()
 ```
 
 ### How requests are selected
@@ -538,7 +596,6 @@ def test_partial_mock(httpx_mock):
         # This request will be mocked
         response2 = client.get("http://test_url")
 ```
-
 
 ## Migrating to pytest-httpx
 

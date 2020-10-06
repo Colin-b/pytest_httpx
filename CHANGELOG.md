@@ -6,6 +6,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.0] - 2020-10-06
+### Added
+- Document how to assert that no requests were issued.
+- Document how to send cookies.
+- Explicit support for python 3.9
+
+### Changed
+- Requires [`httpx`](https://www.python-httpx.org)==0.16.*
+- Update documentation to reflect the latest way of sending bytes using `httpx`. Via `content` parameter instead of `data`.
+- Code now follow `black==20.8b1` formatting instead of the git master version.
+- Sending a JSON response using `json` parameter will now set the `application/json` content-type header by default.
+
+### Fixed
+- Allow to provide any supported `httpx` headers type in headers parameter for `httpx_mock.add_response` and `pytest_httpx.to_response`. Previously only dict was supported.
+
 ## [0.9.0] - 2020-09-22
 ### Changed
 - Requires [`httpx`](https://www.python-httpx.org)==0.15.*
@@ -104,7 +119,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - First release, should be considered as unstable for now as design might change.
 
-[Unreleased]: https://github.com/Colin-b/pytest_httpx/compare/v0.9.0...HEAD
+[Unreleased]: https://github.com/Colin-b/pytest_httpx/compare/v0.10.0...HEAD
+[0.10.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.6.0...v0.7.0
