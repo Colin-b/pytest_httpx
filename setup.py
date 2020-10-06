@@ -30,6 +30,7 @@ setup(
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
         "Topic :: Software Development :: Build Tools",
         "Topic :: Internet :: WWW/HTTP",
         "Framework :: Pytest",
@@ -37,7 +38,7 @@ setup(
     keywords=["pytest", "testing", "mock", "httpx"],
     packages=find_packages(exclude=["tests*"]),
     entry_points={"pytest11": ["pytest_httpx = pytest_httpx"]},
-    install_requires=["httpx==0.15.*", "pytest==6.*"],
+    install_requires=["httpx==0.16.*", "pytest==6.*"],
     extras_require={
         "testing": [
             # Used to run async test functions
