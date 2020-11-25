@@ -1,5 +1,6 @@
 import re
 from typing import List, Union, Optional, Callable, Tuple, Pattern, Any
+from urllib.parse import parse_qs
 
 import httpcore
 import httpx
@@ -35,7 +36,7 @@ class _RequestMatcher:
         match_content: bytes = None,
     ):
         self.nb_calls = 0
-        self.url = url
+        self.url = httpx.URL(url) if url and isinstance(url, str) else url
         self.method = method.upper() if method else method
         self.headers = match_headers
         self.content = match_content
@@ -58,10 +59,15 @@ class _RequestMatcher:
         ):
             return self.url.match(str(request.url)) is not None
 
-        if isinstance(self.url, httpx.URL):
-            return self.url == request.url
+        # Compare query parameters apart as order of parameters should not matter
+        request_qs = parse_qs(request.url.query)
+        qs = parse_qs(self.url.query)
 
-        return self.url == str(request.url)
+        # Remove the query parameters from the original URL to compare everything besides query parameters
+        request_url = request.url.copy_with(query=None)
+        url = self.url.copy_with(query=None)
+
+        return (request_qs == qs) and (url == request_url)
 
     def _method_match(self, request: httpx.Request) -> bool:
         if not self.method:
