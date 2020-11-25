@@ -42,6 +42,19 @@ async def test_url_matching(httpx_mock: HTTPXMock):
 
 
 @pytest.mark.asyncio
+async def test_url_query_string_matching(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(url="http://test_url?a=1&b=2")
+
+    async with httpx.AsyncClient() as client:
+        response = await client.post("http://test_url?a=1&b=2")
+        assert response.content == b""
+
+        # Parameters order should not matter
+        response = await client.get("http://test_url?b=2&a=1")
+        assert response.content == b""
+
+
+@pytest.mark.asyncio
 async def test_url_not_matching(httpx_mock: HTTPXMock):
     httpx_mock.add_response(url="http://test_url")
 
@@ -52,6 +65,24 @@ async def test_url_not_matching(httpx_mock: HTTPXMock):
             str(exception_info.value)
             == """No response can be found for GET request on http://test_url2 amongst:
 Match all requests on http://test_url"""
+        )
+
+    # Clean up responses to avoid assertion failure
+    httpx_mock.reset(assert_all_responses_were_requested=False)
+
+
+@pytest.mark.asyncio
+async def test_url_query_string_not_matching(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(url="http://test_url?a=1&a=2")
+
+    async with httpx.AsyncClient() as client:
+        with pytest.raises(httpx.TimeoutException) as exception_info:
+            # Same parameter order matters as it corresponds to a list on server side
+            await client.get("http://test_url?a=2&a=1")
+        assert (
+            str(exception_info.value)
+            == """No response can be found for GET request on http://test_url?a=2&a=1 amongst:
+Match all requests on http://test_url?a=1&a=2"""
         )
 
     # Clean up responses to avoid assertion failure
