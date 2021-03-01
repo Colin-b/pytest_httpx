@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.0] - 2021-03-01
+### Changed
+- Requires [`httpx`](https://www.python-httpx.org)==0.17.\*
+
 ## [0.10.1] - 2020-11-25
 ### Fixed
 - Order of different parameters does not matters anymore for URL matching. It does however still matter for a same parameter.
@@ -123,7 +127,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - First release, should be considered as unstable for now as design might change.
 
-[Unreleased]: https://github.com/Colin-b/pytest_httpx/compare/v0.10.1...HEAD
+[Unreleased]: https://github.com/Colin-b/pytest_httpx/compare/v0.11.0...HEAD
+[0.11.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.10.1...v0.11.0
 [0.10.1]: https://github.com/Colin-b/pytest_httpx/compare/v0.10.0...v0.10.1
 [0.10.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.8.0...v0.9.0
