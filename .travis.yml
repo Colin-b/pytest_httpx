@@ -8,6 +8,7 @@ install:
   - pip install -e .[testing]
 script:
   - pytest --cov=pytest_httpx --cov-fail-under=100 --runpytest=subprocess
+  - pip install idna==2.10
 deploy:
   provider: pypi
   username: __token__
