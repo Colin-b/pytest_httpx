@@ -158,7 +158,7 @@ from pytest_httpx import HTTPXMock
 
 
 def test_headers_matching(httpx_mock: HTTPXMock):
-    httpx_mock.add_response(match_headers={'user-agent': 'python-httpx/0.17.0'})
+    httpx_mock.add_response(match_headers={'user-agent': 'python-httpx/0.18.0'})
 
     with httpx.Client() as client:
         response = client.get("http://test_url")
@@ -250,7 +250,7 @@ async def test_async_streaming(httpx_mock: HTTPXMock):
 
     async with httpx.AsyncClient() as client:
         async with client.stream(method="GET", url="http://test_url") as response:
-            assert list(response.iter_raw()) == [b"part 1", b"part 2"]
+            assert [part async for part in response.aiter_raw()] == [b"part 1", b"part 2"]
     
 ```
 
@@ -385,7 +385,7 @@ You can perform custom manipulation upon request reception by registering callba
 
 Callback should expect at least two parameters:
  * request: The received [`httpx.Request`](https://www.python-httpx.org/api/#request).
- * ext: The extensions (including the [timeouts](https://www.python-httpx.org/advanced/#timeout-configuration)) linked to the request.
+ * extensions: The extensions (including the [timeouts](https://www.python-httpx.org/advanced/#timeout-configuration)) linked to the request.
 
 If all callbacks are not executed during test execution, the test case will fail at teardown.
 
@@ -435,8 +435,8 @@ from pytest_httpx import HTTPXMock
 
 
 def test_exception_raising(httpx_mock: HTTPXMock):
-    def raise_timeout(request, ext: dict):
-        raise httpx.ReadTimeout(f"Unable to read within {ext['timeout']}", request=request)
+    def raise_timeout(request, extensions: dict):
+        raise httpx.ReadTimeout(f"Unable to read within {extensions['timeout']}", request=request)
 
     httpx_mock.add_callback(raise_timeout)
     

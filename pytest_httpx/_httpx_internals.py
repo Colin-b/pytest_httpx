@@ -23,7 +23,12 @@ HeaderTypes = Union[
 
 class IteratorStream(httpcore.AsyncIteratorByteStream, httpcore.IteratorByteStream):
     def __init__(self, iterator):
-        httpcore.AsyncIteratorByteStream.__init__(self, aiterator=iterator)
+        class AsyncIterator:
+            async def __aiter__(self):
+                for chunk in iterator:
+                    yield chunk
+
+        httpcore.AsyncIteratorByteStream.__init__(self, aiterator=AsyncIterator())
         httpcore.IteratorByteStream.__init__(self, iterator=iterator)
 
 
@@ -43,6 +48,6 @@ def stream(
         data = b""
 
     if isinstance(data, bytes):
-        return httpcore.PlainByteStream(data)
+        return httpcore.ByteStream(data)
 
     return IteratorStream(data)
