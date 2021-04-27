@@ -165,7 +165,7 @@ class HTTPXMock:
         url: URL,
         headers: Headers = None,
         stream: Union[httpcore.SyncByteStream, httpcore.AsyncByteStream] = None,
-        ext: dict = None,
+        extensions: dict = None,
     ) -> Response:
         request = to_request(method, url, headers, stream)
         self._requests.append(request)
@@ -176,7 +176,7 @@ class HTTPXMock:
 
         callback = self._get_callback(request)
         if callback:
-            return callback(request=request, ext=ext)
+            return callback(request=request, extensions=extensions)
 
         raise httpx.TimeoutException(
             self._explain_that_no_response_was_found(request), request=request
@@ -319,7 +319,7 @@ class _PytestSyncTransport(httpcore.SyncHTTPTransport):
     def __init__(self, mock: HTTPXMock):
         self.mock = mock
 
-    def request(
+    def handle_request(
         self, *args, **kwargs
     ) -> Tuple[int, List[Tuple[bytes, bytes]], httpcore.SyncByteStream, dict]:
         return self.mock._handle_request(*args, **kwargs)
@@ -329,7 +329,7 @@ class _PytestAsyncTransport(httpcore.AsyncHTTPTransport):
     def __init__(self, mock: HTTPXMock):
         self.mock = mock
 
-    async def arequest(
+    async def handle_async_request(
         self, *args, **kwargs
     ) -> Tuple[int, List[Tuple[bytes, bytes]], httpcore.AsyncByteStream, dict]:
         return self.mock._handle_request(*args, **kwargs)
@@ -369,6 +369,11 @@ def to_response(
         stream=stream(data=data, files=files, boundary=boundary)
         if json is None
         else None,
-        ext={"http_version": http_version},
+        extensions={"http_version": http_version.encode("ascii")},
     )
-    return response.status_code, response.headers.raw, response.stream, response.ext
+    return (
+        response.status_code,
+        response.headers.raw,
+        response.stream,
+        response.extensions,
+    )

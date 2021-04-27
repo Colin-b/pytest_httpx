@@ -145,7 +145,10 @@ async def test_response_streaming(httpx_mock: HTTPXMock):
 
     async with httpx.AsyncClient() as client:
         async with client.stream(method="GET", url="http://test_url") as response:
-            assert list(response.iter_raw()) == [b"part 1", b"part 2"]
+            assert [part async for part in response.aiter_raw()] == [
+                b"part 1",
+                b"part 2",
+            ]
 
 
 @pytest.mark.asyncio
@@ -653,9 +656,9 @@ async def test_requests_json_body(httpx_mock: HTTPXMock):
 
 @pytest.mark.asyncio
 async def test_callback_raising_exception(httpx_mock: HTTPXMock):
-    def raise_timeout(request, ext):
+    def raise_timeout(request, extensions):
         raise httpx.ReadTimeout(
-            f"Unable to read within {ext['timeout']['read']}", request=request
+            f"Unable to read within {extensions['timeout']['read']}", request=request
         )
 
     httpx_mock.add_callback(raise_timeout, url="http://test_url")
