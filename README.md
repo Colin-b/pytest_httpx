@@ -11,7 +11,7 @@
 
 > Version 1.0.0 will be released once httpx is considered as stable (release of 1.0.0).
 >
-> However current state can be considered as stable.
+> However, current state can be considered as stable.
 
 Once installed, `httpx_mock` [`pytest`](https://docs.pytest.org/en/latest/) fixture will make sure every [`httpx`](https://www.python-httpx.org) request will be replied to with user provided responses.
 
@@ -101,7 +101,7 @@ def test_url(httpx_mock: HTTPXMock):
 
 Use `method` parameter to specify the HTTP method (POST, PUT, DELETE, PATCH, HEAD) to reply to.
 
-`method` parameter must be a string. It will be upper cased so it can be provided lower cased.
+`method` parameter must be a string. It will be upper-cased, so it can be provided lower cased.
 
 Matching is performed on equality.
 
@@ -479,7 +479,7 @@ Matching is performed on the full URL, query parameters included.
 
 Use `method` parameter to specify the HTTP method (POST, PUT, DELETE, PATCH, HEAD) executing the callback.
 
-`method` parameter must be a string. It will be upper cased so it can be provided lower cased.
+`method` parameter must be a string. It will be upper-cased, so it can be provided lower cased.
 
 Matching is performed on equality.
 
@@ -546,7 +546,7 @@ Matching is performed on the full URL, query parameters included.
 
 Use `method` parameter to specify the HTTP method (POST, PUT, DELETE, PATCH, HEAD) of the requests to retrieve.
 
-`method` parameter must be a string. It will be upper cased so it can be provided lower cased.
+`method` parameter must be a string. It will be upper-cased, so it can be provided lower cased.
 
 Matching is performed on equality.
 
