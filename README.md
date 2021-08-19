@@ -158,7 +158,7 @@ from pytest_httpx import HTTPXMock
 
 
 def test_headers_matching(httpx_mock: HTTPXMock):
-    httpx_mock.add_response(match_headers={'user-agent': 'python-httpx/0.18.0'})
+    httpx_mock.add_response(match_headers={'user-agent': 'python-httpx/0.19.0'})
 
     with httpx.Client() as client:
         response = client.get("http://test_url")
@@ -266,7 +266,7 @@ from pytest_httpx import HTTPXMock
 
 
 def test_multipart_body(httpx_mock: HTTPXMock):
-    httpx_mock.add_response(data={"key1": "value1"}, files={"file1": "content of file 1"}, boundary=b"2256d3a36d2a61a1eba35a22bee5c74a")
+    httpx_mock.add_response(data={"key1": "value1"}, files={"file1": b"content of file 1"}, boundary=b"2256d3a36d2a61a1eba35a22bee5c74a")
 
     with httpx.Client() as client:
         assert client.get("http://test_url").text == '''--2256d3a36d2a61a1eba35a22bee5c74a\r

@@ -410,13 +410,13 @@ def test_with_headers(httpx_mock: HTTPXMock):
 def test_multipart_body(httpx_mock: HTTPXMock):
     httpx_mock.add_response(
         url="http://test_url",
-        files={"file1": "content of file 1"},
+        files={"file1": b"content of file 1"},
         boundary=b"2256d3a36d2a61a1eba35a22bee5c74a",
     )
     httpx_mock.add_response(
         url="http://test_url",
         data={"key1": "value1"},
-        files={"file1": "content of file 1"},
+        files={"file1": b"content of file 1"},
         boundary=b"2256d3a36d2a61a1eba35a22bee5c74a",
     )
 
