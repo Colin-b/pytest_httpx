@@ -1,53 +1,14 @@
-from typing import Union, Dict, Sequence, Tuple, Optional, List
+from typing import AsyncIterable, Dict, Iterable, Sequence, Tuple, Union
 
-import httpcore
 
-# Those types are internally defined within httpcore._types
-URL = Tuple[bytes, bytes, Optional[int], bytes]
-Headers = List[Tuple[bytes, bytes]]
-TimeoutDict = Dict[str, Optional[float]]
-
-Response = Tuple[
-    int, Headers, Union[httpcore.SyncByteStream, httpcore.AsyncByteStream], dict
-]
+import httpx
 
 # Those types are internally defined within httpx._types
 HeaderTypes = Union[
-    "Headers",
+    httpx.Headers,
     Dict[str, str],
     Dict[bytes, bytes],
     Sequence[Tuple[str, str]],
     Sequence[Tuple[bytes, bytes]],
 ]
-
-
-class IteratorStream(httpcore.AsyncIteratorByteStream, httpcore.IteratorByteStream):
-    def __init__(self, iterator):
-        class AsyncIterator:
-            async def __aiter__(self):
-                for chunk in iterator:
-                    yield chunk
-
-        httpcore.AsyncIteratorByteStream.__init__(self, aiterator=AsyncIterator())
-        httpcore.IteratorByteStream.__init__(self, iterator=iterator)
-
-
-def stream(
-    data, files, boundary: bytes
-) -> Union[httpcore.AsyncByteStream, httpcore.SyncByteStream]:
-    if files:
-        # TODO Get rid of this internal import
-        # import is performed at runtime when needed to reduce impact of internal changes in httpx
-        from httpx._multipart import MultipartStream
-
-        return MultipartStream(data=data or {}, files=files, boundary=boundary)
-
-    if isinstance(data, str):
-        data = data.encode("utf-8")
-    elif data is None:
-        data = b""
-
-    if isinstance(data, bytes):
-        return httpcore.ByteStream(data)
-
-    return IteratorStream(data)
+ResponseContent = Union[str, bytes, Iterable[bytes], AsyncIterable[bytes]]

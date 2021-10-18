@@ -5,7 +5,6 @@ import pytest
 
 from pytest_httpx._httpx_mock import (
     HTTPXMock,
-    to_response,
     _PytestSyncTransport,
     _PytestAsyncTransport,
 )
