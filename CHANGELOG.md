@@ -5,8 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [0.14.0] - 2021-10-22
 ### Changed
-- Requires [`httpx`](https://www.python-httpx.org)==0.20.\*
+- Requires [`httpx`](https://www.python-httpx.org)==0.20.\*  (many thanks to [`Terence Honles`](https://github.com/terencehonles))
 - Callbacks are now expected to return a `httpx.Response` instance instead of the previous `httpcore.Response` tuple. As a consequence, `pytest_httpx.to_response` now returns a `httpx.Response` instance.
 
 ### Added
@@ -22,7 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.13.0] - 2021-08-19
 ### Changed
 - Requires [`httpx`](https://www.python-httpx.org)==0.19.\*
-- `files` parameter of `httpx_mock.add_response` now expect dictionary values to be binary (as per [httpx new requirement](https://github.com/encode/httpx/blob/master/CHANGELOG.md#0190-19th-june-2021)).
+- `files` parameter of `httpx_mock.add_response` now expect dictionary values to be binary (as per [`httpx` new requirement](https://github.com/encode/httpx/blob/master/CHANGELOG.md#0190-19th-june-2021)).
 
 ## [0.12.1] - 2021-08-11
 ### Fixed
@@ -39,7 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.10.1] - 2020-11-25
 ### Fixed
-- Order of different parameters does not matters anymore for URL matching. It does however still matter for a same parameter.
+- Order of different parameters does not matter anymore for URL matching. It does however still matter for a same parameter.
 
 ## [0.10.0] - 2020-10-06
 ### Added
@@ -48,7 +50,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Explicit support for python 3.9
 
 ### Changed
-- Requires [`httpx`](https://www.python-httpx.org)==0.16.*
+- Requires [`httpx`](https://www.python-httpx.org)==0.16.\*
 - Update documentation to reflect the latest way of sending bytes using `httpx`. Via `content` parameter instead of `data`.
 - Code now follow `black==20.8b1` formatting instead of the git master version.
 - Sending a JSON response using `json` parameter will now set the `application/json` content-type header by default.
@@ -58,7 +60,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.0] - 2020-09-22
 ### Changed
-- Requires [`httpx`](https://www.python-httpx.org)==0.15.*
+- Requires [`httpx`](https://www.python-httpx.org)==0.15.\*
 - Callbacks are now called with `ext` dictionary instead of `timeout`. To follow `httpcore` design changes. You can still retrieve timeout by using ```ext['timeout']```
 
 ## [0.8.0] - 2020-08-26
@@ -74,7 +76,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.6.0] - 2020-08-07
 ### Changed
-- Requires [`httpx`](https://www.python-httpx.org)==0.14.*
+- Requires [`httpx`](https://www.python-httpx.org)==0.14.\*
 
 ## [0.5.0] - 2020-07-31
 ### Changed
@@ -93,7 +95,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.3.0] - 2020-05-24
 ### Changed
-- Requires [`httpx`](https://www.python-httpx.org)==0.13.*
+- Requires [`httpx`](https://www.python-httpx.org)==0.13.\*
 - requires [`pytest`](https://docs.pytest.org/en/latest/) 5.4.0 (at least)
 - callbacks must now return a tuple as per `httpcore` specifications. Refer to documentation for more details.
 - callbacks timeout parameter is now a dict as per `httpcore` specifications.
@@ -104,7 +106,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.2.0] - 2020-03-09
 ### Changed
-- Requires [`httpx`](https://www.python-httpx.org)==0.12.*
+- Requires [`httpx`](https://www.python-httpx.org)==0.12.\*
 
 ## [0.1.0] - 2020-02-13
 ### Added
@@ -112,11 +114,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.0.5] - 2020-02-10
 ### Added
-- match_headers parameter now allows to match on headers.
-- match_content parameter now allows to match on full body.
+- match_headers parameter now allows matching on headers.
+- match_content parameter now allows matching on full body.
 
 ### Changed
-- httpx.HTTPError is now raised instead of Exception in case a request cannot be matched.
+- `httpx.HTTPError` is now raised instead of `Exception` in case a request cannot be matched.
 
 ## [0.0.4] - 2020-02-07
 ### Changed
@@ -130,16 +132,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.0.3] - 2020-02-06
 ### Added
-- Allow to provide JSON response as python values.
-- Mock async httpx requests as well.
-- Allow to provide files and boundary for multipart response.
+- Allow providing JSON response as python values.
+- Mock async `httpx` requests as well.
+- Allow providing files and boundary for multipart response.
 - Allow to provide data as a dictionary for multipart response.
-- Allow to provide callbacks that are executed upon reception of a request.
-- Handle the fact that parameters may be introduced in httpx *Dispatcher.send method.
+- Allow providing callbacks that are executed upon reception of a request.
+- Handle the fact that parameters may be introduced in `httpx` *Dispatcher.send method.
 - Allow to retrieve all matching requests with HTTPXMock.get_requests
 
 ### Changed
-- method can now be provided even if not entirely upper cased.
+- method can now be provided even if not entirely upper-cased.
 - content parameter renamed into data.
 - HTTPXMock.get_request now fails if more than one request match. Use HTTPXMock.get_request instead.
 - HTTPXMock.requests is now private, use HTTPXMock.get_requests instead.
@@ -154,7 +156,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - First release, should be considered as unstable for now as design might change.
 
-[Unreleased]: https://github.com/Colin-b/pytest_httpx/compare/v0.13.0...HEAD
+[Unreleased]: https://github.com/Colin-b/pytest_httpx/compare/v0.14.0...HEAD
+[0.14.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.13.0...v0.14.0
 [0.13.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.12.1...v0.13.0
 [0.12.1]: https://github.com/Colin-b/pytest_httpx/compare/v0.12.0...v0.12.1
 [0.12.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.11.0...v0.12.0
