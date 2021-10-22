@@ -9,6 +9,7 @@ from pytest_httpx._httpx_mock import (
     _PytestSyncTransport,
     _PytestAsyncTransport,
 )
+from pytest_httpx._httpx_internals import IteratorStream
 from pytest_httpx.version import __version__
 
 

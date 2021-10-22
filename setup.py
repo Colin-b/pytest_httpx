@@ -31,6 +31,7 @@ setup(
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
         "Topic :: Software Development :: Build Tools",
         "Topic :: Internet :: WWW/HTTP",
         "Framework :: Pytest",
@@ -39,13 +40,13 @@ setup(
     packages=find_packages(exclude=["tests*"]),
     package_data={"pytest_httpx": ["py.typed"]},
     entry_points={"pytest11": ["pytest_httpx = pytest_httpx"]},
-    install_requires=["httpx==0.19.*", "pytest==6.*"],
+    install_requires=["httpx==0.20.*", "pytest==6.*"],
     extras_require={
         "testing": [
             # Used to run async test functions
-            "pytest-asyncio==0.15.*",
+            "pytest-asyncio==0.16.*",
             # Used to check coverage
-            "pytest-cov==2.*",
+            "pytest-cov==3.*",
         ]
     },
     python_requires=">=3.6",

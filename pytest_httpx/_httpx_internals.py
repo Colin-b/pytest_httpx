@@ -1,15 +1,10 @@
-from typing import Union, Dict, Sequence, Tuple, Optional, List
+from typing import Union, Dict, Sequence, Tuple, Iterable
+import warnings
 
-import httpcore
+import httpx
 
-# Those types are internally defined within httpcore._types
-URL = Tuple[bytes, bytes, Optional[int], bytes]
-Headers = List[Tuple[bytes, bytes]]
-TimeoutDict = Dict[str, Optional[float]]
-
-Response = Tuple[
-    int, Headers, Union[httpcore.SyncByteStream, httpcore.AsyncByteStream], dict
-]
+# TODO Get rid of this internal import
+from httpx._content import IteratorByteStream, AsyncIteratorByteStream
 
 # Those types are internally defined within httpx._types
 HeaderTypes = Union[
@@ -21,20 +16,24 @@ HeaderTypes = Union[
 ]
 
 
-class IteratorStream(httpcore.AsyncIteratorByteStream, httpcore.IteratorByteStream):
-    def __init__(self, iterator):
-        class AsyncIterator:
-            async def __aiter__(self):
-                for chunk in iterator:
+class IteratorStream(AsyncIteratorByteStream, IteratorByteStream):
+    def __init__(self, stream: Iterable):
+        class Stream:
+            def __iter__(self):
+                for chunk in stream:
                     yield chunk
 
-        httpcore.AsyncIteratorByteStream.__init__(self, aiterator=AsyncIterator())
-        httpcore.IteratorByteStream.__init__(self, iterator=iterator)
+            async def __aiter__(self):
+                for chunk in stream:
+                    yield chunk
+
+        AsyncIteratorByteStream.__init__(self, stream=Stream())
+        IteratorByteStream.__init__(self, stream=Stream())
 
 
 def stream(
     data, files, boundary: bytes
-) -> Union[httpcore.AsyncByteStream, httpcore.SyncByteStream]:
+) -> Union[httpx.AsyncByteStream, httpx.SyncByteStream]:
     if files:
         # TODO Get rid of this internal import
         # import is performed at runtime when needed to reduce impact of internal changes in httpx
@@ -43,11 +42,24 @@ def stream(
         return MultipartStream(data=data or {}, files=files, boundary=boundary)
 
     if isinstance(data, str):
+        warnings.warn(
+            "data parameter as str will be removed in a future version. Use text parameter instead.",
+            DeprecationWarning,
+        )
         data = data.encode("utf-8")
     elif data is None:
         data = b""
+    elif isinstance(data, bytes):
+        warnings.warn(
+            "data parameter as bytes will be removed in a future version. Use content parameter instead.",
+            DeprecationWarning,
+        )
 
     if isinstance(data, bytes):
-        return httpcore.ByteStream(data)
+        return httpx.ByteStream(data)
 
+    warnings.warn(
+        "data parameter as iterator will be removed in a future version. Use stream parameter instead.",
+        DeprecationWarning,
+    )
     return IteratorStream(data)

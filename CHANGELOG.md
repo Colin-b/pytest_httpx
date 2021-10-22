@@ -5,6 +5,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Changed
+- Requires [`httpx`](https://www.python-httpx.org)==0.20.\*
+- Callbacks are now expected to return a `httpx.Response` instance instead of the previous `httpcore.Response` tuple. As a consequence, `pytest_httpx.to_response` now returns a `httpx.Response` instance.
+
+### Added
+- `httpx_mock.add_response` now allows to explicitly provide bytes using `content` parameter.
+- `httpx_mock.add_response` now allows to explicitly provide string using `text` parameter.
+- `httpx_mock.add_response` now allows to explicitly provide HTML string content using `html` parameter.
+- `httpx_mock.add_response` now allows to explicitly provide streamed content using `stream` parameter and the new `pytest_httpx.IteratorStream` class.
+
+### Deprecated
+- `pytest_httpx.to_response` is now deprecated in favor of `httpx.Response`. This function will be removed in a future release.
+- `httpx_mock.add_response` `data` parameter should now only be used for multipart content. Instead, use the appropriate parameter amongst `content`, `text`, `html` or `stream`.
 
 ## [0.13.0] - 2021-08-19
 ### Changed
