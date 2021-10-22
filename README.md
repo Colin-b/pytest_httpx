@@ -5,7 +5,7 @@
 <a href="https://travis-ci.com/Colin-b/pytest_httpx"><img alt="Build status" src="https://api.travis-ci.com/Colin-b/pytest_httpx.svg?branch=master"></a>
 <a href="https://travis-ci.com/Colin-b/pytest_httpx"><img alt="Coverage" src="https://img.shields.io/badge/coverage-100%25-brightgreen"></a>
 <a href="https://github.com/psf/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
-<a href="https://travis-ci.com/Colin-b/pytest_httpx"><img alt="Number of tests" src="https://img.shields.io/badge/tests-135 passed-blue"></a>
+<a href="https://travis-ci.com/Colin-b/pytest_httpx"><img alt="Number of tests" src="https://img.shields.io/badge/tests-144 passed-blue"></a>
 <a href="https://pypi.org/project/pytest-httpx/"><img alt="Number of downloads" src="https://img.shields.io/pypi/dm/pytest_httpx"></a>
 </p>
 
@@ -158,7 +158,7 @@ from pytest_httpx import HTTPXMock
 
 
 def test_headers_matching(httpx_mock: HTTPXMock):
-    httpx_mock.add_response(match_headers={'user-agent': 'python-httpx/0.19.0'})
+    httpx_mock.add_response(match_headers={'user-agent': 'python-httpx/0.20.0'})
 
     with httpx.Client() as client:
         response = client.get("http://test_url")
@@ -203,7 +203,7 @@ Note that the `content-type` header will be set to `application/json` by default
 
 ### Reply with custom body
 
-Use `data` parameter to reply with a custom body by providing bytes or UTF-8 encoded string.
+Use `text` parameter to reply with a custom body by providing UTF-8 encoded string.
 
 ```python
 import httpx
@@ -211,33 +211,54 @@ from pytest_httpx import HTTPXMock
 
 
 def test_str_body(httpx_mock: HTTPXMock):
-    httpx_mock.add_response(data="This is my UTF-8 content")
+    httpx_mock.add_response(text="This is my UTF-8 content")
 
     with httpx.Client() as client:
         assert client.get("http://test_url").text == "This is my UTF-8 content"
 
+```
+
+Use `content` parameter to reply with a custom body by providing bytes.
+
+```python
+import httpx
+from pytest_httpx import HTTPXMock
+
 
 def test_bytes_body(httpx_mock: HTTPXMock):
-    httpx_mock.add_response(data=b"This is my bytes content")
+    httpx_mock.add_response(content=b"This is my bytes content")
 
     with httpx.Client() as client:
         assert client.get("http://test_url").content == b"This is my bytes content"
     
 ```
 
-### Reply by streaming data
+Use `html` parameter to reply with a custom body by providing UTF-8 encoded string.
 
-Use `data` parameter to stream chunks that you specify.
-As long as your data is an iterable it will stream your data.
+```python
+import httpx
+from pytest_httpx import HTTPXMock
+
+
+def test_html_body(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(html="<body>This is <p> HTML content</body>")
+
+    with httpx.Client() as client:
+        assert client.get("http://test_url").text == "<body>This is <p> HTML content</body>"
+
+```
+
+### Reply by streaming chunks
+
+Use `stream` parameter to stream chunks that you specify.
 
 ```python
 import httpx
 import pytest
-from pytest_httpx import HTTPXMock
-
+from pytest_httpx import HTTPXMock, IteratorStream
 
 def test_sync_streaming(httpx_mock: HTTPXMock):
-    httpx_mock.add_response(data=[b"part 1", b"part 2"])
+    httpx_mock.add_response(stream=IteratorStream([b"part 1", b"part 2"]))
 
     with httpx.Client() as client:
         with client.stream(method="GET", url="http://test_url") as response:
@@ -246,7 +267,7 @@ def test_sync_streaming(httpx_mock: HTTPXMock):
 
 @pytest.mark.asyncio
 async def test_async_streaming(httpx_mock: HTTPXMock):
-    httpx_mock.add_response(data=[b"part 1", b"part 2"])
+    httpx_mock.add_response(stream=IteratorStream([b"part 1", b"part 2"]))
 
     async with httpx.AsyncClient() as client:
         async with client.stream(method="GET", url="http://test_url") as response:
@@ -401,17 +422,17 @@ def assert_all_responses_were_requested() -> bool:
 
 ### Dynamic responses
 
-Callback should return a `httpcore` response (as a tuple), you can use `pytest_httpx.to_response` function to create such a tuple.
+Callback should return a `httpx.Response`.
 
 ```python
 import httpx
-from pytest_httpx import HTTPXMock, to_response
+from pytest_httpx import HTTPXMock
 
 
 def test_dynamic_response(httpx_mock: HTTPXMock):
     def custom_response(request: httpx.Request, *args, **kwargs):
-        return to_response(
-            json={"url": str(request.url)},
+        return httpx.Response(
+            status_code=200, json={"url": str(request.url)},
         )
 
     httpx_mock.add_callback(custom_response)
@@ -619,8 +640,8 @@ Below is a list of parameters that will require a change in your code.
 | Parameter | responses | pytest-httpx |
 |:--------|:----------|:-------------|
 | method | `method=responses.GET` | `method="GET"` |
-| body (as bytes) | `body=b"sample"` | `data=b"sample"` |
-| body (as str) | `body="sample"` | `data="sample"` |
+| body (as bytes) | `body=b"sample"` | `content=b"sample"` |
+| body (as str) | `body="sample"` | `text="sample"` |
 | status code | `status=201` | `status_code=201` |
 | headers | `adding_headers={"name": "value"}` | `headers={"name": "value"}` |
 | content-type header | `content_type="application/custom"` | `headers={"content-type": "application/custom"}` |
@@ -648,7 +669,7 @@ def test_response(httpx_mock: HTTPXMock):
     httpx_mock.add_response(
         method="GET",
         url="http://test_url",
-        data=b"This is the response content",
+        content=b"This is the response content",
         status_code=400,
     )
 
@@ -668,8 +689,8 @@ Below is a list of parameters that will require a change in your code.
 
 | Parameter | responses | pytest-httpx |
 |:--------|:----------|:-------------|
-| body (as bytes) | `body=b"sample"` | `data=b"sample"` |
-| body (as str) | `body="sample"` | `data="sample"` |
+| body (as bytes) | `body=b"sample"` | `content=b"sample"` |
+| body (as str) | `body="sample"` | `text="sample"` |
 | body (as JSON) | `payload=["sample"]` | `json=["sample"]` |
 | status code | `status=201` | `status_code=201` |
 
@@ -700,7 +721,7 @@ def test_response(httpx_mock):
     httpx_mock.add_response(
         method="GET",
         url="http://test_url",
-        data=b"This is the response content",
+        content=b"This is the response content",
         status_code=400,
     )
 
