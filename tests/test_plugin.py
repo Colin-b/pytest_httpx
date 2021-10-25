@@ -117,7 +117,7 @@ def test_httpx_mock_non_mocked_hosts_sync(testdir):
         
         @pytest.fixture
         def non_mocked_hosts() -> list:
-            return ["localhost"]
+            return ["localhost", "www.foo.bar"]
 
         def test_httpx_mock_non_mocked_hosts_sync(httpx_mock):
             httpx_mock.add_response()
@@ -130,6 +130,10 @@ def test_httpx_mock_non_mocked_hosts_sync(testdir):
                 with pytest.raises(httpx.ConnectError):
                     client.get("https://localhost:5005")
             
+
+                with pytest.raises(httpx.ConnectError):
+                    client.get("http://www.foo.bar/")
+
             # Assert that a single request was mocked
             assert len(httpx_mock.get_requests()) == 1
             

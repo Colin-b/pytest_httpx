@@ -206,6 +206,7 @@ async def test_deprecated_response_streaming(httpx_mock: HTTPXMock):
             ]
 
 
+@pytest.mark.xfail
 @pytest.mark.asyncio
 async def test_with_many_responses(httpx_mock: HTTPXMock):
     httpx_mock.add_response(url="https://test_url", content=b"test content 1")
@@ -529,7 +530,7 @@ async def test_multipart_body(httpx_mock: HTTPXMock):
         boundary=b"2256d3a36d2a61a1eba35a22bee5c74a",
     )
     httpx_mock.add_response(
-        url="https://test_url",
+        url="https://test_url2",
         data={"key1": "value1"},
         files={"file1": b"content of file 1"},
         boundary=b"2256d3a36d2a61a1eba35a22bee5c74a",
@@ -542,7 +543,7 @@ async def test_multipart_body(httpx_mock: HTTPXMock):
             == '--2256d3a36d2a61a1eba35a22bee5c74a\r\nContent-Disposition: form-data; name="file1"; filename="upload"\r\nContent-Type: application/octet-stream\r\n\r\ncontent of file 1\r\n--2256d3a36d2a61a1eba35a22bee5c74a--\r\n'
         )
 
-        response = await client.get("https://test_url")
+        response = await client.get("https://test_url2")
         assert (
             response.text
             == """--2256d3a36d2a61a1eba35a22bee5c74a\r
@@ -761,7 +762,7 @@ async def test_callback_returning_response(httpx_mock: HTTPXMock):
 
     async with httpx.AsyncClient() as client:
         response = await client.get("https://test_url")
-        assert response.json() == {"url": "https://test_url"}
+        assert response.json() == {"url": "https://test_url/"}
         assert response.headers["content-type"] == "application/json"
 
 
