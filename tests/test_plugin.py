@@ -6,8 +6,8 @@ def test_fixture_is_available(testdir):
         
         
         def test_http(httpx_mock):
-            mock = httpx_mock.add_response(url="http://foo.tld")
-            r = httpx.get("http://foo.tld")
+            mock = httpx_mock.add_response(url="https://foo.tld")
+            r = httpx.get("https://foo.tld")
             assert httpx_mock.get_request() is not None
 
     """
@@ -124,11 +124,11 @@ def test_httpx_mock_non_mocked_hosts_sync(testdir):
             
             with httpx.Client() as client:
                 # Mocked request
-                client.get("http://foo.tld")
+                client.get("https://foo.tld")
             
                 # Non mocked request
                 with pytest.raises(httpx.ConnectError):
-                    client.get("http://localhost:5005")
+                    client.get("https://localhost:5005")
             
             # Assert that a single request was mocked
             assert len(httpx_mock.get_requests()) == 1
@@ -158,11 +158,11 @@ def test_httpx_mock_non_mocked_hosts_async(testdir):
             
             async with httpx.AsyncClient() as client:
                 # Mocked request
-                await client.get("http://foo.tld")
+                await client.get("https://foo.tld")
             
                 # Non mocked request
                 with pytest.raises(httpx.ConnectError):
-                    await client.get("http://localhost:5005")
+                    await client.get("https://localhost:5005")
             
             # Assert that a single request was mocked
             assert len(httpx_mock.get_requests()) == 1

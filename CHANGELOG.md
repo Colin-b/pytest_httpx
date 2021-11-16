@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.15.0] - 2021-11-16
+### Changed
+- Requires [`httpx`](https://www.python-httpx.org)==0.21.\*
+
 ## [0.14.0] - 2021-10-22
 ### Changed
 - Requires [`httpx`](https://www.python-httpx.org)==0.20.\*  (many thanks to [`Terence Honles`](https://github.com/terencehonles))
@@ -156,7 +160,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - First release, should be considered as unstable for now as design might change.
 
-[Unreleased]: https://github.com/Colin-b/pytest_httpx/compare/v0.14.0...HEAD
+[Unreleased]: https://github.com/Colin-b/pytest_httpx/compare/v0.15.0...HEAD
+[0.15.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.14.0...v0.15.0
 [0.14.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.13.0...v0.14.0
 [0.13.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.12.1...v0.13.0
 [0.12.1]: https://github.com/Colin-b/pytest_httpx/compare/v0.12.0...v0.12.1
