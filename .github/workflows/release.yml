@@ -1,0 +1,36 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.6', '3.7', '3.8', '3.9', '3.10']
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install -e .[testing]
+    - name: Test with pytest
+      run: |
+        pytest --cov=pytest_httpx --cov-fail-under=100 --cov-report=term-missing --runpytest=subprocess
+    - name: Create packages
+      run: |
+        python -m pip install wheel
+        python setup.py sdist bdist_wheel
+    - name: Publish packages
+      run: |
+        python -m pip install twine
+        python -m twine upload dist/* --skip-existing --username __token__ --password ${{ secrets.pypi_password }}
