@@ -22,4 +22,4 @@ jobs:
         python -m pip install .[testing]
     - name: Test with pytest
       run: |
-        pytest --cov=pytest_httpx --cov-fail-under=100 --cov-report=term-missing
+        pytest --cov=pytest_httpx --cov-fail-under=100 --cov-report=term-missing --runpytest=subprocess
