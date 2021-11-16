@@ -158,7 +158,7 @@ from pytest_httpx import HTTPXMock
 
 
 def test_headers_matching(httpx_mock: HTTPXMock):
-    httpx_mock.add_response(match_headers={'user-agent': 'python-httpx/0.20.0'})
+    httpx_mock.add_response(match_headers={'user-agent': 'python-httpx/0.21.0'})
 
     with httpx.Client() as client:
         response = client.get("https://test_url")
