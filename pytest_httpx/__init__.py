@@ -12,6 +12,13 @@ from pytest_httpx._httpx_mock import (
 from pytest_httpx._httpx_internals import IteratorStream
 from pytest_httpx.version import __version__
 
+__all__ = (
+    "HTTPXMock",
+    "IteratorStream",
+    "to_response",
+    "__version__",
+)
+
 
 @pytest.fixture
 def assert_all_responses_were_requested() -> bool:
