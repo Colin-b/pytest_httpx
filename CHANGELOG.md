@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.17.1] - 2021-12-20
+### Fixed
+- Do not consider a response as read, even if it is not a stream, before returning to `httpx`. Allowing any specific httpx handling to be triggered such as `httpx.Response.elapsed` computing.
+
 ## [0.17.0] - 2021-12-20
 ### Changed
 - `httpx_mock.add_response` `data` parameter is only used for multipart content. It was deprecated since `0.14.0`. Refer to this version changelog entry for more details on how to update your code.
@@ -180,7 +184,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - First release, should be considered as unstable for now as design might change.
 
-[Unreleased]: https://github.com/Colin-b/pytest_httpx/compare/v0.17.0...HEAD
+[Unreleased]: https://github.com/Colin-b/pytest_httpx/compare/v0.17.1...HEAD
+[0.17.1]: https://github.com/Colin-b/pytest_httpx/compare/v0.17.0...v0.17.1
 [0.17.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.16.0...v0.17.0
 [0.16.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.15.0...v0.16.0
 [0.15.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.14.0...v0.15.0
