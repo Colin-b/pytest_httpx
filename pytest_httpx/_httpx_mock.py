@@ -186,20 +186,16 @@ class HTTPXMock:
         )
 
     def _explain_that_no_response_was_found(self, request: httpx.Request) -> str:
+        matchers = [matcher for matcher, _ in self._responses + self._callbacks]
         expect_headers = set(
             [
                 header
-                for matcher, _ in self._responses + self._callbacks
+                for matcher in matchers
                 if matcher.headers
                 for header in matcher.headers
             ]
         )
-        expect_body = any(
-            [
-                matcher.content is not None
-                for matcher, _ in self._responses + self._callbacks
-            ]
-        )
+        expect_body = any([matcher.content is not None for matcher in matchers])
 
         request_description = f"{request.method} request on {request.url}"
         if expect_headers:
@@ -209,9 +205,7 @@ class HTTPXMock:
         elif expect_body:
             request_description += f" with {request.read()} body"
 
-        matchers_description = "\n".join(
-            [str(matcher) for matcher, _ in self._responses + self._callbacks]
-        )
+        matchers_description = "\n".join([str(matcher) for matcher in matchers])
 
         message = f"No response can be found for {request_description}"
         if matchers_description:
