@@ -1,4 +1,7 @@
-def test_fixture_is_available(testdir):
+from pytest import Testdir
+
+
+def test_fixture_is_available(testdir: Testdir) -> None:
     # create a temporary pytest test file
     testdir.makepyfile(
         """
@@ -18,7 +21,7 @@ def test_fixture_is_available(testdir):
     result.assert_outcomes(passed=1)
 
 
-def test_httpx_mock_unused_response(testdir):
+def test_httpx_mock_unused_response(testdir: Testdir) -> None:
     """
     Unused responses should fail test case.
     """
@@ -38,7 +41,7 @@ def test_httpx_mock_unused_response(testdir):
     )
 
 
-def test_httpx_mock_unused_response_without_assertion(testdir):
+def test_httpx_mock_unused_response_without_assertion(testdir: Testdir) -> None:
     """
     Unused responses should not fail test case if assert_all_responses_were_requested fixture is set to False.
     """
@@ -58,7 +61,7 @@ def test_httpx_mock_unused_response_without_assertion(testdir):
     result.assert_outcomes(passed=1)
 
 
-def test_httpx_mock_unused_callback(testdir):
+def test_httpx_mock_unused_callback(testdir: Testdir) -> None:
     """
     Unused callbacks should fail test case.
     """
@@ -82,7 +85,7 @@ def test_httpx_mock_unused_callback(testdir):
     )
 
 
-def test_httpx_mock_unused_callback_without_assertion(testdir):
+def test_httpx_mock_unused_callback_without_assertion(testdir: Testdir) -> None:
     """
     Unused callbacks should not fail test case if assert_all_responses_were_requested fixture is set to False.
     """
@@ -106,7 +109,7 @@ def test_httpx_mock_unused_callback_without_assertion(testdir):
     result.assert_outcomes(passed=1)
 
 
-def test_httpx_mock_non_mocked_hosts_sync(testdir):
+def test_httpx_mock_non_mocked_hosts_sync(testdir: Testdir) -> None:
     """
     Non mocked hosts should go through while other requests should be mocked.
     """
@@ -139,7 +142,7 @@ def test_httpx_mock_non_mocked_hosts_sync(testdir):
     result.assert_outcomes(passed=1)
 
 
-def test_httpx_mock_non_mocked_hosts_async(testdir):
+def test_httpx_mock_non_mocked_hosts_async(testdir: Testdir) -> None:
     """
     Non mocked hosts should go through while other requests should be mocked.
     """

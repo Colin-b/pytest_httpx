@@ -2,6 +2,7 @@ from typing import List
 
 import httpx
 import pytest
+from pytest import MonkeyPatch
 
 from pytest_httpx._httpx_mock import (
     HTTPXMock,
@@ -26,13 +27,15 @@ def assert_all_responses_were_requested() -> bool:
 
 
 @pytest.fixture
-def non_mocked_hosts() -> list:
+def non_mocked_hosts() -> List[str]:
     return []
 
 
 @pytest.fixture
 def httpx_mock(
-    monkeypatch, assert_all_responses_were_requested: bool, non_mocked_hosts: List[str]
+    monkeypatch: MonkeyPatch,
+    assert_all_responses_were_requested: bool,
+    non_mocked_hosts: List[str],
 ) -> HTTPXMock:
     # Ensure redirections to www hosts are handled transparently.
     missing_www = [

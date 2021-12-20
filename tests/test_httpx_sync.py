@@ -2,12 +2,13 @@ import re
 
 import httpx
 import pytest
+from pytest import Testdir
 
 import pytest_httpx
 from pytest_httpx import HTTPXMock
 
 
-def test_without_response(httpx_mock: HTTPXMock):
+def test_without_response(httpx_mock: HTTPXMock) -> None:
     with pytest.raises(Exception) as exception_info:
         with httpx.Client() as client:
             client.get("https://test_url")
@@ -17,7 +18,7 @@ def test_without_response(httpx_mock: HTTPXMock):
     )
 
 
-def test_default_response(httpx_mock: HTTPXMock):
+def test_default_response(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response()
 
     with httpx.Client() as client:
@@ -28,7 +29,7 @@ def test_default_response(httpx_mock: HTTPXMock):
     assert response.http_version == "HTTP/1.1"
 
 
-def test_url_matching(httpx_mock: HTTPXMock):
+def test_url_matching(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url="https://test_url")
 
     with httpx.Client() as client:
@@ -39,7 +40,7 @@ def test_url_matching(httpx_mock: HTTPXMock):
         assert response.content == b""
 
 
-def test_url_query_string_matching(httpx_mock: HTTPXMock):
+def test_url_query_string_matching(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url="https://test_url?a=1&b=2")
 
     with httpx.Client() as client:
@@ -51,7 +52,7 @@ def test_url_query_string_matching(httpx_mock: HTTPXMock):
         assert response.content == b""
 
 
-def test_url_not_matching(httpx_mock: HTTPXMock):
+def test_url_not_matching(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url="https://test_url")
 
     with httpx.Client() as client:
@@ -67,7 +68,7 @@ Match all requests on https://test_url"""
     httpx_mock.reset(assert_all_responses_were_requested=False)
 
 
-def test_url_query_string_not_matching(httpx_mock: HTTPXMock):
+def test_url_query_string_not_matching(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url="https://test_url?a=1&a=2")
 
     with httpx.Client() as client:
@@ -84,7 +85,7 @@ Match all requests on https://test_url?a=1&a=2"""
     httpx_mock.reset(assert_all_responses_were_requested=False)
 
 
-def test_method_matching(httpx_mock: HTTPXMock):
+def test_method_matching(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(method="get")
 
     with httpx.Client() as client:
@@ -95,7 +96,7 @@ def test_method_matching(httpx_mock: HTTPXMock):
         assert response.content == b""
 
 
-def test_method_not_matching(httpx_mock: HTTPXMock):
+def test_method_not_matching(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(method="get")
 
     with httpx.Client() as client:
@@ -111,7 +112,7 @@ Match GET requests"""
     httpx_mock.reset(assert_all_responses_were_requested=False)
 
 
-def test_with_one_response(httpx_mock: HTTPXMock):
+def test_with_one_response(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url="https://test_url", content=b"test content")
 
     with httpx.Client() as client:
@@ -122,7 +123,7 @@ def test_with_one_response(httpx_mock: HTTPXMock):
         assert response.content == b"test content"
 
 
-def test_deprecated_response_with_bytes_body(httpx_mock: HTTPXMock):
+def test_deprecated_response_with_bytes_body(httpx_mock: HTTPXMock) -> None:
     with pytest.warns(
         DeprecationWarning,
         match="data parameter as bytes will be removed in a future version. Use content parameter instead.",
@@ -134,7 +135,7 @@ def test_deprecated_response_with_bytes_body(httpx_mock: HTTPXMock):
         assert response.content == b"test content"
 
 
-def test_response_with_string_body(httpx_mock: HTTPXMock):
+def test_response_with_string_body(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url="https://test_url", text="test content")
 
     with httpx.Client() as client:
@@ -142,7 +143,7 @@ def test_response_with_string_body(httpx_mock: HTTPXMock):
         assert response.content == b"test content"
 
 
-def test_deprecated_response_with_string_body(httpx_mock: HTTPXMock):
+def test_deprecated_response_with_string_body(httpx_mock: HTTPXMock) -> None:
     with pytest.warns(
         DeprecationWarning,
         match="data parameter as str will be removed in a future version. Use text parameter instead.",
@@ -154,7 +155,7 @@ def test_deprecated_response_with_string_body(httpx_mock: HTTPXMock):
         assert response.content == b"test content"
 
 
-def test_response_with_html_string_body(httpx_mock: HTTPXMock):
+def test_response_with_html_string_body(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url="https://test_url", html="<body>test content</body>")
 
     with httpx.Client() as client:
@@ -162,7 +163,7 @@ def test_response_with_html_string_body(httpx_mock: HTTPXMock):
         assert response.text == "<body>test content</body>"
 
 
-def test_response_streaming(httpx_mock: HTTPXMock):
+def test_response_streaming(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(
         url="https://test_url",
         stream=pytest_httpx.IteratorStream([b"part 1", b"part 2"]),
@@ -173,7 +174,7 @@ def test_response_streaming(httpx_mock: HTTPXMock):
             assert list(response.iter_raw()) == [b"part 1", b"part 2"]
 
 
-def test_deprecated_response_streaming(httpx_mock: HTTPXMock):
+def test_deprecated_response_streaming(httpx_mock: HTTPXMock) -> None:
     with pytest.warns(
         DeprecationWarning,
         match="data parameter as iterator will be removed in a future version. Use stream parameter instead.",
@@ -185,7 +186,7 @@ def test_deprecated_response_streaming(httpx_mock: HTTPXMock):
             assert list(response.iter_raw()) == [b"part 1", b"part 2"]
 
 
-def test_with_many_responses(httpx_mock: HTTPXMock):
+def test_with_many_responses(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url="https://test_url", content=b"test content 1")
     httpx_mock.add_response(url="https://test_url", content=b"test content 2")
 
@@ -200,7 +201,7 @@ def test_with_many_responses(httpx_mock: HTTPXMock):
         assert response.content == b"test content 2"
 
 
-def test_with_many_responses_methods(httpx_mock: HTTPXMock):
+def test_with_many_responses_methods(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(
         url="https://test_url", method="GET", content=b"test content 1"
     )
@@ -240,7 +241,7 @@ def test_with_many_responses_methods(httpx_mock: HTTPXMock):
         assert response.content == b"test content 4"
 
 
-def test_with_many_responses_status_codes(httpx_mock: HTTPXMock):
+def test_with_many_responses_status_codes(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(
         url="https://test_url", method="GET", content=b"test content 1", status_code=200
     )
@@ -298,7 +299,7 @@ def test_with_many_responses_status_codes(httpx_mock: HTTPXMock):
         assert response.status_code == 303
 
 
-def test_with_many_responses_urls_str(httpx_mock: HTTPXMock):
+def test_with_many_responses_urls_str(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(
         url="https://test_url?param1=test", method="GET", content=b"test content 1"
     )
@@ -342,7 +343,7 @@ def test_with_many_responses_urls_str(httpx_mock: HTTPXMock):
         assert response.content == b"test content 4"
 
 
-def test_response_with_pattern_in_url(httpx_mock: HTTPXMock):
+def test_response_with_pattern_in_url(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=re.compile(".*test.*"))
     httpx_mock.add_response(url="https://unmatched", content=b"test content")
 
@@ -354,7 +355,7 @@ def test_response_with_pattern_in_url(httpx_mock: HTTPXMock):
         assert response.content == b""
 
 
-def test_request_with_pattern_in_url(httpx_mock: HTTPXMock):
+def test_request_with_pattern_in_url(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url="https://test_url")
     httpx_mock.add_response(url="https://unmatched")
 
@@ -365,7 +366,7 @@ def test_request_with_pattern_in_url(httpx_mock: HTTPXMock):
     assert httpx_mock.get_request(url=re.compile(".*test.*")).headers["x-test"] == "1"
 
 
-def test_requests_with_pattern_in_url(httpx_mock: HTTPXMock):
+def test_requests_with_pattern_in_url(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url="https://test_url")
     httpx_mock.add_response(url="https://tests_url")
     httpx_mock.add_response(url="https://unmatched")
@@ -381,11 +382,11 @@ def test_requests_with_pattern_in_url(httpx_mock: HTTPXMock):
     assert "x-test" not in requests[1].headers
 
 
-def test_callback_with_pattern_in_url(httpx_mock: HTTPXMock):
-    def custom_response(request: httpx.Request, *args, **kwargs):
+def test_callback_with_pattern_in_url(httpx_mock: HTTPXMock) -> None:
+    def custom_response(request: httpx.Request, extensions: dict) -> httpx.Response:
         return httpx.Response(status_code=200, json={"url": str(request.url)})
 
-    def custom_response2(request: httpx.Request, *args, **kwargs):
+    def custom_response2(request: httpx.Request, extensions: dict) -> httpx.Response:
         return httpx.Response(
             status_code=200,
             extensions={"http_version": b"HTTP/2.0"},
@@ -403,7 +404,7 @@ def test_callback_with_pattern_in_url(httpx_mock: HTTPXMock):
         assert response.http_version == "HTTP/1.1"
 
 
-def test_with_many_responses_urls_instances(httpx_mock: HTTPXMock):
+def test_with_many_responses_urls_instances(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(
         url=httpx.URL("https://test_url", params={"param1": "test"}),
         method="GET",
@@ -455,7 +456,7 @@ def test_with_many_responses_urls_instances(httpx_mock: HTTPXMock):
         assert response.content == b"test content 4"
 
 
-def test_with_http_version_2(httpx_mock: HTTPXMock):
+def test_with_http_version_2(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(
         url="https://test_url", http_version="HTTP/2", content=b"test content 1"
     )
@@ -466,7 +467,7 @@ def test_with_http_version_2(httpx_mock: HTTPXMock):
         assert response.http_version == "HTTP/2"
 
 
-def test_with_headers(httpx_mock: HTTPXMock):
+def test_with_headers(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(
         url="https://test_url",
         content=b"test content 1",
@@ -481,7 +482,7 @@ def test_with_headers(httpx_mock: HTTPXMock):
         )
 
 
-def test_multipart_body(httpx_mock: HTTPXMock):
+def test_multipart_body(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(
         url="https://test_url",
         files={"file1": b"content of file 1"},
@@ -518,7 +519,7 @@ content of file 1\r
         )
 
 
-def test_requests_retrieval(httpx_mock: HTTPXMock):
+def test_requests_retrieval(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(
         url="https://test_url", method="GET", content=b"test content 1"
     )
@@ -576,7 +577,7 @@ def test_requests_retrieval(httpx_mock: HTTPXMock):
     )
 
 
-def test_requests_retrieval_on_same_url(httpx_mock: HTTPXMock):
+def test_requests_retrieval_on_same_url(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url="https://test_url")
 
     with httpx.Client() as client:
@@ -589,7 +590,7 @@ def test_requests_retrieval_on_same_url(httpx_mock: HTTPXMock):
     assert requests[1].headers["x-test"] == "test header 2"
 
 
-def test_request_retrieval_on_same_url(httpx_mock: HTTPXMock):
+def test_request_retrieval_on_same_url(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response()
 
     with httpx.Client() as client:
@@ -600,7 +601,7 @@ def test_request_retrieval_on_same_url(httpx_mock: HTTPXMock):
     assert request.headers["x-test"] == "test header 1"
 
 
-def test_requests_retrieval_on_same_method(httpx_mock: HTTPXMock):
+def test_requests_retrieval_on_same_method(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response()
 
     with httpx.Client() as client:
@@ -613,7 +614,7 @@ def test_requests_retrieval_on_same_method(httpx_mock: HTTPXMock):
     assert requests[1].headers["x-test"] == "test header 2"
 
 
-def test_request_retrieval_on_same_method(httpx_mock: HTTPXMock):
+def test_request_retrieval_on_same_method(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response()
 
     with httpx.Client() as client:
@@ -624,7 +625,7 @@ def test_request_retrieval_on_same_method(httpx_mock: HTTPXMock):
     assert request.headers["x-test"] == "test header 1"
 
 
-def test_requests_retrieval_on_same_url_and_method(httpx_mock: HTTPXMock):
+def test_requests_retrieval_on_same_url_and_method(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response()
 
     with httpx.Client() as client:
@@ -639,7 +640,7 @@ def test_requests_retrieval_on_same_url_and_method(httpx_mock: HTTPXMock):
     assert requests[1].headers["x-test"] == "test header 2"
 
 
-def test_default_requests_retrieval(httpx_mock: HTTPXMock):
+def test_default_requests_retrieval(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response()
 
     with httpx.Client() as client:
@@ -652,7 +653,7 @@ def test_default_requests_retrieval(httpx_mock: HTTPXMock):
     assert requests[1].headers["x-test"] == "test header 2"
 
 
-def test_default_request_retrieval(httpx_mock: HTTPXMock):
+def test_default_request_retrieval(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response()
 
     with httpx.Client() as client:
@@ -662,7 +663,7 @@ def test_default_request_retrieval(httpx_mock: HTTPXMock):
     assert request.headers["x-test"] == "test header 1"
 
 
-def test_requests_json_body(httpx_mock: HTTPXMock):
+def test_requests_json_body(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(
         url="https://test_url", method="GET", json=["list content 1", "list content 2"]
     )
@@ -687,8 +688,8 @@ def test_requests_json_body(httpx_mock: HTTPXMock):
         assert response.headers["content-type"] == "application/json"
 
 
-def test_callback_raising_exception(httpx_mock: HTTPXMock):
-    def raise_timeout(request, extensions):
+def test_callback_raising_exception(httpx_mock: HTTPXMock) -> None:
+    def raise_timeout(request: httpx.Request, extensions: dict) -> httpx.Response:
         raise httpx.ReadTimeout(
             f"Unable to read within {extensions['timeout']['read']}", request=request
         )
@@ -701,8 +702,8 @@ def test_callback_raising_exception(httpx_mock: HTTPXMock):
         assert str(exception_info.value) == "Unable to read within 5.0"
 
 
-def test_callback_returning_response(httpx_mock: HTTPXMock):
-    def custom_response(request: httpx.Request, *args, **kwargs):
+def test_callback_returning_response(httpx_mock: HTTPXMock) -> None:
+    def custom_response(request: httpx.Request, extensions: dict) -> httpx.Response:
         return httpx.Response(status_code=200, json={"url": str(request.url)})
 
     httpx_mock.add_callback(custom_response, url="https://test_url")
@@ -713,8 +714,8 @@ def test_callback_returning_response(httpx_mock: HTTPXMock):
         assert response.headers["content-type"] == "application/json"
 
 
-def test_callback_executed_twice(httpx_mock: HTTPXMock):
-    def custom_response(*args, **kwargs):
+def test_callback_executed_twice(httpx_mock: HTTPXMock) -> None:
+    def custom_response(request: httpx.Request, extensions: dict) -> httpx.Response:
         return httpx.Response(status_code=200, json=["content"])
 
     httpx_mock.add_callback(custom_response)
@@ -729,8 +730,8 @@ def test_callback_executed_twice(httpx_mock: HTTPXMock):
         assert response.headers["content-type"] == "application/json"
 
 
-def test_callback_matching_method(httpx_mock: HTTPXMock):
-    def custom_response(*args, **kwargs) -> httpx.Response:
+def test_callback_matching_method(httpx_mock: HTTPXMock) -> None:
+    def custom_response(request: httpx.Request, extensions: dict) -> httpx.Response:
         return httpx.Response(status_code=200, json=["content"])
 
     httpx_mock.add_callback(custom_response, method="GET")
@@ -745,7 +746,7 @@ def test_callback_matching_method(httpx_mock: HTTPXMock):
         assert response.headers["content-type"] == "application/json"
 
 
-def test_request_retrieval_with_more_than_one(testdir):
+def test_request_retrieval_with_more_than_one(testdir: Testdir) -> None:
     """
     Single request cannot be returned if there is more than one matching.
     """
@@ -773,7 +774,7 @@ def test_request_retrieval_with_more_than_one(testdir):
     )
 
 
-def test_headers_matching(httpx_mock: HTTPXMock):
+def test_headers_matching(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(
         match_headers={"user-agent": f"python-httpx/{httpx.__version__}"}
     )
@@ -783,7 +784,7 @@ def test_headers_matching(httpx_mock: HTTPXMock):
         assert response.content == b""
 
 
-def test_headers_not_matching(httpx_mock: HTTPXMock):
+def test_headers_not_matching(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(
         match_headers={
             "user-agent": f"python-httpx/{httpx.__version__}",
@@ -805,7 +806,7 @@ Match all requests with {{'user-agent': 'python-httpx/{httpx.__version__}', 'hos
     httpx_mock.reset(assert_all_responses_were_requested=False)
 
 
-def test_content_matching(httpx_mock: HTTPXMock):
+def test_content_matching(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(match_content=b"This is the body")
 
     with httpx.Client() as client:
@@ -813,7 +814,7 @@ def test_content_matching(httpx_mock: HTTPXMock):
         assert response.read() == b""
 
 
-def test_content_not_matching(httpx_mock: HTTPXMock):
+def test_content_not_matching(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(match_content=b"This is the body")
 
     with httpx.Client() as client:
@@ -829,7 +830,7 @@ Match all requests with b'This is the body' body"""
     httpx_mock.reset(assert_all_responses_were_requested=False)
 
 
-def test_headers_and_content_matching(httpx_mock: HTTPXMock):
+def test_headers_and_content_matching(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(
         match_headers={"user-agent": f"python-httpx/{httpx.__version__}"},
         match_content=b"This is the body",
@@ -840,7 +841,7 @@ def test_headers_and_content_matching(httpx_mock: HTTPXMock):
         assert response.content == b""
 
 
-def test_headers_not_matching_and_content_matching(httpx_mock: HTTPXMock):
+def test_headers_not_matching_and_content_matching(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(
         match_headers={
             "user-agent": f"python-httpx/{httpx.__version__}",
@@ -862,7 +863,7 @@ Match all requests with {{'user-agent': 'python-httpx/{httpx.__version__}', 'hos
     httpx_mock.reset(assert_all_responses_were_requested=False)
 
 
-def test_headers_matching_and_content_not_matching(httpx_mock: HTTPXMock):
+def test_headers_matching_and_content_not_matching(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(
         match_headers={
             "user-agent": f"python-httpx/{httpx.__version__}",
@@ -884,7 +885,7 @@ Match all requests with {{'user-agent': 'python-httpx/{httpx.__version__}', 'hos
     httpx_mock.reset(assert_all_responses_were_requested=False)
 
 
-def test_headers_and_content_not_matching(httpx_mock: HTTPXMock):
+def test_headers_and_content_not_matching(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(
         match_headers={
             "user-agent": f"python-httpx/{httpx.__version__}",
@@ -906,7 +907,7 @@ Match all requests with {{'user-agent': 'python-httpx/{httpx.__version__}', 'hos
     httpx_mock.reset(assert_all_responses_were_requested=False)
 
 
-def test_url_and_headers_and_content_matching(httpx_mock: HTTPXMock):
+def test_url_and_headers_and_content_matching(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(
         url="https://test_url",
         match_headers={"user-agent": f"python-httpx/{httpx.__version__}"},
@@ -918,7 +919,9 @@ def test_url_and_headers_and_content_matching(httpx_mock: HTTPXMock):
         assert response.content == b""
 
 
-def test_headers_not_matching_and_url_and_content_matching(httpx_mock: HTTPXMock):
+def test_headers_not_matching_and_url_and_content_matching(
+    httpx_mock: HTTPXMock,
+) -> None:
     httpx_mock.add_response(
         url="https://test_url",
         match_headers={
@@ -941,7 +944,9 @@ Match all requests on https://test_url with {{'user-agent': 'python-httpx/{httpx
     httpx_mock.reset(assert_all_responses_were_requested=False)
 
 
-def test_url_and_headers_not_matching_and_content_matching(httpx_mock: HTTPXMock):
+def test_url_and_headers_not_matching_and_content_matching(
+    httpx_mock: HTTPXMock,
+) -> None:
     httpx_mock.add_response(
         url="https://test_url2",
         match_headers={
@@ -964,7 +969,9 @@ Match all requests on https://test_url2 with {{'user-agent': 'python-httpx/{http
     httpx_mock.reset(assert_all_responses_were_requested=False)
 
 
-def test_url_and_headers_matching_and_content_not_matching(httpx_mock: HTTPXMock):
+def test_url_and_headers_matching_and_content_not_matching(
+    httpx_mock: HTTPXMock,
+) -> None:
     httpx_mock.add_response(
         url="https://test_url",
         match_headers={
@@ -987,7 +994,9 @@ Match all requests on https://test_url with {{'user-agent': 'python-httpx/{httpx
     httpx_mock.reset(assert_all_responses_were_requested=False)
 
 
-def test_headers_matching_and_url_and_content_not_matching(httpx_mock: HTTPXMock):
+def test_headers_matching_and_url_and_content_not_matching(
+    httpx_mock: HTTPXMock,
+) -> None:
     httpx_mock.add_response(
         url="https://test_url2",
         match_headers={
@@ -1010,7 +1019,9 @@ Match all requests on https://test_url2 with {{'user-agent': 'python-httpx/{http
     httpx_mock.reset(assert_all_responses_were_requested=False)
 
 
-def test_url_matching_and_headers_and_content_not_matching(httpx_mock: HTTPXMock):
+def test_url_matching_and_headers_and_content_not_matching(
+    httpx_mock: HTTPXMock,
+) -> None:
     httpx_mock.add_response(
         url="https://test_url",
         match_headers={
@@ -1033,7 +1044,7 @@ Match all requests on https://test_url with {{'user-agent': 'python-httpx/{httpx
     httpx_mock.reset(assert_all_responses_were_requested=False)
 
 
-def test_url_and_headers_and_content_not_matching(httpx_mock: HTTPXMock):
+def test_url_and_headers_and_content_not_matching(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(
         url="https://test_url2",
         match_headers={
@@ -1056,7 +1067,7 @@ Match all requests on https://test_url2 with {{'user-agent': 'python-httpx/{http
     httpx_mock.reset(assert_all_responses_were_requested=False)
 
 
-def test_method_and_url_and_headers_and_content_matching(httpx_mock: HTTPXMock):
+def test_method_and_url_and_headers_and_content_matching(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(
         url="https://test_url",
         method="POST",
@@ -1071,7 +1082,7 @@ def test_method_and_url_and_headers_and_content_matching(httpx_mock: HTTPXMock):
 
 def test_headers_not_matching_and_method_and_url_and_content_matching(
     httpx_mock: HTTPXMock,
-):
+) -> None:
     httpx_mock.add_response(
         url="https://test_url",
         method="POST",
@@ -1097,7 +1108,7 @@ Match POST requests on https://test_url with {{'user-agent': 'python-httpx/{http
 
 def test_url_and_headers_not_matching_and_method_and_content_matching(
     httpx_mock: HTTPXMock,
-):
+) -> None:
     httpx_mock.add_response(
         url="https://test_url2",
         method="POST",
@@ -1123,7 +1134,7 @@ Match POST requests on https://test_url2 with {{'user-agent': 'python-httpx/{htt
 
 def test_method_and_url_and_headers_matching_and_content_not_matching(
     httpx_mock: HTTPXMock,
-):
+) -> None:
     httpx_mock.add_response(
         url="https://test_url",
         method="POST",
@@ -1149,7 +1160,7 @@ Match POST requests on https://test_url with {{'user-agent': 'python-httpx/{http
 
 def test_method_and_headers_matching_and_url_and_content_not_matching(
     httpx_mock: HTTPXMock,
-):
+) -> None:
     httpx_mock.add_response(
         url="https://test_url2",
         method="POST",
@@ -1175,7 +1186,7 @@ Match POST requests on https://test_url2 with {{'user-agent': 'python-httpx/{htt
 
 def test_method_and_url_matching_and_headers_and_content_not_matching(
     httpx_mock: HTTPXMock,
-):
+) -> None:
     httpx_mock.add_response(
         url="https://test_url",
         method="POST",
@@ -1201,7 +1212,7 @@ Match POST requests on https://test_url with {{'user-agent': 'python-httpx/{http
 
 def test_method_matching_and_url_and_headers_and_content_not_matching(
     httpx_mock: HTTPXMock,
-):
+) -> None:
     httpx_mock.add_response(
         url="https://test_url2",
         method="POST",
@@ -1225,7 +1236,9 @@ Match POST requests on https://test_url2 with {{'user-agent': 'python-httpx/{htt
     httpx_mock.reset(assert_all_responses_were_requested=False)
 
 
-def test_method_and_url_and_headers_and_content_not_matching(httpx_mock: HTTPXMock):
+def test_method_and_url_and_headers_and_content_not_matching(
+    httpx_mock: HTTPXMock,
+) -> None:
     httpx_mock.add_response(
         url="https://test_url2",
         method="PUT",
@@ -1249,7 +1262,7 @@ Match PUT requests on https://test_url2 with {{'user-agent': 'python-httpx/{http
     httpx_mock.reset(assert_all_responses_were_requested=False)
 
 
-def test_header_as_str_tuple_list(httpx_mock: HTTPXMock):
+def test_header_as_str_tuple_list(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(
         headers=[("set-cookie", "key=value"), ("set-cookie", "key2=value2")]
     )
@@ -1260,7 +1273,7 @@ def test_header_as_str_tuple_list(httpx_mock: HTTPXMock):
     assert dict(response.cookies) == {"key": "value", "key2": "value2"}
 
 
-def test_header_as_bytes_tuple_list(httpx_mock: HTTPXMock):
+def test_header_as_bytes_tuple_list(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(
         headers=[(b"set-cookie", b"key=value"), (b"set-cookie", b"key2=value2")]
     )
@@ -1271,7 +1284,7 @@ def test_header_as_bytes_tuple_list(httpx_mock: HTTPXMock):
     assert dict(response.cookies) == {"key": "value", "key2": "value2"}
 
 
-def test_header_as_bytes_dict(httpx_mock: HTTPXMock):
+def test_header_as_bytes_dict(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(headers={b"set-cookie": b"key=value"})
 
     with httpx.Client() as client:
@@ -1280,7 +1293,7 @@ def test_header_as_bytes_dict(httpx_mock: HTTPXMock):
     assert dict(response.cookies) == {"key": "value"}
 
 
-def test_header_as_httpx_headers(httpx_mock: HTTPXMock):
+def test_header_as_httpx_headers(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(headers=httpx.Headers({"set-cookie": "key=value"}))
 
     with httpx.Client() as client:

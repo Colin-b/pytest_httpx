@@ -1,4 +1,16 @@
-from typing import Union, Dict, Sequence, Tuple, Iterable
+from typing import (
+    Union,
+    Dict,
+    Sequence,
+    Tuple,
+    Iterable,
+    Generator,
+    AsyncGenerator,
+    Optional,
+    AsyncIterator,
+    Iterator,
+    Any,
+)
 import warnings
 
 import httpx
@@ -8,7 +20,7 @@ from httpx._content import IteratorByteStream, AsyncIteratorByteStream
 
 # Those types are internally defined within httpx._types
 HeaderTypes = Union[
-    "Headers",
+    httpx.Headers,
     Dict[str, str],
     Dict[bytes, bytes],
     Sequence[Tuple[str, str]],
@@ -17,13 +29,13 @@ HeaderTypes = Union[
 
 
 class IteratorStream(AsyncIteratorByteStream, IteratorByteStream):
-    def __init__(self, stream: Iterable):
+    def __init__(self, stream: Iterable[bytes]):
         class Stream:
-            def __iter__(self):
+            def __iter__(self) -> Iterator[bytes]:
                 for chunk in stream:
                     yield chunk
 
-            async def __aiter__(self):
+            async def __aiter__(self) -> AsyncIterator[bytes]:
                 for chunk in stream:
                     yield chunk
 
@@ -32,7 +44,7 @@ class IteratorStream(AsyncIteratorByteStream, IteratorByteStream):
 
 
 def stream(
-    data, files, boundary: bytes
+    data: Any, files: Any, boundary: Optional[bytes]
 ) -> Union[httpx.AsyncByteStream, httpx.SyncByteStream]:
     if files:
         # TODO Get rid of this internal import

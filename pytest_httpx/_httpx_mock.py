@@ -1,5 +1,5 @@
 import re
-from typing import List, Union, Optional, Callable, Tuple, Pattern, Any
+from typing import List, Union, Optional, Callable, Tuple, Pattern, Any, Dict
 from urllib.parse import parse_qs
 import warnings
 
@@ -7,14 +7,17 @@ import httpx
 
 from pytest_httpx import _httpx_internals
 
+# re.Pattern was introduced in Python 3.7
+pattern_type = re._pattern_type if hasattr(re, "_pattern_type") else re.Pattern
+
 
 class _RequestMatcher:
     def __init__(
         self,
-        url: Union[str, Pattern, httpx.URL] = None,
-        method: str = None,
-        match_headers: dict = None,
-        match_content: bytes = None,
+        url: Optional[Union[str, Pattern[str], httpx.URL]] = None,
+        method: Optional[str] = None,
+        match_headers: Optional[Dict[str, Any]] = None,
+        match_content: Optional[bytes] = None,
     ):
         self.nb_calls = 0
         self.url = httpx.URL(url) if url and isinstance(url, str) else url
@@ -34,10 +37,7 @@ class _RequestMatcher:
         if not self.url:
             return True
 
-        # re.Pattern was introduced in Python 3.7
-        if isinstance(
-            self.url, re._pattern_type if hasattr(re, "_pattern_type") else re.Pattern
-        ):
+        if isinstance(self.url, pattern_type):
             return self.url.match(str(request.url)) is not None
 
         # Compare query parameters apart as order of parameters should not matter
@@ -85,26 +85,31 @@ class _RequestMatcher:
 
 
 class HTTPXMock:
-    def __init__(self):
+    def __init__(self) -> None:
         self._requests: List[httpx.Request] = []
         self._responses: List[Tuple[_RequestMatcher, httpx.Response]] = []
-        self._callbacks: List[Tuple[_RequestMatcher, Callable]] = []
+        self._callbacks: List[
+            Tuple[
+                _RequestMatcher,
+                Callable[[httpx.Request, Dict[str, Any]], httpx.Response],
+            ]
+        ] = []
 
     def add_response(
         self,
         status_code: int = 200,
         http_version: str = "HTTP/1.1",
         headers: _httpx_internals.HeaderTypes = None,
-        content=None,
-        text=None,
-        html=None,
-        stream=None,
-        data=None,
-        files=None,
+        content: Optional[bytes] = None,
+        text: Optional[str] = None,
+        html: Optional[str] = None,
+        stream: Any = None,
+        data: Any = None,
+        files: Any = None,
         json: Any = None,
         boundary: bytes = None,
         **matchers,
-    ):
+    ) -> None:
         """
         Mock the response that will be sent if a request match.
 
@@ -146,7 +151,9 @@ class HTTPXMock:
         )
         self._responses.append((_RequestMatcher(**matchers), response))
 
-    def add_callback(self, callback: Callable, **matchers):
+    def add_callback(
+        self, callback: Callable[[httpx.Request, dict], httpx.Response], **matchers
+    ) -> None:
         """
         Mock the action that will take place if a request match.
 
@@ -154,7 +161,7 @@ class HTTPXMock:
         It must expect at least 2 parameters:
          * request: The received httpx.Request.
          * ext: The extensions linked to the request (such as timeout).
-        It should return a valid httpcore response tuple, you can use pytest_httpx.to_response function to create one.
+        It should return a httpx.Response.
         :param url: Full URL identifying the request(s) to match.
         Can be a str, a re.Pattern instance or a httpx.URL instance.
         :param method: HTTP method identifying the request(s) to match.
@@ -224,7 +231,7 @@ class HTTPXMock:
 
         # No response match this request
         if not responses:
-            return
+            return None
 
         # Responses match this request
         for matcher, response in responses:
@@ -237,7 +244,9 @@ class HTTPXMock:
         matcher.nb_calls += 1
         return response
 
-    def _get_callback(self, request: httpx.Request) -> Optional[Callable]:
+    def _get_callback(
+        self, request: httpx.Request
+    ) -> Optional[Callable[[httpx.Request, dict], httpx.Response]]:
         callbacks = [
             (matcher, callback)
             for matcher, callback in self._callbacks
@@ -246,7 +255,7 @@ class HTTPXMock:
 
         # No callback match this request
         if not callbacks:
-            return
+            return None
 
         # Callbacks match this request
         for matcher, callback in callbacks:
@@ -289,7 +298,7 @@ class HTTPXMock:
         ), f"More than one request ({len(requests)}) matched, use get_requests instead."
         return requests[0] if requests else None
 
-    def reset(self, assert_all_responses_were_requested: bool):
+    def reset(self, assert_all_responses_were_requested: bool) -> None:
         not_called = self._reset_responses() + self._reset_callbacks()
 
         if assert_all_responses_were_requested:
@@ -337,7 +346,7 @@ def to_response(
     data=None,
     files=None,
     json: Any = None,
-    boundary: bytes = None,
+    boundary: Optional[bytes] = None,
 ) -> httpx.Response:
     """
     Convert to a valid httpx response.
@@ -358,12 +367,6 @@ def to_response(
     return httpx.Response(
         status_code=status_code,
         headers=headers,
-        # TODO Allow to provide content
-        content=None,
-        # TODO Allow to provide text
-        text=None,
-        # TODO Allow to provide html
-        html=None,
         json=json,
         stream=_httpx_internals.stream(data=data, files=files, boundary=boundary)
         if json is None
