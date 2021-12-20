@@ -91,7 +91,7 @@ class HTTPXMock:
         self._callbacks: List[
             Tuple[
                 _RequestMatcher,
-                Callable[[httpx.Request, Dict[str, Any]], httpx.Response],
+                Callable[[httpx.Request], httpx.Response],
             ]
         ] = []
 
@@ -152,16 +152,13 @@ class HTTPXMock:
         self._responses.append((_RequestMatcher(**matchers), response))
 
     def add_callback(
-        self, callback: Callable[[httpx.Request, dict], httpx.Response], **matchers
+        self, callback: Callable[[httpx.Request], httpx.Response], **matchers
     ) -> None:
         """
         Mock the action that will take place if a request match.
 
         :param callback: The callable that will be called upon reception of the matched request.
-        It must expect at least 2 parameters:
-         * request: The received httpx.Request.
-         * ext: The extensions linked to the request (such as timeout).
-        It should return a httpx.Response.
+        It must expect one parameter, the received httpx.Request and should return a httpx.Response.
         :param url: Full URL identifying the request(s) to match.
         Can be a str, a re.Pattern instance or a httpx.URL instance.
         :param method: HTTP method identifying the request(s) to match.
@@ -182,7 +179,7 @@ class HTTPXMock:
 
         callback = self._get_callback(request)
         if callback:
-            return callback(request=request, extensions=request.extensions)
+            return callback(request)
 
         raise httpx.TimeoutException(
             self._explain_that_no_response_was_found(request), request=request
@@ -246,7 +243,7 @@ class HTTPXMock:
 
     def _get_callback(
         self, request: httpx.Request
-    ) -> Optional[Callable[[httpx.Request, dict], httpx.Response]]:
+    ) -> Optional[Callable[[httpx.Request], httpx.Response]]:
         callbacks = [
             (matcher, callback)
             for matcher, callback in self._callbacks

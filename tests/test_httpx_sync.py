@@ -383,10 +383,10 @@ def test_requests_with_pattern_in_url(httpx_mock: HTTPXMock) -> None:
 
 
 def test_callback_with_pattern_in_url(httpx_mock: HTTPXMock) -> None:
-    def custom_response(request: httpx.Request, extensions: dict) -> httpx.Response:
+    def custom_response(request: httpx.Request) -> httpx.Response:
         return httpx.Response(status_code=200, json={"url": str(request.url)})
 
-    def custom_response2(request: httpx.Request, extensions: dict) -> httpx.Response:
+    def custom_response2(request: httpx.Request) -> httpx.Response:
         return httpx.Response(
             status_code=200,
             extensions={"http_version": b"HTTP/2.0"},
@@ -689,9 +689,10 @@ def test_requests_json_body(httpx_mock: HTTPXMock) -> None:
 
 
 def test_callback_raising_exception(httpx_mock: HTTPXMock) -> None:
-    def raise_timeout(request: httpx.Request, extensions: dict) -> httpx.Response:
+    def raise_timeout(request: httpx.Request) -> httpx.Response:
         raise httpx.ReadTimeout(
-            f"Unable to read within {extensions['timeout']['read']}", request=request
+            f"Unable to read within {request.extensions['timeout']['read']}",
+            request=request,
         )
 
     httpx_mock.add_callback(raise_timeout, url="https://test_url")
@@ -703,7 +704,7 @@ def test_callback_raising_exception(httpx_mock: HTTPXMock) -> None:
 
 
 def test_callback_returning_response(httpx_mock: HTTPXMock) -> None:
-    def custom_response(request: httpx.Request, extensions: dict) -> httpx.Response:
+    def custom_response(request: httpx.Request) -> httpx.Response:
         return httpx.Response(status_code=200, json={"url": str(request.url)})
 
     httpx_mock.add_callback(custom_response, url="https://test_url")
@@ -715,7 +716,7 @@ def test_callback_returning_response(httpx_mock: HTTPXMock) -> None:
 
 
 def test_callback_executed_twice(httpx_mock: HTTPXMock) -> None:
-    def custom_response(request: httpx.Request, extensions: dict) -> httpx.Response:
+    def custom_response(request: httpx.Request) -> httpx.Response:
         return httpx.Response(status_code=200, json=["content"])
 
     httpx_mock.add_callback(custom_response)
@@ -731,7 +732,7 @@ def test_callback_executed_twice(httpx_mock: HTTPXMock) -> None:
 
 
 def test_callback_matching_method(httpx_mock: HTTPXMock) -> None:
-    def custom_response(request: httpx.Request, extensions: dict) -> httpx.Response:
+    def custom_response(request: httpx.Request) -> httpx.Response:
         return httpx.Response(status_code=200, json=["content"])
 
     httpx_mock.add_callback(custom_response, method="GET")
