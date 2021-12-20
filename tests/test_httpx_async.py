@@ -151,7 +151,7 @@ async def test_response_with_html_string_body(httpx_mock: HTTPXMock) -> None:
 
 
 @pytest.mark.asyncio
-async def test_response_streaming(httpx_mock: HTTPXMock) -> None:
+async def test_stream_response_streaming(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(
         url="https://test_url",
         stream=pytest_httpx.IteratorStream([b"part 1", b"part 2"]),
@@ -163,6 +163,98 @@ async def test_response_streaming(httpx_mock: HTTPXMock) -> None:
                 b"part 1",
                 b"part 2",
             ]
+            # Assert that stream still behaves the proper way (can only be consumed once per request)
+            with pytest.raises(httpx.StreamConsumed):
+                async for part in response.aiter_raw():
+                    pass
+
+        async with client.stream(method="GET", url="https://test_url") as response:
+            assert [part async for part in response.aiter_raw()] == [
+                b"part 1",
+                b"part 2",
+            ]
+            # Assert that stream still behaves the proper way (can only be consumed once per request)
+            with pytest.raises(httpx.StreamConsumed):
+                async for part in response.aiter_raw():
+                    pass
+
+
+@pytest.mark.asyncio
+async def test_content_response_streaming(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(
+        url="https://test_url",
+        content=b"part 1 and 2",
+    )
+
+    async with httpx.AsyncClient() as client:
+        async with client.stream(method="GET", url="https://test_url") as response:
+            assert [part async for part in response.aiter_raw()] == [
+                b"part 1 and 2",
+            ]
+            # Assert that stream still behaves the proper way (can only be consumed once per request)
+            with pytest.raises(httpx.StreamConsumed):
+                async for part in response.aiter_raw():
+                    pass
+
+        async with client.stream(method="GET", url="https://test_url") as response:
+            assert [part async for part in response.aiter_raw()] == [
+                b"part 1 and 2",
+            ]
+            # Assert that stream still behaves the proper way (can only be consumed once per request)
+            with pytest.raises(httpx.StreamConsumed):
+                async for part in response.aiter_raw():
+                    pass
+
+
+@pytest.mark.asyncio
+async def test_text_response_streaming(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(
+        url="https://test_url",
+        text="part 1 and 2",
+    )
+
+    async with httpx.AsyncClient() as client:
+        async with client.stream(method="GET", url="https://test_url") as response:
+            assert [part async for part in response.aiter_raw()] == [
+                b"part 1 and 2",
+            ]
+            # Assert that stream still behaves the proper way (can only be consumed once per request)
+            with pytest.raises(httpx.StreamConsumed):
+                async for part in response.aiter_raw():
+                    pass
+
+        async with client.stream(method="GET", url="https://test_url") as response:
+            assert [part async for part in response.aiter_raw()] == [
+                b"part 1 and 2",
+            ]
+            # Assert that stream still behaves the proper way (can only be consumed once per request)
+            with pytest.raises(httpx.StreamConsumed):
+                async for part in response.aiter_raw():
+                    pass
+
+
+@pytest.mark.asyncio
+async def test_default_response_streaming(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response()
+
+    async with httpx.AsyncClient() as client:
+        async with client.stream(method="GET", url="https://test_url") as response:
+            assert [part async for part in response.aiter_raw()] == [
+                b"",
+            ]
+            # Assert that stream still behaves the proper way (can only be consumed once per request)
+            with pytest.raises(httpx.StreamConsumed):
+                async for part in response.aiter_raw():
+                    pass
+
+        async with client.stream(method="GET", url="https://test_url") as response:
+            assert [part async for part in response.aiter_raw()] == [
+                b"",
+            ]
+            # Assert that stream still behaves the proper way (can only be consumed once per request)
+            with pytest.raises(httpx.StreamConsumed):
+                async for part in response.aiter_raw():
+                    pass
 
 
 @pytest.mark.asyncio

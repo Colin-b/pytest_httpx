@@ -224,10 +224,16 @@ class HTTPXMock:
             # Return the first not yet called
             if not matcher.nb_calls:
                 matcher.nb_calls += 1
+                # Allow to read the response on client side
+                response.is_stream_consumed = False
+                response.is_closed = False
                 return response
 
         # Or the last registered
         matcher.nb_calls += 1
+        # Allow to read the response on client side
+        response.is_stream_consumed = False
+        response.is_closed = False
         return response
 
     def _get_callback(

@@ -139,7 +139,7 @@ def test_response_with_html_string_body(httpx_mock: HTTPXMock) -> None:
         assert response.text == "<body>test content</body>"
 
 
-def test_response_streaming(httpx_mock: HTTPXMock) -> None:
+def test_stream_response_streaming(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(
         url="https://test_url",
         stream=pytest_httpx.IteratorStream([b"part 1", b"part 2"]),
@@ -148,6 +148,76 @@ def test_response_streaming(httpx_mock: HTTPXMock) -> None:
     with httpx.Client() as client:
         with client.stream(method="GET", url="https://test_url") as response:
             assert list(response.iter_raw()) == [b"part 1", b"part 2"]
+            # Assert that stream still behaves the proper way (can only be consumed once per request)
+            with pytest.raises(httpx.StreamConsumed):
+                list(response.iter_raw())
+
+        # Assert a response can be streamed more than once
+        with client.stream(method="GET", url="https://test_url") as response:
+            assert list(response.iter_raw()) == [b"part 1", b"part 2"]
+            # Assert that stream still behaves the proper way (can only be consumed once per request)
+            with pytest.raises(httpx.StreamConsumed):
+                list(response.iter_raw())
+
+
+def test_content_response_streaming(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(
+        url="https://test_url",
+        content=b"part 1 and 2",
+    )
+
+    with httpx.Client() as client:
+        with client.stream(method="GET", url="https://test_url") as response:
+            assert list(response.iter_raw()) == [b"part 1 and 2"]
+            # Assert that stream still behaves the proper way (can only be consumed once per request)
+            with pytest.raises(httpx.StreamConsumed):
+                list(response.iter_raw())
+
+        # Assert a response can be streamed more than once
+        with client.stream(method="GET", url="https://test_url") as response:
+            assert list(response.iter_raw()) == [b"part 1 and 2"]
+            # Assert that stream still behaves the proper way (can only be consumed once per request)
+            with pytest.raises(httpx.StreamConsumed):
+                list(response.iter_raw())
+
+
+def test_text_response_streaming(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(
+        url="https://test_url",
+        text="part 1 and 2",
+    )
+
+    with httpx.Client() as client:
+        with client.stream(method="GET", url="https://test_url") as response:
+            assert list(response.iter_raw()) == [b"part 1 and 2"]
+            # Assert that stream still behaves the proper way (can only be consumed once per request)
+            with pytest.raises(httpx.StreamConsumed):
+                list(response.iter_raw())
+
+        # Assert a response can be streamed more than once
+        with client.stream(method="GET", url="https://test_url") as response:
+            assert list(response.iter_raw()) == [b"part 1 and 2"]
+            # Assert that stream still behaves the proper way (can only be consumed once per request)
+            with pytest.raises(httpx.StreamConsumed):
+                list(response.iter_raw())
+
+
+def test_default_response_streaming(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response()
+
+    with httpx.Client() as client:
+        with client.stream(method="GET", url="https://test_url") as response:
+            assert list(response.iter_raw()) == [b""]
+            # Assert that stream still behaves the proper way (can only be consumed once per request)
+            with pytest.raises(httpx.StreamConsumed):
+                list(response.iter_raw())
+
+        # Assert a response can be streamed more than once
+        with client.stream(method="GET", url="https://test_url") as response:
+            assert list(response.iter_raw()) == [b""]
+            # Assert that stream still behaves the proper way (can only be consumed once per request)
+            with pytest.raises(httpx.StreamConsumed):
+                list(response.iter_raw())
 
 
 def test_with_many_responses(httpx_mock: HTTPXMock) -> None:
