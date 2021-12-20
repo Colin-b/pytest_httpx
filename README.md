@@ -277,17 +277,18 @@ async def test_async_streaming(httpx_mock: HTTPXMock):
 
 ### Add multipart response
 
-Use `files` parameter (and optionally `data` parameter as a dictionary) to send multipart response.
+Use the httpx `MultipartStream` via the `stream` parameter to send a multipart response.
 
-You can specify `boundary` parameter to specify the multipart boundary to use.
+Reach out to `httpx` developers if you need this publicly exposed as [this is not a standard use case](https://github.com/encode/httpx/issues/872#issuecomment-633584819).
 
 ```python
 import httpx
+from httpx._multipart import MultipartStream
 from pytest_httpx import HTTPXMock
 
 
 def test_multipart_body(httpx_mock: HTTPXMock):
-    httpx_mock.add_response(data={"key1": "value1"}, files={"file1": b"content of file 1"}, boundary=b"2256d3a36d2a61a1eba35a22bee5c74a")
+    httpx_mock.add_response(stream=MultipartStream(data={"key1": "value1"}, files={"file1": b"content of file 1"}, boundary=b"2256d3a36d2a61a1eba35a22bee5c74a"))
 
     with httpx.Client() as client:
         assert client.get("https://test_url").text == '''--2256d3a36d2a61a1eba35a22bee5c74a\r

@@ -5,9 +5,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Changed
+- `httpx_mock.add_response` `data` parameter is only used for multipart content. It was deprecated since `0.14.0`. Refer to this version changelog entry for more details on how to update your code.
+
 ### Removed
 - `pytest_httpx.to_response` function has been removed. It was deprecated since `0.14.0`. Refer to this version changelog entry for more details on how to update your code.
 
+### Deprecated
+- `httpx_mock.add_response` `data`, `files` and `boundary` parameters that were only used for multipart content. Instead, provide the `stream` parameter with an instance of the `httpx._multipart.MultipartStream`.
 
 ## [0.16.0] - 2021-12-20
 ### Changed

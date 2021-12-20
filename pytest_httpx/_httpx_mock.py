@@ -104,7 +104,7 @@ class HTTPXMock:
         text: Optional[str] = None,
         html: Optional[str] = None,
         stream: Any = None,
-        data: Any = None,
+        data: dict = None,
         files: Any = None,
         json: Any = None,
         boundary: bytes = None,
@@ -120,7 +120,7 @@ class HTTPXMock:
         :param text: HTTP body of the response (as string).
         :param html: HTTP body of the response (as HTML string content).
         :param stream: HTTP body of the response (as httpx.SyncByteStream or httpx.AsyncByteStream) as stream content.
-        :param data: HTTP body of the response as a dictionary in case of a multipart.
+        :param data: HTTP multipart body of the response (as a dictionary) if files is provided.
         :param files: Multipart files.
         :param json: HTTP body of the response (if JSON should be used as content type) if data is not provided.
         :param boundary: Multipart boundary if files is provided.
@@ -130,13 +130,6 @@ class HTTPXMock:
         :param match_headers: HTTP headers identifying the request(s) to match. Must be a dictionary.
         :param match_content: Full HTTP body identifying the request(s) to match. Must be bytes.
         """
-        stream_data_provided = (
-            (json is None)
-            and (content is None)
-            and (text is None)
-            and (html is None)
-            and (stream is None)
-        )
         response = httpx.Response(
             status_code=status_code,
             extensions={"http_version": http_version.encode("ascii")},
@@ -145,8 +138,10 @@ class HTTPXMock:
             content=content,
             text=text,
             html=html,
-            stream=_httpx_internals.stream(data=data, files=files, boundary=boundary)
-            if stream_data_provided
+            stream=_httpx_internals.multipart_stream(
+                data=data, files=files, boundary=boundary
+            )
+            if files
             else stream,
         )
         self._responses.append((_RequestMatcher(**matchers), response))

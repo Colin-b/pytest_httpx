@@ -133,34 +133,8 @@ async def test_with_one_response(httpx_mock: HTTPXMock) -> None:
 
 
 @pytest.mark.asyncio
-async def test_deprecated_response_with_bytes_body(httpx_mock: HTTPXMock) -> None:
-    with pytest.warns(
-        DeprecationWarning,
-        match="data parameter as bytes will be removed in a future version. Use content parameter instead.",
-    ):
-        httpx_mock.add_response(url="https://test_url", data=b"test content")
-
-    async with httpx.AsyncClient() as client:
-        response = await client.get("https://test_url")
-        assert response.content == b"test content"
-
-
-@pytest.mark.asyncio
 async def test_response_with_string_body(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url="https://test_url", text="test content")
-
-    async with httpx.AsyncClient() as client:
-        response = await client.get("https://test_url")
-        assert response.content == b"test content"
-
-
-@pytest.mark.asyncio
-async def test_deprecated_response_with_string_body(httpx_mock: HTTPXMock) -> None:
-    with pytest.warns(
-        DeprecationWarning,
-        match="data parameter as str will be removed in a future version. Use text parameter instead.",
-    ):
-        httpx_mock.add_response(url="https://test_url", data="test content")
 
     async with httpx.AsyncClient() as client:
         response = await client.get("https://test_url")
@@ -182,22 +156,6 @@ async def test_response_streaming(httpx_mock: HTTPXMock) -> None:
         url="https://test_url",
         stream=pytest_httpx.IteratorStream([b"part 1", b"part 2"]),
     )
-
-    async with httpx.AsyncClient() as client:
-        async with client.stream(method="GET", url="https://test_url") as response:
-            assert [part async for part in response.aiter_raw()] == [
-                b"part 1",
-                b"part 2",
-            ]
-
-
-@pytest.mark.asyncio
-async def test_deprecated_response_streaming(httpx_mock: HTTPXMock) -> None:
-    with pytest.warns(
-        DeprecationWarning,
-        match="data parameter as iterator will be removed in a future version. Use stream parameter instead.",
-    ):
-        httpx_mock.add_response(url="https://test_url", data=[b"part 1", b"part 2"])
 
     async with httpx.AsyncClient() as client:
         async with client.stream(method="GET", url="https://test_url") as response:
@@ -523,18 +481,26 @@ async def test_with_headers(httpx_mock: HTTPXMock) -> None:
 
 
 @pytest.mark.asyncio
-async def test_multipart_body(httpx_mock: HTTPXMock) -> None:
-    httpx_mock.add_response(
-        url="https://test_url",
-        files={"file1": b"content of file 1"},
-        boundary=b"2256d3a36d2a61a1eba35a22bee5c74a",
-    )
-    httpx_mock.add_response(
-        url="https://test_url",
-        data={"key1": "value1"},
-        files={"file1": b"content of file 1"},
-        boundary=b"2256d3a36d2a61a1eba35a22bee5c74a",
-    )
+async def test_deprecated_multipart_response(httpx_mock: HTTPXMock) -> None:
+    with pytest.warns(
+        DeprecationWarning,
+        match="data, files and boundary parameters will be removed in a future version. Use stream parameter with an instance of httpx._multipart.MultipartStream instead.",
+    ):
+        httpx_mock.add_response(
+            url="https://test_url",
+            files={"file1": b"content of file 1"},
+            boundary=b"2256d3a36d2a61a1eba35a22bee5c74a",
+        )
+    with pytest.warns(
+        DeprecationWarning,
+        match="data, files and boundary parameters will be removed in a future version. Use stream parameter with an instance of httpx._multipart.MultipartStream instead.",
+    ):
+        httpx_mock.add_response(
+            url="https://test_url",
+            data={"key1": "value1"},
+            files={"file1": b"content of file 1"},
+            boundary=b"2256d3a36d2a61a1eba35a22bee5c74a",
+        )
 
     async with httpx.AsyncClient() as client:
         response = await client.get("https://test_url")
