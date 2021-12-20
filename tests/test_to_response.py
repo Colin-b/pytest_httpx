@@ -3,7 +3,7 @@ import pytest
 import pytest_httpx
 
 
-def test_default_response():
+def test_default_response() -> None:
     with pytest.warns(
         DeprecationWarning,
         match="pytest_httpx.to_response will be removed in a future version. Use httpx.Response instead.",
