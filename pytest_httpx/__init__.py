@@ -6,7 +6,6 @@ from pytest import MonkeyPatch
 
 from pytest_httpx._httpx_mock import (
     HTTPXMock,
-    to_response,
     _PytestSyncTransport,
     _PytestAsyncTransport,
 )
@@ -16,7 +15,6 @@ from pytest_httpx.version import __version__
 __all__ = (
     "HTTPXMock",
     "IteratorStream",
-    "to_response",
     "__version__",
 )
 

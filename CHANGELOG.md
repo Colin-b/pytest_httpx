@@ -6,6 +6,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.17.0] - 2021-12-20
+### Changed
+- `httpx_mock.add_response` `data` parameter is only used for multipart content. It was deprecated since `0.14.0`. Refer to this version changelog entry for more details on how to update your code.
+
+### Removed
+- `pytest_httpx.to_response` function has been removed. It was deprecated since `0.14.0`. Refer to this version changelog entry for more details on how to update your code.
+
+### Deprecated
+- `httpx_mock.add_response` `data`, `files` and `boundary` parameters that were only used for multipart content. Instead, provide the `stream` parameter with an instance of the `httpx._multipart.MultipartStream`.
+
+### Fixed
+- Responses are no more read or closed when returned to the client. Allowing to add a response once and reading it as a new response on every request.
+
 ## [0.16.0] - 2021-12-20
 ### Changed
 - Callbacks are now expected to have a single parameter, the request. The previously second parameter `extensions`, can still be accessed via `request.extensions`.
@@ -167,7 +180,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - First release, should be considered as unstable for now as design might change.
 
-[Unreleased]: https://github.com/Colin-b/pytest_httpx/compare/v0.16.0...HEAD
+[Unreleased]: https://github.com/Colin-b/pytest_httpx/compare/v0.17.0...HEAD
+[0.17.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.16.0...v0.17.0
 [0.16.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.15.0...v0.16.0
 [0.15.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.14.0...v0.15.0
 [0.14.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.13.0...v0.14.0

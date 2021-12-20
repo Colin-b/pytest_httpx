@@ -104,7 +104,7 @@ class HTTPXMock:
         text: Optional[str] = None,
         html: Optional[str] = None,
         stream: Any = None,
-        data: Any = None,
+        data: dict = None,
         files: Any = None,
         json: Any = None,
         boundary: bytes = None,
@@ -120,7 +120,7 @@ class HTTPXMock:
         :param text: HTTP body of the response (as string).
         :param html: HTTP body of the response (as HTML string content).
         :param stream: HTTP body of the response (as httpx.SyncByteStream or httpx.AsyncByteStream) as stream content.
-        :param data: HTTP body of the response as a dictionary in case of a multipart.
+        :param data: HTTP multipart body of the response (as a dictionary) if files is provided.
         :param files: Multipart files.
         :param json: HTTP body of the response (if JSON should be used as content type) if data is not provided.
         :param boundary: Multipart boundary if files is provided.
@@ -130,13 +130,6 @@ class HTTPXMock:
         :param match_headers: HTTP headers identifying the request(s) to match. Must be a dictionary.
         :param match_content: Full HTTP body identifying the request(s) to match. Must be bytes.
         """
-        stream_data_provided = (
-            (json is None)
-            and (content is None)
-            and (text is None)
-            and (html is None)
-            and (stream is None)
-        )
         response = httpx.Response(
             status_code=status_code,
             extensions={"http_version": http_version.encode("ascii")},
@@ -145,8 +138,10 @@ class HTTPXMock:
             content=content,
             text=text,
             html=html,
-            stream=_httpx_internals.stream(data=data, files=files, boundary=boundary)
-            if stream_data_provided
+            stream=_httpx_internals.multipart_stream(
+                data=data, files=files, boundary=boundary
+            )
+            if files
             else stream,
         )
         self._responses.append((_RequestMatcher(**matchers), response))
@@ -229,10 +224,16 @@ class HTTPXMock:
             # Return the first not yet called
             if not matcher.nb_calls:
                 matcher.nb_calls += 1
+                # Allow to read the response on client side
+                response.is_stream_consumed = False
+                response.is_closed = False
                 return response
 
         # Or the last registered
         matcher.nb_calls += 1
+        # Allow to read the response on client side
+        response.is_stream_consumed = False
+        response.is_closed = False
         return response
 
     def _get_callback(
@@ -328,39 +329,3 @@ class _PytestAsyncTransport(httpx.AsyncBaseTransport):
 
     async def handle_async_request(self, *args, **kwargs) -> httpx.Response:
         return self.mock._handle_request(*args, **kwargs)
-
-
-def to_response(
-    status_code: int = 200,
-    http_version: str = "HTTP/1.1",
-    headers: _httpx_internals.HeaderTypes = None,
-    data=None,
-    files=None,
-    json: Any = None,
-    boundary: Optional[bytes] = None,
-) -> httpx.Response:
-    """
-    Convert to a valid httpx response.
-
-    :param status_code: HTTP status code of the response. Default to 200 (OK).
-    :param http_version: HTTP protocol version of the response. Default to HTTP/1.1
-    :param headers: HTTP headers of the response. Default to no headers.
-    :param data: HTTP body of the response, can be an iterator to stream content, bytes, str of the full body or
-    a dictionary in case of a multipart.
-    :param files: Multipart files.
-    :param json: HTTP body of the response (if JSON should be used as content type) if data is not provided.
-    :param boundary: Multipart boundary if files is provided.
-    """
-    warnings.warn(
-        "pytest_httpx.to_response will be removed in a future version. Use httpx.Response instead.",
-        DeprecationWarning,
-    )
-    return httpx.Response(
-        status_code=status_code,
-        headers=headers,
-        json=json,
-        stream=_httpx_internals.stream(data=data, files=files, boundary=boundary)
-        if json is None
-        else None,
-        extensions={"http_version": http_version.encode("ascii")},
-    )
