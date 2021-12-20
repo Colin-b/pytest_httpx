@@ -227,6 +227,8 @@ class HTTPXMock:
                 # Allow to read the response on client side
                 response.is_stream_consumed = False
                 response.is_closed = False
+                if hasattr(response, "_content"):
+                    del response._content
                 return response
 
         # Or the last registered
@@ -234,6 +236,8 @@ class HTTPXMock:
         # Allow to read the response on client side
         response.is_stream_consumed = False
         response.is_closed = False
+        if hasattr(response, "_content"):
+            del response._content
         return response
 
     def _get_callback(

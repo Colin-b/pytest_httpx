@@ -1343,3 +1343,11 @@ def test_header_as_httpx_headers(httpx_mock: HTTPXMock) -> None:
         response = client.get("https://test_url")
 
     assert dict(response.cookies) == {"key": "value"}
+
+
+def test_elapsed(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response()
+
+    with httpx.Client() as client:
+        response = client.get("https://test_url")
+    assert response.elapsed is not None
