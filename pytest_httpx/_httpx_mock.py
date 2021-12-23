@@ -169,12 +169,18 @@ class HTTPXMock:
         self._requests.append(request)
 
         response = self._get_response(request)
-        if response:
-            return response
+        if not response:
+            callback = self._get_callback(request)
+            if callback:
+                response = callback(request)
 
-        callback = self._get_callback(request)
-        if callback:
-            return callback(request)
+        if response:
+            # Allow to read the response on client side
+            response.is_stream_consumed = False
+            response.is_closed = False
+            if hasattr(response, "_content"):
+                del response._content
+            return response
 
         raise httpx.TimeoutException(
             self._explain_that_no_response_was_found(request), request=request
@@ -224,20 +230,10 @@ class HTTPXMock:
             # Return the first not yet called
             if not matcher.nb_calls:
                 matcher.nb_calls += 1
-                # Allow to read the response on client side
-                response.is_stream_consumed = False
-                response.is_closed = False
-                if hasattr(response, "_content"):
-                    del response._content
                 return response
 
         # Or the last registered
         matcher.nb_calls += 1
-        # Allow to read the response on client side
-        response.is_stream_consumed = False
-        response.is_closed = False
-        if hasattr(response, "_content"):
-            del response._content
         return response
 
     def _get_callback(
