@@ -1447,8 +1447,17 @@ async def test_header_as_httpx_headers(httpx_mock: HTTPXMock) -> None:
 
 
 @pytest.mark.asyncio
-async def test_elapsed(httpx_mock: HTTPXMock) -> None:
+async def test_elapsed_when_add_response(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response()
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get("https://test_url")
+    assert response.elapsed is not None
+
+
+@pytest.mark.asyncio
+async def test_elapsed_when_add_callback(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_callback(callback=lambda req: httpx.Response(status_code=200, json={'foo': 'bar'}))
 
     async with httpx.AsyncClient() as client:
         response = await client.get("https://test_url")
