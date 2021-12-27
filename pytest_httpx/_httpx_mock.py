@@ -91,7 +91,7 @@ class HTTPXMock:
         self._callbacks: List[
             Tuple[
                 _RequestMatcher,
-                Callable[[httpx.Request], httpx.Response],
+                Callable[[httpx.Request], Optional[httpx.Response]],
             ]
         ] = []
 
@@ -147,7 +147,7 @@ class HTTPXMock:
         self._responses.append((_RequestMatcher(**matchers), response))
 
     def add_callback(
-        self, callback: Callable[[httpx.Request], httpx.Response], **matchers
+        self, callback: Callable[[httpx.Request], Optional[httpx.Response]], **matchers
     ) -> None:
         """
         Mock the action that will take place if a request match.
@@ -161,6 +161,25 @@ class HTTPXMock:
         :param match_content: Full HTTP body identifying the request(s) to match. Must be bytes.
         """
         self._callbacks.append((_RequestMatcher(**matchers), callback))
+
+    def add_exception(self, exception: Exception, **matchers) -> None:
+        """
+        Raise an exception if a request match.
+
+        :param exception: The exception that will be raised upon reception of the matched request.
+        :param url: Full URL identifying the request(s) to match.
+        Can be a str, a re.Pattern instance or a httpx.URL instance.
+        :param method: HTTP method identifying the request(s) to match.
+        :param match_headers: HTTP headers identifying the request(s) to match. Must be a dictionary.
+        :param match_content: Full HTTP body identifying the request(s) to match. Must be bytes.
+        """
+
+        def exception_callback(request: httpx.Request) -> None:
+            if isinstance(exception, httpx.RequestError):
+                exception.request = request
+            raise exception
+
+        self.add_callback(exception_callback, **matchers)
 
     def _handle_request(
         self,
@@ -238,7 +257,7 @@ class HTTPXMock:
 
     def _get_callback(
         self, request: httpx.Request
-    ) -> Optional[Callable[[httpx.Request], httpx.Response]]:
+    ) -> Optional[Callable[[httpx.Request], Optional[httpx.Response]]]:
         callbacks = [
             (matcher, callback)
             for matcher, callback in self._callbacks

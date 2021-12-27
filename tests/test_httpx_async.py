@@ -813,6 +813,31 @@ async def test_callback_raising_exception(httpx_mock: HTTPXMock) -> None:
 
 
 @pytest.mark.asyncio
+async def test_request_exception_raising(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_exception(
+        httpx.ReadTimeout("Unable to read within 5.0"), url="https://test_url"
+    )
+
+    async with httpx.AsyncClient() as client:
+        with pytest.raises(httpx.ReadTimeout) as exception_info:
+            await client.get("https://test_url")
+        assert str(exception_info.value) == "Unable to read within 5.0"
+        assert exception_info.value.request is not None
+
+
+@pytest.mark.asyncio
+async def test_non_request_exception_raising(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_exception(
+        httpx.HTTPError("Unable to read within 5.0"), url="https://test_url"
+    )
+
+    async with httpx.AsyncClient() as client:
+        with pytest.raises(httpx.HTTPError) as exception_info:
+            await client.get("https://test_url")
+        assert str(exception_info.value) == "Unable to read within 5.0"
+
+
+@pytest.mark.asyncio
 async def test_callback_returning_response(httpx_mock: HTTPXMock) -> None:
     def custom_response(request: httpx.Request) -> httpx.Response:
         return httpx.Response(status_code=200, json={"url": str(request.url)})
@@ -1457,7 +1482,9 @@ async def test_elapsed_when_add_response(httpx_mock: HTTPXMock) -> None:
 
 @pytest.mark.asyncio
 async def test_elapsed_when_add_callback(httpx_mock: HTTPXMock) -> None:
-    httpx_mock.add_callback(callback=lambda req: httpx.Response(status_code=200, json={'foo': 'bar'}))
+    httpx_mock.add_callback(
+        callback=lambda req: httpx.Response(status_code=200, json={"foo": "bar"})
+    )
 
     async with httpx.AsyncClient() as client:
         response = await client.get("https://test_url")
