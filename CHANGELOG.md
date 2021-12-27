@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.17.3] - 2021-12-27
+### Fixed
+- A callback can now raise an exception again (regression in mypy check since [0.16.0]).
+
+### Added
+- An exception can now be raised without creating a callback by using `httpx_mock.add_exception` method.
+
 ## [0.17.2] - 2021-12-23
 ### Fixed
 - Do not consider a callback response as read, even if it is not a stream, before returning to `httpx`. Allowing any specific httpx handling to be triggered such as `httpx.Response.elapsed` computing.
@@ -188,7 +195,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - First release, should be considered as unstable for now as design might change.
 
-[Unreleased]: https://github.com/Colin-b/pytest_httpx/compare/v0.17.2...HEAD
+[Unreleased]: https://github.com/Colin-b/pytest_httpx/compare/v0.17.3...HEAD
+[0.17.3]: https://github.com/Colin-b/pytest_httpx/compare/v0.17.2...v0.17.3
 [0.17.2]: https://github.com/Colin-b/pytest_httpx/compare/v0.17.1...v0.17.2
 [0.17.1]: https://github.com/Colin-b/pytest_httpx/compare/v0.17.0...v0.17.1
 [0.17.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.16.0...v0.17.0
