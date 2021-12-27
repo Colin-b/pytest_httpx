@@ -444,7 +444,7 @@ def test_dynamic_response(httpx_mock: HTTPXMock):
 
 ### Raising exceptions
 
-You can simulate HTTPX exception throwing by raising an exception in your callback.
+You can simulate HTTPX exception throwing by raising an exception in your callback or use `httpx_mock.add_exception` with the exception instance.
 
 This can be useful if you want to assert that your code handles HTTPX exceptions properly.
 
@@ -455,10 +455,7 @@ from pytest_httpx import HTTPXMock
 
 
 def test_exception_raising(httpx_mock: HTTPXMock):
-    def raise_timeout(request: httpx.Request):
-        raise httpx.ReadTimeout(f"Unable to read within {request.extensions['timeout']['read']}", request=request)
-
-    httpx_mock.add_callback(raise_timeout)
+    httpx_mock.add_exception(httpx.ReadTimeout("Unable to read within timeout"))
     
     with httpx.Client() as client:
         with pytest.raises(httpx.ReadTimeout):
