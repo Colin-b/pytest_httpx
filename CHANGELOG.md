@@ -5,11 +5,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [0.18.0] - 2022-01-17
 ### Fixed
 - Callback are now executed as expected when there is a matching already sent response.
 
 ### Changed
-- Registration order is now looking at responses and callbacks. Previous to this version, registration order was looking at responses before callbacks.
+- Registration order is now looking at responses and callbacks. Prior to this version, registration order was looking at responses before callbacks.
 
 ### Removed
 - `httpx_mock.add_response` `data`, `files` and `boundary` parameters have been removed. It was deprecated since `0.17.0`. Refer to this version changelog entry for more details on how to update your code.
@@ -203,7 +205,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - First release, should be considered as unstable for now as design might change.
 
-[Unreleased]: https://github.com/Colin-b/pytest_httpx/compare/v0.17.3...HEAD
+[Unreleased]: https://github.com/Colin-b/pytest_httpx/compare/v0.18.0...HEAD
+[0.18.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.17.3...v0.18.0
 [0.17.3]: https://github.com/Colin-b/pytest_httpx/compare/v0.17.2...v0.17.3
 [0.17.2]: https://github.com/Colin-b/pytest_httpx/compare/v0.17.1...v0.17.2
 [0.17.1]: https://github.com/Colin-b/pytest_httpx/compare/v0.17.0...v0.17.1
