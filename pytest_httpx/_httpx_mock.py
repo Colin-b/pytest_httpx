@@ -1,7 +1,6 @@
 import re
 from typing import List, Union, Optional, Callable, Tuple, Pattern, Any, Dict
 from urllib.parse import parse_qs
-import warnings
 
 import httpx
 
@@ -87,7 +86,6 @@ class _RequestMatcher:
 class HTTPXMock:
     def __init__(self) -> None:
         self._requests: List[httpx.Request] = []
-        self._responses: List[Tuple[_RequestMatcher, httpx.Response]] = []
         self._callbacks: List[
             Tuple[
                 _RequestMatcher,
@@ -144,7 +142,7 @@ class HTTPXMock:
             if files
             else stream,
         )
-        self._responses.append((_RequestMatcher(**matchers), response))
+        self.add_callback(lambda request: response, **matchers)
 
     def add_callback(
         self, callback: Callable[[httpx.Request], Optional[httpx.Response]], **matchers
@@ -187,26 +185,24 @@ class HTTPXMock:
     ) -> httpx.Response:
         self._requests.append(request)
 
-        response = self._get_response(request)
-        if not response:
-            callback = self._get_callback(request)
-            if callback:
-                response = callback(request)
+        callback = self._get_callback(request)
+        if callback:
+            response = callback(request)
 
-        if response:
-            # Allow to read the response on client side
-            response.is_stream_consumed = False
-            response.is_closed = False
-            if hasattr(response, "_content"):
-                del response._content
-            return response
+            if response:
+                # Allow to read the response on client side
+                response.is_stream_consumed = False
+                response.is_closed = False
+                if hasattr(response, "_content"):
+                    del response._content
+                return response
 
         raise httpx.TimeoutException(
             self._explain_that_no_response_was_found(request), request=request
         )
 
     def _explain_that_no_response_was_found(self, request: httpx.Request) -> str:
-        matchers = [matcher for matcher, _ in self._responses + self._callbacks]
+        matchers = [matcher for matcher, _ in self._callbacks]
         expect_headers = set(
             [
                 header
@@ -232,28 +228,6 @@ class HTTPXMock:
             message += f" amongst:\n{matchers_description}"
 
         return message
-
-    def _get_response(self, request: httpx.Request) -> Optional[httpx.Response]:
-        responses = [
-            (matcher, response)
-            for matcher, response in self._responses
-            if matcher.match(request)
-        ]
-
-        # No response match this request
-        if not responses:
-            return None
-
-        # Responses match this request
-        for matcher, response in responses:
-            # Return the first not yet called
-            if not matcher.nb_calls:
-                matcher.nb_calls += 1
-                return response
-
-        # Or the last registered
-        matcher.nb_calls += 1
-        return response
 
     def _get_callback(
         self, request: httpx.Request
@@ -310,7 +284,7 @@ class HTTPXMock:
         return requests[0] if requests else None
 
     def reset(self, assert_all_responses_were_requested: bool) -> None:
-        not_called = self._reset_responses() + self._reset_callbacks()
+        not_called = self._reset_callbacks()
 
         if assert_all_responses_were_requested:
             matchers_description = "\n".join([str(matcher) for matcher in not_called])
@@ -318,13 +292,6 @@ class HTTPXMock:
             assert (
                 not not_called
             ), f"The following responses are mocked but not requested:\n{matchers_description}"
-
-    def _reset_responses(self) -> List[_RequestMatcher]:
-        responses_not_called = [
-            matcher for matcher, _ in self._responses if not matcher.nb_calls
-        ]
-        self._responses.clear()
-        return responses_not_called
 
     def _reset_callbacks(self) -> List[_RequestMatcher]:
         callbacks_not_executed = [

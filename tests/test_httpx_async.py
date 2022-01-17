@@ -868,6 +868,52 @@ async def test_callback_executed_twice(httpx_mock: HTTPXMock) -> None:
 
 
 @pytest.mark.asyncio
+async def test_callback_registered_after_response(httpx_mock: HTTPXMock) -> None:
+    def custom_response(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(status_code=200, json=["content2"])
+
+    httpx_mock.add_response(json=["content1"])
+    httpx_mock.add_callback(custom_response)
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get("https://test_url")
+        assert response.json() == ["content1"]
+        assert response.headers["content-type"] == "application/json"
+
+        response = await client.post("https://test_url")
+        assert response.json() == ["content2"]
+        assert response.headers["content-type"] == "application/json"
+
+        # Assert that the last registered callback is sent again even if there is a response
+        response = await client.post("https://test_url")
+        assert response.json() == ["content2"]
+        assert response.headers["content-type"] == "application/json"
+
+
+@pytest.mark.asyncio
+async def test_response_registered_after_callback(httpx_mock: HTTPXMock) -> None:
+    def custom_response(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(status_code=200, json=["content1"])
+
+    httpx_mock.add_callback(custom_response)
+    httpx_mock.add_response(json=["content2"])
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get("https://test_url")
+        assert response.json() == ["content1"]
+        assert response.headers["content-type"] == "application/json"
+
+        response = await client.post("https://test_url")
+        assert response.json() == ["content2"]
+        assert response.headers["content-type"] == "application/json"
+
+        # Assert that the last registered response is sent again even if there is a callback
+        response = await client.post("https://test_url")
+        assert response.json() == ["content2"]
+        assert response.headers["content-type"] == "application/json"
+
+
+@pytest.mark.asyncio
 async def test_callback_matching_method(httpx_mock: HTTPXMock) -> None:
     def custom_response(request: httpx.Request) -> httpx.Response:
         return httpx.Response(status_code=200, json=["content"])
