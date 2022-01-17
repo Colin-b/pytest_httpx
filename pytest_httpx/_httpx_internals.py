@@ -4,12 +4,9 @@ from typing import (
     Sequence,
     Tuple,
     Iterable,
-    Optional,
     AsyncIterator,
     Iterator,
-    Any,
 )
-import warnings
 
 import httpx
 
@@ -39,16 +36,3 @@ class IteratorStream(AsyncIteratorByteStream, IteratorByteStream):
 
         AsyncIteratorByteStream.__init__(self, stream=Stream())
         IteratorByteStream.__init__(self, stream=Stream())
-
-
-def multipart_stream(
-    data: dict, files: Any, boundary: Optional[bytes]
-) -> Union[httpx.AsyncByteStream, httpx.SyncByteStream]:
-    warnings.warn(
-        "data, files and boundary parameters will be removed in a future version. Use stream parameter with an instance of httpx._multipart.MultipartStream instead.",
-        DeprecationWarning,
-    )
-    # import is performed at runtime when needed to reduce impact of internal changes in httpx
-    from httpx._multipart import MultipartStream
-
-    return MultipartStream(data=data or {}, files=files, boundary=boundary)
