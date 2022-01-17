@@ -5,7 +5,7 @@
 <a href="https://github.com/Colin-b/pytest_httpx/actions"><img alt="Build status" src="https://github.com/Colin-b/pytest_httpx/workflows/Release/badge.svg"></a>
 <a href="https://github.com/Colin-b/pytest_httpx/actions"><img alt="Coverage" src="https://img.shields.io/badge/coverage-100%25-brightgreen"></a>
 <a href="https://github.com/psf/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
-<a href="https://github.com/Colin-b/pytest_httpx/actions"><img alt="Number of tests" src="https://img.shields.io/badge/tests-151 passed-blue"></a>
+<a href="https://github.com/Colin-b/pytest_httpx/actions"><img alt="Number of tests" src="https://img.shields.io/badge/tests-155 passed-blue"></a>
 <a href="https://pypi.org/project/pytest-httpx/"><img alt="Number of downloads" src="https://img.shields.io/pypi/dm/pytest_httpx"></a>
 </p>
 
@@ -419,6 +419,8 @@ def assert_all_responses_were_requested() -> bool:
     return False
 ```
 
+Note that callbacks are considered as responses, and thus are [selected the same way](#how-response-is-selected).
+
 ### Dynamic responses
 
 Callback should return a `httpx.Response`.
@@ -477,40 +479,6 @@ def test_timeout(httpx_mock: HTTPXMock):
             client.get("https://test_url")
 
 ```
-
-### How callback is selected
-
-In case more than one callback match request, the first one not yet executed (according to the registration order) will be executed.
-
-In case all matching callbacks have been executed, the last one (according to the registration order) will be executed.
-
-You can add criteria so that callback will be sent only in case of a more specific matching.
-
-#### Matching on URL
-
-`url` parameter can either be a string, a python [`re.Pattern`](https://docs.python.org/3/library/re.html) instance or a [`httpx.URL`](https://www.python-httpx.org/api/#url) instance.
-
-Matching is performed on the full URL, query parameters included.
-
-#### Matching on HTTP method
-
-Use `method` parameter to specify the HTTP method (POST, PUT, DELETE, PATCH, HEAD) executing the callback.
-
-`method` parameter must be a string. It will be upper-cased, so it can be provided lower cased.
-
-Matching is performed on equality.
-
-#### Matching on HTTP headers
-
-Use `match_headers` parameter to specify the HTTP headers executing the callback.
-
-Matching is performed on equality for each provided header.
-
-#### Matching on HTTP body
-
-Use `match_content` parameter to specify the full HTTP body executing the callback.
-
-Matching is performed on equality.
 
 ## Check sent requests
 
