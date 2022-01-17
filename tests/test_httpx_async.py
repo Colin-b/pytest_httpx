@@ -573,52 +573,6 @@ async def test_with_headers(httpx_mock: HTTPXMock) -> None:
 
 
 @pytest.mark.asyncio
-async def test_deprecated_multipart_response(httpx_mock: HTTPXMock) -> None:
-    with pytest.warns(
-        DeprecationWarning,
-        match="data, files and boundary parameters will be removed in a future version. Use stream parameter with an instance of httpx._multipart.MultipartStream instead.",
-    ):
-        httpx_mock.add_response(
-            url="https://test_url",
-            files={"file1": b"content of file 1"},
-            boundary=b"2256d3a36d2a61a1eba35a22bee5c74a",
-        )
-    with pytest.warns(
-        DeprecationWarning,
-        match="data, files and boundary parameters will be removed in a future version. Use stream parameter with an instance of httpx._multipart.MultipartStream instead.",
-    ):
-        httpx_mock.add_response(
-            url="https://test_url",
-            data={"key1": "value1"},
-            files={"file1": b"content of file 1"},
-            boundary=b"2256d3a36d2a61a1eba35a22bee5c74a",
-        )
-
-    async with httpx.AsyncClient() as client:
-        response = await client.get("https://test_url")
-        assert (
-            response.text
-            == '--2256d3a36d2a61a1eba35a22bee5c74a\r\nContent-Disposition: form-data; name="file1"; filename="upload"\r\nContent-Type: application/octet-stream\r\n\r\ncontent of file 1\r\n--2256d3a36d2a61a1eba35a22bee5c74a--\r\n'
-        )
-
-        response = await client.get("https://test_url")
-        assert (
-            response.text
-            == """--2256d3a36d2a61a1eba35a22bee5c74a\r
-Content-Disposition: form-data; name="key1"\r
-\r
-value1\r
---2256d3a36d2a61a1eba35a22bee5c74a\r
-Content-Disposition: form-data; name="file1"; filename="upload"\r
-Content-Type: application/octet-stream\r
-\r
-content of file 1\r
---2256d3a36d2a61a1eba35a22bee5c74a--\r
-"""
-        )
-
-
-@pytest.mark.asyncio
 async def test_requests_retrieval(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(
         url="https://test_url", method="GET", content=b"test content 1"
@@ -864,6 +818,52 @@ async def test_callback_executed_twice(httpx_mock: HTTPXMock) -> None:
 
         response = await client.post("https://test_url")
         assert response.json() == ["content"]
+        assert response.headers["content-type"] == "application/json"
+
+
+@pytest.mark.asyncio
+async def test_callback_registered_after_response(httpx_mock: HTTPXMock) -> None:
+    def custom_response(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(status_code=200, json=["content2"])
+
+    httpx_mock.add_response(json=["content1"])
+    httpx_mock.add_callback(custom_response)
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get("https://test_url")
+        assert response.json() == ["content1"]
+        assert response.headers["content-type"] == "application/json"
+
+        response = await client.post("https://test_url")
+        assert response.json() == ["content2"]
+        assert response.headers["content-type"] == "application/json"
+
+        # Assert that the last registered callback is sent again even if there is a response
+        response = await client.post("https://test_url")
+        assert response.json() == ["content2"]
+        assert response.headers["content-type"] == "application/json"
+
+
+@pytest.mark.asyncio
+async def test_response_registered_after_callback(httpx_mock: HTTPXMock) -> None:
+    def custom_response(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(status_code=200, json=["content1"])
+
+    httpx_mock.add_callback(custom_response)
+    httpx_mock.add_response(json=["content2"])
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get("https://test_url")
+        assert response.json() == ["content1"]
+        assert response.headers["content-type"] == "application/json"
+
+        response = await client.post("https://test_url")
+        assert response.json() == ["content2"]
+        assert response.headers["content-type"] == "application/json"
+
+        # Assert that the last registered response is sent again even if there is a callback
+        response = await client.post("https://test_url")
+        assert response.json() == ["content2"]
         assert response.headers["content-type"] == "application/json"
 
 
