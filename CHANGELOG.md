@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Registration order is now looking at responses and callbacks. Previous to this version, registration order was looking at responses before callbacks.
 
+### Removed
+- `httpx_mock.add_response` `data`, `files` and `boundary` parameters have been removed. It was deprecated since `0.17.0`. Refer to this version changelog entry for more details on how to update your code.
+
 ## [0.17.3] - 2021-12-27
 ### Fixed
 - A callback can now raise an exception again (regression in mypy check since [0.16.0]).

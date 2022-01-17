@@ -102,10 +102,7 @@ class HTTPXMock:
         text: Optional[str] = None,
         html: Optional[str] = None,
         stream: Any = None,
-        data: dict = None,
-        files: Any = None,
         json: Any = None,
-        boundary: bytes = None,
         **matchers,
     ) -> None:
         """
@@ -118,10 +115,7 @@ class HTTPXMock:
         :param text: HTTP body of the response (as string).
         :param html: HTTP body of the response (as HTML string content).
         :param stream: HTTP body of the response (as httpx.SyncByteStream or httpx.AsyncByteStream) as stream content.
-        :param data: HTTP multipart body of the response (as a dictionary) if files is provided.
-        :param files: Multipart files.
         :param json: HTTP body of the response (if JSON should be used as content type) if data is not provided.
-        :param boundary: Multipart boundary if files is provided.
         :param url: Full URL identifying the request(s) to match.
         Can be a str, a re.Pattern instance or a httpx.URL instance.
         :param method: HTTP method identifying the request(s) to match.
@@ -136,11 +130,7 @@ class HTTPXMock:
             content=content,
             text=text,
             html=html,
-            stream=_httpx_internals.multipart_stream(
-                data=data, files=files, boundary=boundary
-            )
-            if files
-            else stream,
+            stream=stream,
         )
         self.add_callback(lambda request: response, **matchers)
 

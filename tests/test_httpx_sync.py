@@ -516,51 +516,6 @@ def test_with_headers(httpx_mock: HTTPXMock) -> None:
         )
 
 
-def test_deprecated_multipart_response(httpx_mock: HTTPXMock) -> None:
-    with pytest.warns(
-        DeprecationWarning,
-        match="data, files and boundary parameters will be removed in a future version. Use stream parameter with an instance of httpx._multipart.MultipartStream instead.",
-    ):
-        httpx_mock.add_response(
-            url="https://test_url",
-            files={"file1": b"content of file 1"},
-            boundary=b"2256d3a36d2a61a1eba35a22bee5c74a",
-        )
-    with pytest.warns(
-        DeprecationWarning,
-        match="data, files and boundary parameters will be removed in a future version. Use stream parameter with an instance of httpx._multipart.MultipartStream instead.",
-    ):
-        httpx_mock.add_response(
-            url="https://test_url",
-            data={"key1": "value1"},
-            files={"file1": b"content of file 1"},
-            boundary=b"2256d3a36d2a61a1eba35a22bee5c74a",
-        )
-
-    with httpx.Client() as client:
-        response = client.get("https://test_url")
-        assert (
-            response.text
-            == '--2256d3a36d2a61a1eba35a22bee5c74a\r\nContent-Disposition: form-data; name="file1"; filename="upload"\r\nContent-Type: application/octet-stream\r\n\r\ncontent of file 1\r\n--2256d3a36d2a61a1eba35a22bee5c74a--\r\n'
-        )
-
-        response = client.get("https://test_url")
-        assert (
-            response.text
-            == """--2256d3a36d2a61a1eba35a22bee5c74a\r
-Content-Disposition: form-data; name="key1"\r
-\r
-value1\r
---2256d3a36d2a61a1eba35a22bee5c74a\r
-Content-Disposition: form-data; name="file1"; filename="upload"\r
-Content-Type: application/octet-stream\r
-\r
-content of file 1\r
---2256d3a36d2a61a1eba35a22bee5c74a--\r
-"""
-        )
-
-
 def test_requests_retrieval(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(
         url="https://test_url", method="GET", content=b"test content 1"
