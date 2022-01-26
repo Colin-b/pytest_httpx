@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Requires [`httpx`](https://www.python-httpx.org)==0.22.\*
 
+### Removed
+- Python 3.6 is no longer supported.
+
 ## [0.18.0] - 2022-01-17
 ### Fixed
 - Callback are now executed as expected when there is a matching already sent response.
