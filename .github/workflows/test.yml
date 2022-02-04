@@ -9,6 +9,7 @@ jobs:
     strategy:
       matrix:
         python-version: ['3.7', '3.8', '3.9', '3.10']
+        pytest-major-version: ['6', '7']
 
     steps:
     - uses: actions/checkout@v2
@@ -19,7 +20,8 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
+        python -m pip install pytest~=${{ matrix.pytest-major-version }}.0
         python -m pip install -e .[testing]
-    - name: Test with pytest
+    - name: Test with pytest v${{ matrix.pytest-major-version }}
       run: |
         pytest --cov=pytest_httpx --cov-fail-under=100 --cov-report=term-missing --runpytest=subprocess
