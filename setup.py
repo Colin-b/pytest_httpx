@@ -25,6 +25,7 @@ setup(
         "Intended Audience :: Developers",
         "License :: OSI Approved :: MIT License",
         "Natural Language :: English",
+        "Typing :: Typed",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.7",
@@ -39,7 +40,7 @@ setup(
     packages=find_packages(exclude=["tests*"]),
     package_data={"pytest_httpx": ["py.typed"]},
     entry_points={"pytest11": ["pytest_httpx = pytest_httpx"]},
-    install_requires=["httpx==0.22.*", "pytest==6.*"],
+    install_requires=["httpx==0.22.*", "pytest>=6.*,<8.*"],
     extras_require={
         "testing": [
             # Used to run async test functions
