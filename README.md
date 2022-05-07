@@ -143,7 +143,7 @@ def test_head(httpx_mock: HTTPXMock):
 
     with httpx.Client() as client:
         response = client.head("https://test_url")
-    
+
 ```
 
 #### Matching on HTTP headers
@@ -196,7 +196,7 @@ def test_json(httpx_mock: HTTPXMock):
 
     with httpx.Client() as client:
         assert client.get("https://test_url").json() == [{"key1": "value1", "key2": "value2"}]
-    
+
 ```
 
 Note that the `content-type` header will be set to `application/json` by default in the response.
@@ -230,7 +230,7 @@ def test_bytes_body(httpx_mock: HTTPXMock):
 
     with httpx.Client() as client:
         assert client.get("https://test_url").content == b"This is my bytes content"
-    
+
 ```
 
 Use `html` parameter to reply with a custom body by providing UTF-8 encoded string.
@@ -272,7 +272,7 @@ async def test_async_streaming(httpx_mock: HTTPXMock):
     async with httpx.AsyncClient() as client:
         async with client.stream(method="GET", url="https://test_url") as response:
             assert [part async for part in response.aiter_raw()] == [b"part 1", b"part 2"]
-    
+
 ```
 
 ### Add multipart response
@@ -302,7 +302,7 @@ Content-Type: application/octet-stream\r
 content of file 1\r
 --2256d3a36d2a61a1eba35a22bee5c74a--\r
 '''
-    
+
 ```
 
 ### Add non 200 response
@@ -359,7 +359,7 @@ def test_headers_as_httpx_headers(httpx_mock: HTTPXMock):
 
 Cookies are sent in the `set-cookie` HTTP header.
 
-You can then send cookies in the response by setting the `set-cookie` header with [the value following key=value format]((https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie)).
+You can then send cookies in the response by setting the `set-cookie` header with [the value following key=value format](<(https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie)>).
 
 ```python
 import httpx
@@ -382,7 +382,6 @@ def test_cookies(httpx_mock: HTTPXMock):
     assert dict(response.cookies) == {"key": "value", "key2": "value2"}
 
 ```
-
 
 ### Add HTTP/2.0 response
 
@@ -417,6 +416,14 @@ import pytest
 @pytest.fixture
 def assert_all_responses_were_requested() -> bool:
     return False
+```
+
+If you want to disable a specific request, you can add the `check_if_was_requested_url` parameter.
+By default `check_if_was_requested_url` is True for all responses.
+
+```
+def test_example_check_if_was_requested_url(httpx_mock: HTTPXMock):
+    httpx_mock.add_response("https://test_url", check_if_was_requested_url=False)
 ```
 
 Note that callbacks are considered as responses, and thus are [selected the same way](#how-response-is-selected).
@@ -458,7 +465,7 @@ from pytest_httpx import HTTPXMock
 
 def test_exception_raising(httpx_mock: HTTPXMock):
     httpx_mock.add_exception(httpx.ReadTimeout("Unable to read within timeout"))
-    
+
     with httpx.Client() as client:
         with pytest.raises(httpx.ReadTimeout):
             client.get("https://test_url")
@@ -591,7 +598,7 @@ Here is how to migrate from well-known testing libraries to `pytest-httpx`.
 ### From responses
 
 | Feature           | responses                  | pytest-httpx                |
-|:------------------|:---------------------------|:----------------------------|
+| :---------------- | :------------------------- | :-------------------------- |
 | Add a response    | `responses.add()`          | `httpx_mock.add_response()` |
 | Add a callback    | `responses.add_callback()` | `httpx_mock.add_callback()` |
 | Retrieve requests | `responses.calls`          | `httpx_mock.get_requests()` |
@@ -602,7 +609,7 @@ Undocumented parameters means that they are unchanged between `responses` and `p
 Below is a list of parameters that will require a change in your code.
 
 | Parameter            | responses                           | pytest-httpx                                                         |
-|:---------------------|:------------------------------------|:---------------------------------------------------------------------|
+| :------------------- | :---------------------------------- | :------------------------------------------------------------------- |
 | method               | `method=responses.GET`              | `method="GET"`                                                       |
 | body (as bytes)      | `body=b"sample"`                    | `content=b"sample"`                                                  |
 | body (as str)        | `body="sample"`                     | `text="sample"`                                                      |
@@ -612,6 +619,7 @@ Below is a list of parameters that will require a change in your code.
 | Match the full query | `match_querystring=True`            | The full query is always matched when providing the `url` parameter. |
 
 Sample adding a response with `responses`:
+
 ```python
 from responses import RequestsMock
 
@@ -626,6 +634,7 @@ def test_response(responses: RequestsMock):
 ```
 
 Sample adding the same response with `pytest-httpx`:
+
 ```python
 from pytest_httpx import HTTPXMock
 
@@ -642,7 +651,7 @@ def test_response(httpx_mock: HTTPXMock):
 ### From aioresponses
 
 | Feature        | aioresponses            | pytest-httpx                               |
-|:---------------|:------------------------|:-------------------------------------------|
+| :------------- | :---------------------- | :----------------------------------------- |
 | Add a response | `aioresponses.method()` | `httpx_mock.add_response(method="METHOD")` |
 | Add a callback | `aioresponses.method()` | `httpx_mock.add_callback(method="METHOD")` |
 
@@ -652,13 +661,14 @@ Undocumented parameters means that they are unchanged between `responses` and `p
 Below is a list of parameters that will require a change in your code.
 
 | Parameter       | responses            | pytest-httpx        |
-|:----------------|:---------------------|:--------------------|
+| :-------------- | :------------------- | :------------------ |
 | body (as bytes) | `body=b"sample"`     | `content=b"sample"` |
 | body (as str)   | `body="sample"`      | `text="sample"`     |
 | body (as JSON)  | `payload=["sample"]` | `json=["sample"]`   |
 | status code     | `status=201`         | `status_code=201`   |
 
 Sample adding a response with `aioresponses`:
+
 ```python
 import pytest
 from aioresponses import aioresponses
@@ -680,6 +690,7 @@ def test_response(mock_aioresponse):
 ```
 
 Sample adding the same response with `pytest-httpx`:
+
 ```python
 def test_response(httpx_mock):
     httpx_mock.add_response(

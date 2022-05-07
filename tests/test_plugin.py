@@ -41,6 +41,45 @@ def test_httpx_mock_unused_response(testdir: Testdir) -> None:
     )
 
 
+def test_httpx_mock_unused_response_with_param_check_if_was_requested_url(
+    testdir: Testdir,
+) -> None:
+    """
+    Unused responses should fail test case.
+    """
+    testdir.makepyfile(
+        """
+        def test_httpx_mock_unused_response(httpx_mock):
+            httpx_mock.add_response(check_if_was_requested_url=False)
+    """
+    )
+    result = testdir.runpytest()
+    result.assert_outcomes(errors=0, passed=1)
+
+
+def test_httpx_mock_unused_response_with_param_check_if_was_requested_url_multiples_url(
+    testdir: Testdir,
+) -> None:
+    """
+    Unused responses should fail test case.
+    """
+    testdir.makepyfile(
+        """
+        def test_httpx_mock_unused_response(httpx_mock):
+            httpx_mock.add_response(url="https://foo.tld")
+            httpx_mock.add_response(check_if_was_requested_url=False)
+    """
+    )
+    result = testdir.runpytest()
+    result.assert_outcomes(errors=1, passed=1)
+    result.stdout.fnmatch_lines(
+        [
+            "*AssertionError: The following responses are mocked but not requested:",
+            "*Match all requests on https://foo.tld",
+        ]
+    )
+
+
 def test_httpx_mock_unused_response_without_assertion(testdir: Testdir) -> None:
     """
     Unused responses should not fail test case if assert_all_responses_were_requested fixture is set to False.

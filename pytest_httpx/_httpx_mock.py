@@ -1,5 +1,5 @@
 import re
-from typing import List, Union, Optional, Callable, Tuple, Pattern, Any, Dict
+from typing import Any, Callable, Dict, List, Optional, Pattern, Tuple, Union
 from urllib.parse import parse_qs
 
 import httpx
@@ -17,12 +17,14 @@ class _RequestMatcher:
         method: Optional[str] = None,
         match_headers: Optional[Dict[str, Any]] = None,
         match_content: Optional[bytes] = None,
+        check_if_was_requested_url: bool = True,
     ):
         self.nb_calls = 0
         self.url = httpx.URL(url) if url and isinstance(url, str) else url
         self.method = method.upper() if method else method
         self.headers = match_headers
         self.content = match_content
+        self.check_if_was_requested_url = check_if_was_requested_url
 
     def match(self, request: httpx.Request) -> bool:
         return (
@@ -285,7 +287,9 @@ class HTTPXMock:
 
     def _reset_callbacks(self) -> List[_RequestMatcher]:
         callbacks_not_executed = [
-            matcher for matcher, _ in self._callbacks if not matcher.nb_calls
+            matcher
+            for matcher, _ in self._callbacks
+            if not matcher.nb_calls and matcher.check_if_was_requested_url
         ]
         self._callbacks.clear()
         return callbacks_not_executed
