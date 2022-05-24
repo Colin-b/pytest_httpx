@@ -207,14 +207,14 @@ def test_default_response_streaming(httpx_mock: HTTPXMock) -> None:
 
     with httpx.Client() as client:
         with client.stream(method="GET", url="https://test_url") as response:
-            assert list(response.iter_raw()) == [b""]
+            assert list(response.iter_raw()) == []
             # Assert that stream still behaves the proper way (can only be consumed once per request)
             with pytest.raises(httpx.StreamConsumed):
                 list(response.iter_raw())
 
         # Assert a response can be streamed more than once
         with client.stream(method="GET", url="https://test_url") as response:
-            assert list(response.iter_raw()) == [b""]
+            assert list(response.iter_raw()) == []
             # Assert that stream still behaves the proper way (can only be consumed once per request)
             with pytest.raises(httpx.StreamConsumed):
                 list(response.iter_raw())
