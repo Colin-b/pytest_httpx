@@ -239,18 +239,14 @@ async def test_default_response_streaming(httpx_mock: HTTPXMock) -> None:
 
     async with httpx.AsyncClient() as client:
         async with client.stream(method="GET", url="https://test_url") as response:
-            assert [part async for part in response.aiter_raw()] == [
-                b"",
-            ]
+            assert [part async for part in response.aiter_raw()] == []
             # Assert that stream still behaves the proper way (can only be consumed once per request)
             with pytest.raises(httpx.StreamConsumed):
                 async for part in response.aiter_raw():
                     pass
 
         async with client.stream(method="GET", url="https://test_url") as response:
-            assert [part async for part in response.aiter_raw()] == [
-                b"",
-            ]
+            assert [part async for part in response.aiter_raw()] == []
             # Assert that stream still behaves the proper way (can only be consumed once per request)
             with pytest.raises(httpx.StreamConsumed):
                 async for part in response.aiter_raw():
