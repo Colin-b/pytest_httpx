@@ -1,5 +1,6 @@
+import inspect
 import re
-from typing import List, Union, Optional, Callable, Tuple, Pattern, Any, Dict
+from typing import List, Union, Optional, Callable, Tuple, Pattern, Any, Dict, Awaitable
 from urllib.parse import parse_qs
 
 import httpx
@@ -89,7 +90,12 @@ class HTTPXMock:
         self._callbacks: List[
             Tuple[
                 _RequestMatcher,
-                Callable[[httpx.Request], Optional[httpx.Response]],
+                Callable[
+                    [httpx.Request],
+                    Union[
+                        Optional[httpx.Response], Awaitable[Optional[httpx.Response]]
+                    ],
+                ],
             ]
         ] = []
 
@@ -135,7 +141,12 @@ class HTTPXMock:
         self.add_callback(lambda request: response, **matchers)
 
     def add_callback(
-        self, callback: Callable[[httpx.Request], Optional[httpx.Response]], **matchers
+        self,
+        callback: Callable[
+            [httpx.Request],
+            Union[Optional[httpx.Response], Awaitable[Optional[httpx.Response]]],
+        ],
+        **matchers,
     ) -> None:
         """
         Mock the action that will take place if a request match.
@@ -180,12 +191,26 @@ class HTTPXMock:
             response = callback(request)
 
             if response:
-                # Allow to read the response on client side
-                response.is_stream_consumed = False
-                response.is_closed = False
-                if hasattr(response, "_content"):
-                    del response._content
-                return response
+                return _unread(response)
+
+        raise httpx.TimeoutException(
+            self._explain_that_no_response_was_found(request), request=request
+        )
+
+    async def _handle_async_request(
+        self,
+        request: httpx.Request,
+    ) -> httpx.Response:
+        self._requests.append(request)
+
+        callback = self._get_callback(request)
+        if callback:
+            response = callback(request)
+
+            if response:
+                if inspect.isawaitable(response):
+                    response = await response
+                return _unread(response)
 
         raise httpx.TimeoutException(
             self._explain_that_no_response_was_found(request), request=request
@@ -221,7 +246,12 @@ class HTTPXMock:
 
     def _get_callback(
         self, request: httpx.Request
-    ) -> Optional[Callable[[httpx.Request], Optional[httpx.Response]]]:
+    ) -> Optional[
+        Callable[
+            [httpx.Request],
+            Union[Optional[httpx.Response], Awaitable[Optional[httpx.Response]]],
+        ]
+    ]:
         callbacks = [
             (matcher, callback)
             for matcher, callback in self._callbacks
@@ -304,4 +334,13 @@ class _PytestAsyncTransport(httpx.AsyncBaseTransport):
         self.mock = mock
 
     async def handle_async_request(self, *args, **kwargs) -> httpx.Response:
-        return self.mock._handle_request(*args, **kwargs)
+        return await self.mock._handle_async_request(*args, **kwargs)
+
+
+def _unread(response: httpx.Response) -> httpx.Response:
+    # Allow to read the response on client side
+    response.is_stream_consumed = False
+    response.is_closed = False
+    if hasattr(response, "_content"):
+        del response._content
+    return response
