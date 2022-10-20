@@ -1,4 +1,7 @@
+import asyncio
+import math
 import re
+import time
 
 import httpx
 import pytest
@@ -166,7 +169,7 @@ async def test_stream_response_streaming(httpx_mock: HTTPXMock) -> None:
             # Assert that stream still behaves the proper way (can only be consumed once per request)
             with pytest.raises(httpx.StreamConsumed):
                 async for part in response.aiter_raw():
-                    pass
+                    pass  # pragma: no cover
 
         async with client.stream(method="GET", url="https://test_url") as response:
             assert [part async for part in response.aiter_raw()] == [
@@ -176,7 +179,7 @@ async def test_stream_response_streaming(httpx_mock: HTTPXMock) -> None:
             # Assert that stream still behaves the proper way (can only be consumed once per request)
             with pytest.raises(httpx.StreamConsumed):
                 async for part in response.aiter_raw():
-                    pass
+                    pass  # pragma: no cover
 
 
 @pytest.mark.asyncio
@@ -194,7 +197,7 @@ async def test_content_response_streaming(httpx_mock: HTTPXMock) -> None:
             # Assert that stream still behaves the proper way (can only be consumed once per request)
             with pytest.raises(httpx.StreamConsumed):
                 async for part in response.aiter_raw():
-                    pass
+                    pass  # pragma: no cover
 
         async with client.stream(method="GET", url="https://test_url") as response:
             assert [part async for part in response.aiter_raw()] == [
@@ -203,7 +206,7 @@ async def test_content_response_streaming(httpx_mock: HTTPXMock) -> None:
             # Assert that stream still behaves the proper way (can only be consumed once per request)
             with pytest.raises(httpx.StreamConsumed):
                 async for part in response.aiter_raw():
-                    pass
+                    pass  # pragma: no cover
 
 
 @pytest.mark.asyncio
@@ -221,7 +224,7 @@ async def test_text_response_streaming(httpx_mock: HTTPXMock) -> None:
             # Assert that stream still behaves the proper way (can only be consumed once per request)
             with pytest.raises(httpx.StreamConsumed):
                 async for part in response.aiter_raw():
-                    pass
+                    pass  # pragma: no cover
 
         async with client.stream(method="GET", url="https://test_url") as response:
             assert [part async for part in response.aiter_raw()] == [
@@ -230,7 +233,7 @@ async def test_text_response_streaming(httpx_mock: HTTPXMock) -> None:
             # Assert that stream still behaves the proper way (can only be consumed once per request)
             with pytest.raises(httpx.StreamConsumed):
                 async for part in response.aiter_raw():
-                    pass
+                    pass  # pragma: no cover
 
 
 @pytest.mark.asyncio
@@ -243,14 +246,14 @@ async def test_default_response_streaming(httpx_mock: HTTPXMock) -> None:
             # Assert that stream still behaves the proper way (can only be consumed once per request)
             with pytest.raises(httpx.StreamConsumed):
                 async for part in response.aiter_raw():
-                    pass
+                    pass  # pragma: no cover
 
         async with client.stream(method="GET", url="https://test_url") as response:
             assert [part async for part in response.aiter_raw()] == []
             # Assert that stream still behaves the proper way (can only be consumed once per request)
             with pytest.raises(httpx.StreamConsumed):
                 async for part in response.aiter_raw():
-                    pass
+                    pass  # pragma: no cover
 
 
 @pytest.mark.asyncio
@@ -470,6 +473,66 @@ async def test_callback_with_pattern_in_url(httpx_mock: HTTPXMock) -> None:
         return httpx.Response(status_code=200, json={"url": str(request.url)})
 
     def custom_response2(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            status_code=200,
+            extensions={"http_version": b"HTTP/2.0"},
+            json={"url": str(request.url)},
+        )
+
+    httpx_mock.add_callback(custom_response, url=re.compile(".*test.*"))
+    httpx_mock.add_callback(custom_response2, url="https://unmatched")
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get("https://unmatched")
+        assert response.http_version == "HTTP/2.0"
+
+        response = await client.get("https://test_url")
+        assert response.http_version == "HTTP/1.1"
+
+
+@pytest.mark.asyncio
+async def test_async_callback_with_await_statement(httpx_mock: HTTPXMock) -> None:
+    async def simulate_network_latency(request: httpx.Request):
+        await asyncio.sleep(1)
+        return httpx.Response(
+            status_code=200,
+            json={"url": str(request.url), "time": time.time()},
+        )
+
+    def instant_response(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            status_code=200, json={"url": str(request.url), "time": time.time()}
+        )
+
+    httpx_mock.add_callback(simulate_network_latency)
+    httpx_mock.add_callback(instant_response)
+    httpx_mock.add_response(json={"url": "not a callback"})
+
+    async with httpx.AsyncClient() as client:
+        responses = await asyncio.gather(
+            client.get("https://slow"),
+            client.get("https://fast_with_callback"),
+            client.get("https://fast_with_response"),
+        )
+        slow_response = responses[0].json()
+        assert slow_response["url"] == "https://slow"
+
+        fast_callback_response = responses[1].json()
+        assert fast_callback_response["url"] == "https://fast_with_callback"
+
+        fast_response = responses[2].json()
+        assert fast_response["url"] == "not a callback"
+
+        # Ensure slow request was properly awaited (did not block subsequent async queries)
+        assert math.isclose(slow_response["time"], fast_callback_response["time"] + 1)
+
+
+@pytest.mark.asyncio
+async def test_async_callback_with_pattern_in_url(httpx_mock: HTTPXMock) -> None:
+    async def custom_response(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(status_code=200, json={"url": str(request.url)})
+
+    async def custom_response2(request: httpx.Request) -> httpx.Response:
         return httpx.Response(
             status_code=200,
             extensions={"http_version": b"HTTP/2.0"},
@@ -763,6 +826,22 @@ async def test_callback_raising_exception(httpx_mock: HTTPXMock) -> None:
 
 
 @pytest.mark.asyncio
+async def test_async_callback_raising_exception(httpx_mock: HTTPXMock) -> None:
+    async def raise_timeout(request: httpx.Request) -> httpx.Response:
+        raise httpx.ReadTimeout(
+            f"Unable to read within {request.extensions['timeout']['read']}",
+            request=request,
+        )
+
+    httpx_mock.add_callback(raise_timeout, url="https://test_url")
+
+    async with httpx.AsyncClient() as client:
+        with pytest.raises(httpx.ReadTimeout) as exception_info:
+            await client.get("https://test_url")
+        assert str(exception_info.value) == "Unable to read within 5.0"
+
+
+@pytest.mark.asyncio
 async def test_request_exception_raising(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_exception(
         httpx.ReadTimeout("Unable to read within 5.0"), url="https://test_url"
@@ -801,6 +880,19 @@ async def test_callback_returning_response(httpx_mock: HTTPXMock) -> None:
 
 
 @pytest.mark.asyncio
+async def test_async_callback_returning_response(httpx_mock: HTTPXMock) -> None:
+    async def custom_response(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(status_code=200, json={"url": str(request.url)})
+
+    httpx_mock.add_callback(custom_response, url="https://test_url")
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get("https://test_url")
+        assert response.json() == {"url": "https://test_url"}
+        assert response.headers["content-type"] == "application/json"
+
+
+@pytest.mark.asyncio
 async def test_callback_executed_twice(httpx_mock: HTTPXMock) -> None:
     def custom_response(request: httpx.Request) -> httpx.Response:
         return httpx.Response(status_code=200, json=["content"])
@@ -818,8 +910,48 @@ async def test_callback_executed_twice(httpx_mock: HTTPXMock) -> None:
 
 
 @pytest.mark.asyncio
+async def test_async_callback_executed_twice(httpx_mock: HTTPXMock) -> None:
+    async def custom_response(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(status_code=200, json=["content"])
+
+    httpx_mock.add_callback(custom_response)
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get("https://test_url")
+        assert response.json() == ["content"]
+        assert response.headers["content-type"] == "application/json"
+
+        response = await client.post("https://test_url")
+        assert response.json() == ["content"]
+        assert response.headers["content-type"] == "application/json"
+
+
+@pytest.mark.asyncio
 async def test_callback_registered_after_response(httpx_mock: HTTPXMock) -> None:
     def custom_response(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(status_code=200, json=["content2"])
+
+    httpx_mock.add_response(json=["content1"])
+    httpx_mock.add_callback(custom_response)
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get("https://test_url")
+        assert response.json() == ["content1"]
+        assert response.headers["content-type"] == "application/json"
+
+        response = await client.post("https://test_url")
+        assert response.json() == ["content2"]
+        assert response.headers["content-type"] == "application/json"
+
+        # Assert that the last registered callback is sent again even if there is a response
+        response = await client.post("https://test_url")
+        assert response.json() == ["content2"]
+        assert response.headers["content-type"] == "application/json"
+
+
+@pytest.mark.asyncio
+async def test_async_callback_registered_after_response(httpx_mock: HTTPXMock) -> None:
+    async def custom_response(request: httpx.Request) -> httpx.Response:
         return httpx.Response(status_code=200, json=["content2"])
 
     httpx_mock.add_response(json=["content1"])
@@ -864,8 +996,48 @@ async def test_response_registered_after_callback(httpx_mock: HTTPXMock) -> None
 
 
 @pytest.mark.asyncio
+async def test_response_registered_after_async_callback(httpx_mock: HTTPXMock) -> None:
+    async def custom_response(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(status_code=200, json=["content1"])
+
+    httpx_mock.add_callback(custom_response)
+    httpx_mock.add_response(json=["content2"])
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get("https://test_url")
+        assert response.json() == ["content1"]
+        assert response.headers["content-type"] == "application/json"
+
+        response = await client.post("https://test_url")
+        assert response.json() == ["content2"]
+        assert response.headers["content-type"] == "application/json"
+
+        # Assert that the last registered response is sent again even if there is a callback
+        response = await client.post("https://test_url")
+        assert response.json() == ["content2"]
+        assert response.headers["content-type"] == "application/json"
+
+
+@pytest.mark.asyncio
 async def test_callback_matching_method(httpx_mock: HTTPXMock) -> None:
     def custom_response(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(status_code=200, json=["content"])
+
+    httpx_mock.add_callback(custom_response, method="GET")
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get("https://test_url")
+        assert response.json() == ["content"]
+        assert response.headers["content-type"] == "application/json"
+
+        response = await client.get("https://test_url2")
+        assert response.json() == ["content"]
+        assert response.headers["content-type"] == "application/json"
+
+
+@pytest.mark.asyncio
+async def test_async_callback_matching_method(httpx_mock: HTTPXMock) -> None:
+    async def custom_response(request: httpx.Request) -> httpx.Response:
         return httpx.Response(status_code=200, json=["content"])
 
     httpx_mock.add_callback(custom_response, method="GET")
@@ -1481,6 +1653,18 @@ async def test_elapsed_when_add_callback(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_callback(
         callback=lambda req: httpx.Response(status_code=200, json={"foo": "bar"})
     )
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get("https://test_url")
+    assert response.elapsed is not None
+
+
+@pytest.mark.asyncio
+async def test_elapsed_when_add_async_callback(httpx_mock: HTTPXMock) -> None:
+    async def custom_response(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(status_code=200, json={"foo": "bar"})
+
+    httpx_mock.add_callback(custom_response)
 
     async with httpx.AsyncClient() as client:
         response = await client.get("https://test_url")
