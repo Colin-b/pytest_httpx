@@ -6,9 +6,6 @@ import httpx
 
 from pytest_httpx import _httpx_internals
 
-# re.Pattern was introduced in Python 3.7
-pattern_type = re._pattern_type if hasattr(re, "_pattern_type") else re.Pattern
-
 
 class _RequestMatcher:
     def __init__(
@@ -36,7 +33,7 @@ class _RequestMatcher:
         if not self.url:
             return True
 
-        if isinstance(self.url, pattern_type):
+        if isinstance(self.url, re.Pattern):
             return self.url.match(str(request.url)) is not None
 
         # Compare query parameters apart as order of parameters should not matter
