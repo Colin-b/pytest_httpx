@@ -56,7 +56,7 @@ Before creating an issue please make sure that it was not already reported.
 1) Go to the *Pull requests* tab and click on the *New pull request* button.
 2) *base* should always be set to `develop` and it should be compared to your branch.
 3) Title should be a small sentence describing the request.
-3) The comment should contain as much information as possible
+4) The comment should contain as much information as possible
     * Actual behavior (before the new code)
     * Expected behavior (with the new code)
     * Steps to reproduce (with and without the new code to see the difference)
