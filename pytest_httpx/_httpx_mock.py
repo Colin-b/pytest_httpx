@@ -1,14 +1,10 @@
 import inspect
 import re
 from typing import List, Union, Optional, Callable, Tuple, Pattern, Any, Dict, Awaitable
-from urllib.parse import parse_qs
 
 import httpx
 
 from pytest_httpx import _httpx_internals
-
-# re.Pattern was introduced in Python 3.7
-pattern_type = re._pattern_type if hasattr(re, "_pattern_type") else re.Pattern
 
 
 class _RequestMatcher:
@@ -37,18 +33,18 @@ class _RequestMatcher:
         if not self.url:
             return True
 
-        if isinstance(self.url, pattern_type):
+        if isinstance(self.url, re.Pattern):
             return self.url.match(str(request.url)) is not None
 
         # Compare query parameters apart as order of parameters should not matter
-        request_qs = parse_qs(request.url.query)
-        qs = parse_qs(self.url.query)
+        request_params = dict(request.url.params)
+        params = dict(self.url.params)
 
         # Remove the query parameters from the original URL to compare everything besides query parameters
         request_url = request.url.copy_with(query=None)
         url = self.url.copy_with(query=None)
 
-        return (request_qs == qs) and (url == request_url)
+        return (request_params == params) and (url == request_url)
 
     def _method_match(self, request: httpx.Request) -> bool:
         if not self.method:
@@ -304,6 +300,7 @@ class HTTPXMock:
         return requests[0] if requests else None
 
     def reset(self, assert_all_responses_were_requested: bool) -> None:
+        self._requests.clear()
         not_called = self._reset_callbacks()
 
         if assert_all_responses_were_requested:
