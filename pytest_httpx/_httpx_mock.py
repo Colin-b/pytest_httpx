@@ -1,7 +1,6 @@
 import inspect
 import re
 from typing import List, Union, Optional, Callable, Tuple, Pattern, Any, Dict, Awaitable
-from urllib.parse import parse_qs
 
 import httpx
 
@@ -41,14 +40,14 @@ class _RequestMatcher:
             return self.url.match(str(request.url)) is not None
 
         # Compare query parameters apart as order of parameters should not matter
-        request_qs = parse_qs(request.url.query)
-        qs = parse_qs(self.url.query)
+        request_params = dict(request.url.params)
+        params = dict(self.url.params)
 
         # Remove the query parameters from the original URL to compare everything besides query parameters
         request_url = request.url.copy_with(query=None)
         url = self.url.copy_with(query=None)
 
-        return (request_qs == qs) and (url == request_url)
+        return (request_params == params) and (url == request_url)
 
     def _method_match(self, request: httpx.Request) -> bool:
         if not self.method:
