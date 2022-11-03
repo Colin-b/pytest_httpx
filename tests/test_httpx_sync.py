@@ -1383,3 +1383,19 @@ def test_elapsed_when_add_callback(httpx_mock: HTTPXMock) -> None:
     with httpx.Client() as client:
         response = client.get("https://test_url")
     assert response.elapsed is not None
+
+
+def test_non_ascii_url_response(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url="https://test_url?query_type=数据")
+
+    with httpx.Client() as client:
+        response = client.get("https://test_url?query_type=数据")
+    assert response.content == b""
+
+
+def test_url_encoded_matching_response(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url="https://test_url?a=%E6%95%B0%E6%8D%AE")
+
+    with httpx.Client() as client:
+        response = client.get("https://test_url?a=数据")
+    assert response.content == b""
