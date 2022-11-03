@@ -300,6 +300,7 @@ class HTTPXMock:
         return requests[0] if requests else None
 
     def reset(self, assert_all_responses_were_requested: bool) -> None:
+        self._requests.clear()
         not_called = self._reset_callbacks()
 
         if assert_all_responses_were_requested:

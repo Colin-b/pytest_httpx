@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.21.2] - 2022-11-03
 ### Fixed
 - URL containing non ASCII characters in query can now be matched.
+- Requests are now cleared when calling `httpx_mock.reset`.
 
 ## [0.21.1] - 2022-10-20
 ### Fixed
