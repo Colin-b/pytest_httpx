@@ -83,6 +83,7 @@ class _RequestMatcher:
 class HTTPXMock:
     def __init__(self) -> None:
         self._requests: List[httpx.Request] = []
+        self._responses: Dict[int, httpx.Response] = {}
         self._callbacks: List[
             Tuple[
                 _RequestMatcher,
@@ -187,6 +188,7 @@ class HTTPXMock:
             response = callback(request)
 
             if response:
+                self._responses[id(request)] = response
                 return _unread(response)
 
         raise httpx.TimeoutException(
@@ -206,6 +208,7 @@ class HTTPXMock:
             if response:
                 if inspect.isawaitable(response):
                     response = await response
+                self._responses[id(request)] = response
                 return _unread(response)
 
         raise httpx.TimeoutException(
@@ -282,6 +285,24 @@ class HTTPXMock:
         matcher = _RequestMatcher(**matchers)
         return [request for request in self._requests if matcher.match(request)]
 
+    def get_responses(self, **matchers) -> List[httpx.Response]:
+        """
+        Return all responses that match (empty list if no responses were
+        matched).
+
+        :param url: Full URL identifying the requests to retrieve.
+        Can be a str, a re.Pattern instance or a httpx.URL instance.
+        :param method: HTTP method identifying the requests to retrieve. Must be a upper cased string value.
+        :param match_headers: HTTP headers identifying the requests to retrieve. Must be a dictionary.
+        :param match_content: Full HTTP body identifying the requests to retrieve. Must be bytes.
+        """
+        matcher = _RequestMatcher(**matchers)
+        return [
+            self._responses[id(request)]
+            for request in self._requests
+            if matcher.match(request)
+        ]
+
     def get_request(self, **matchers) -> Optional[httpx.Request]:
         """
         Return the single request that match (or None).
@@ -299,8 +320,26 @@ class HTTPXMock:
         ), f"More than one request ({len(requests)}) matched, use get_requests instead."
         return requests[0] if requests else None
 
+    def get_response(self, **matchers) -> Optional[httpx.Response]:
+        """
+        Return the single response that match (or None).
+
+        :param url: Full URL identifying the request to retrieve.
+        Can be a str, a re.Pattern instance or a httpx.URL instance.
+        :param method: HTTP method identifying the request to retrieve. Must be a upper cased string value.
+        :param match_headers: HTTP headers identifying the request to retrieve. Must be a dictionary.
+        :param match_content: Full HTTP body identifying the request to retrieve. Must be bytes.
+        :raises AssertionError: in case more than one request match.
+        """
+        requests = self.get_requests(**matchers)
+        assert (
+            len(requests) <= 1
+        ), f"More than one request ({len(requests)}) matched, use get_requests instead."
+        return self._responses[id(requests[0])] if requests else None
+
     def reset(self, assert_all_responses_were_requested: bool) -> None:
         self._requests.clear()
+        self._responses.clear()
         not_called = self._reset_callbacks()
 
         if assert_all_responses_were_requested:

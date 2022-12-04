@@ -1699,3 +1699,103 @@ async def test_reset_is_removing_requests(httpx_mock: HTTPXMock) -> None:
 
     httpx_mock.reset(assert_all_responses_were_requested=False)
     assert len(httpx_mock.get_requests()) == 0
+
+
+@pytest.mark.asyncio
+async def test_response_with_pattern_in_url(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url="https://test_url", headers={"X-Test": "1"})
+    httpx_mock.add_response(url="https://unmatched")
+
+    async with httpx.AsyncClient() as client:
+        await client.get("https://unmatched")
+        await client.get("https://test_url")
+
+    assert httpx_mock.get_response(url=re.compile(".*test.*")).headers["x-test"] == "1"
+
+
+@pytest.mark.asyncio
+async def test_responses_with_pattern_in_url(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url="https://test_url")
+    httpx_mock.add_response(url="https://tests_url", headers={"X-Test": "1"})
+    httpx_mock.add_response(url="https://unmatched", headers={"X-Test": "2"})
+
+    async with httpx.AsyncClient() as client:
+        await client.get("https://tests_url")
+        await client.get("https://unmatched")
+        await client.get("https://test_url")
+
+    responses = httpx_mock.get_responses(url=re.compile(".*test.*"))
+    assert len(responses) == 2
+    assert responses[0].headers["x-test"] == "1"
+    assert "x-test" not in responses[1].headers
+
+
+@pytest.mark.asyncio
+async def test_responses_retrieval(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(
+        url="https://test_url", method="GET", content=b"test content 1"
+    )
+    httpx_mock.add_response(
+        url="https://test_url", method="POST", content=b"test content 2"
+    )
+    httpx_mock.add_response(
+        url="https://test_url", method="PUT", content=b"test content 3"
+    )
+    httpx_mock.add_response(
+        url="https://test_url", method="DELETE", content=b"test content 4"
+    )
+    httpx_mock.add_response(
+        url="https://test_url", method="PATCH", content=b"test content 5"
+    )
+    httpx_mock.add_response(
+        url="https://test_url", method="HEAD", content=b"test content 6"
+    )
+
+    async with httpx.AsyncClient() as client:
+        await client.post("https://test_url", content=b"sent content 2")
+        await client.get("https://test_url", headers={"X-TEST": "test header 1"})
+        await client.put("https://test_url", content=b"sent content 3")
+        await client.head("https://test_url")
+        await client.patch("https://test_url", content=b"sent content 5")
+        await client.delete("https://test_url", headers={"X-Test": "test header 4"})
+
+    assert (
+        httpx_mock.get_response(
+            url=httpx.URL("https://test_url"), method="PATCH"
+        ).read()
+        == b"test content 5"
+    )
+    assert (
+        httpx_mock.get_response(url=httpx.URL("https://test_url"), method="HEAD").read()
+        == b"test content 6"
+    )
+    assert (
+        httpx_mock.get_response(url=httpx.URL("https://test_url"), method="PUT").read()
+        == b"test content 3"
+    )
+    assert (
+        httpx_mock.get_response(url=httpx.URL("https://test_url"), method="GET").read()
+        == b"test content 1"
+    )
+    assert (
+        httpx_mock.get_response(url=httpx.URL("https://test_url"), method="POST").read()
+        == b"test content 2"
+    )
+    assert (
+        httpx_mock.get_response(
+            url=httpx.URL("https://test_url"), method="DELETE"
+        ).read()
+        == b"test content 4"
+    )
+
+
+@pytest.mark.asyncio
+async def test_reset_is_removing_responses(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response()
+    async with httpx.AsyncClient() as client:
+        await client.get("https://test_url")
+
+    assert len(httpx_mock.get_responses()) == 1
+
+    httpx_mock.reset(assert_all_responses_were_requested=False)
+    assert len(httpx_mock.get_responses()) == 0

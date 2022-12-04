@@ -5,6 +5,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- Add HTTPXMock.get_responses method to retrieve all responses related with 
+  matching requests
+- Add HTTPXMock.get_response method to retrieve a response related with 
+  matching request
+- Add HTTPXMock._responses to HTTPXMock.__init__, HTTPXMock._handle_request, 
+  HTTPXMock._handle_async_request 
+  and HTTPXMock.reset methods to manage httpx.Response objects.
 
 ## [0.21.2] - 2022-11-03
 ### Fixed
