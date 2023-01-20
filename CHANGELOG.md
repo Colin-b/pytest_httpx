@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.21.3] - 2023-01-19
+- Update version specifiers for pytest dependency to support Packaging 23.0
+
 ## [0.21.2] - 2022-11-03
 ### Fixed
 - URL containing non ASCII characters in query can now be matched.
