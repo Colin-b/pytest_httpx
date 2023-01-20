@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.21.3] - 2023-01-20
+### Fixed
+- Update version specifiers for `pytest` dependency to support `packaging` `23`.
+- Add explicit support for `python` `3.11`.
+
 ## [0.21.2] - 2022-11-03
 ### Fixed
 - URL containing non ASCII characters in query can now be matched.
@@ -232,7 +237,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - First release, should be considered as unstable for now as design might change.
 
-[Unreleased]: https://github.com/Colin-b/pytest_httpx/compare/v0.21.2...HEAD
+[Unreleased]: https://github.com/Colin-b/pytest_httpx/compare/v0.21.3...HEAD
+[0.21.3]: https://github.com/Colin-b/pytest_httpx/compare/v0.21.2...v0.21.3
 [0.21.2]: https://github.com/Colin-b/pytest_httpx/compare/v0.21.1...v0.21.2
 [0.21.1]: https://github.com/Colin-b/pytest_httpx/compare/v0.21.0...v0.21.1
 [0.21.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.20.0...v0.21.0
