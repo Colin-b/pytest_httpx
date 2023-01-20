@@ -48,7 +48,7 @@ Before creating an issue please make sure that it was not already reported.
     * To add the [pre-commit](https://pre-commit.com) hook, after the installation run: **pre-commit install**
 6) Add at least one [`pytest`](https://doc.pytest.org/en/latest/index.html) test case.
     * Unless it is an internal refactoring request or a documentation update.
-7) Add related [changelog entry](https://keepachangelog.com/en/1.1.0/).
+7) Add related [changelog entry](https://keepachangelog.com/en/1.1.0/) in the `Unreleased` section.
     * Unless it is a documentation update.
 
 #### Enter pull request
