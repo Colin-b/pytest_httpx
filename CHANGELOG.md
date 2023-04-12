@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.22.0] - 2023-04-12
+### Changed
+- Requires [`httpx`](https://www.python-httpx.org)==0.24.\*
+
 ## [0.21.3] - 2023-01-20
 ### Fixed
 - Update version specifiers for `pytest` dependency to support `packaging` `23`.
@@ -237,7 +241,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - First release, should be considered as unstable for now as design might change.
 
-[Unreleased]: https://github.com/Colin-b/pytest_httpx/compare/v0.21.3...HEAD
+[Unreleased]: https://github.com/Colin-b/pytest_httpx/compare/v0.22.0...HEAD
+[0.22.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.21.3...v0.22.0
 [0.21.3]: https://github.com/Colin-b/pytest_httpx/compare/v0.21.2...v0.21.3
 [0.21.2]: https://github.com/Colin-b/pytest_httpx/compare/v0.21.1...v0.21.2
 [0.21.1]: https://github.com/Colin-b/pytest_httpx/compare/v0.21.0...v0.21.1
