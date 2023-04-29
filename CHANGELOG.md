@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Removed
+- Python `3.7` and `3.8` are no longer supported.
 
 ## [0.22.0] - 2023-04-12
 ### Changed
@@ -29,7 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Requires [`httpx`](https://www.python-httpx.org)==0.23.\*
 
 ### Removed
-- Python 3.6 is no longer supported.
+- Python `3.6` is no longer supported.
 
 ## [0.20.0] - 2022-02-05
 ### Added
