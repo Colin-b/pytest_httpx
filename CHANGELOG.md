@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.23.0] - 2023-08-02
+### Removed
+- Python `3.7` and `3.8` are no longer supported.
+
+### Fixed
+- `httpx_mock.add_response` is now returning a new `httpx.Response` instance upon each matching request. Preventing unnecessary cascading streams.
+
 ## [0.22.0] - 2023-04-12
 ### Changed
 - Requires [`httpx`](https://www.python-httpx.org)==0.24.\*
@@ -29,7 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Requires [`httpx`](https://www.python-httpx.org)==0.23.\*
 
 ### Removed
-- Python 3.6 is no longer supported.
+- Python `3.6` is no longer supported.
 
 ## [0.20.0] - 2022-02-05
 ### Added
@@ -241,7 +248,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - First release, should be considered as unstable for now as design might change.
 
-[Unreleased]: https://github.com/Colin-b/pytest_httpx/compare/v0.22.0...HEAD
+[Unreleased]: https://github.com/Colin-b/pytest_httpx/compare/v0.23.0...HEAD
+[0.23.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.22.0...v0.23.0
 [0.22.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.21.3...v0.22.0
 [0.21.3]: https://github.com/Colin-b/pytest_httpx/compare/v0.21.2...v0.21.3
 [0.21.2]: https://github.com/Colin-b/pytest_httpx/compare/v0.21.1...v0.21.2

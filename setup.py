@@ -28,8 +28,6 @@ setup(
         "Typing :: Typed",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.7",
-        "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
@@ -45,12 +43,12 @@ setup(
     extras_require={
         "testing": [
             # Used to run async test functions
-            "pytest-asyncio==0.20.*",
+            "pytest-asyncio==0.21.*",
             # Used to check coverage
             "pytest-cov==4.*",
         ]
     },
-    python_requires=">=3.7",
+    python_requires=">=3.9",
     project_urls={
         "GitHub": "https://github.com/Colin-b/pytest_httpx",
         "Changelog": "https://github.com/Colin-b/pytest_httpx/blob/master/CHANGELOG.md",

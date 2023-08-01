@@ -1,3 +1,4 @@
+from collections.abc import Generator
 from typing import List
 
 import httpx
@@ -34,7 +35,7 @@ def httpx_mock(
     monkeypatch: MonkeyPatch,
     assert_all_responses_were_requested: bool,
     non_mocked_hosts: List[str],
-) -> HTTPXMock:
+) -> Generator[HTTPXMock, None, None]:
     # Ensure redirections to www hosts are handled transparently.
     missing_www = [
         f"www.{host}" for host in non_mocked_hosts if not host.startswith("www.")

@@ -124,17 +124,20 @@ class HTTPXMock:
         :param match_headers: HTTP headers identifying the request(s) to match. Must be a dictionary.
         :param match_content: Full HTTP body identifying the request(s) to match. Must be bytes.
         """
-        response = httpx.Response(
-            status_code=status_code,
-            extensions={"http_version": http_version.encode("ascii")},
-            headers=headers,
-            json=json,
-            content=content,
-            text=text,
-            html=html,
-            stream=stream,
-        )
-        self.add_callback(lambda request: response, **matchers)
+
+        def response_callback(request: httpx.Request) -> httpx.Response:
+            return httpx.Response(
+                status_code=status_code,
+                extensions={"http_version": http_version.encode("ascii")},
+                headers=headers,
+                json=json,
+                content=content,
+                text=text,
+                html=html,
+                stream=stream,
+            )
+
+        self.add_callback(response_callback, **matchers)
 
     def add_callback(
         self,
