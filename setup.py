@@ -43,7 +43,7 @@ setup(
     extras_require={
         "testing": [
             # Used to run async test functions
-            "pytest-asyncio==0.20.*",
+            "pytest-asyncio==0.21.*",
             # Used to check coverage
             "pytest-cov==4.*",
         ]
