@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Python `3.7` and `3.8` are no longer supported.
 
 ### Fixed
-- `httpx_mock.add_response` is now returning a new `httpx.Response` instance upon each matching request. Preventing unnecessary cascading streams.
+- `httpx_mock.add_response` is now returning a new `httpx.Response` instance upon each matching request. Preventing unnecessary recursion in streams.
 
 ## [0.22.0] - 2023-04-12
 ### Changed

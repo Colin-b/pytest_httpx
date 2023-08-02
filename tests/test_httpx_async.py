@@ -1699,3 +1699,14 @@ async def test_reset_is_removing_requests(httpx_mock: HTTPXMock) -> None:
 
     httpx_mock.reset(assert_all_responses_were_requested=False)
     assert len(httpx_mock.get_requests()) == 0
+
+
+@pytest.mark.asyncio
+async def test_streams_are_not_cascading_resulting_in_maximum_recursion(
+    httpx_mock: HTTPXMock,
+) -> None:
+    httpx_mock.add_response(json={"abc": "def"})
+    async with httpx.AsyncClient() as client:
+        tasks = [client.get("https://example.com/") for _ in range(950)]
+        await asyncio.gather(*tasks)
+    # No need to assert anything, this test case ensure that no error was raised by the gather
