@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [0.23.1] - 2023-08-02
 ### Fixed
 - Version `0.23.0` introduced a regression removing the support for mutating json content provided in `httpx_mock.add_response`. 
   - This is fixed, you can now expect the JSON return being as it was when provided to `httpx_mock.add_response`:
@@ -260,7 +262,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - First release, should be considered as unstable for now as design might change.
 
-[Unreleased]: https://github.com/Colin-b/pytest_httpx/compare/v0.23.0...HEAD
+[Unreleased]: https://github.com/Colin-b/pytest_httpx/compare/v0.23.1...HEAD
+[0.23.1]: https://github.com/Colin-b/pytest_httpx/compare/v0.23.0...v0.23.1
 [0.23.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.22.0...v0.23.0
 [0.22.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.21.3...v0.22.0
 [0.21.3]: https://github.com/Colin-b/pytest_httpx/compare/v0.21.2...v0.21.3
