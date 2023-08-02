@@ -6,12 +6,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.23.1] - 2023-08-02
+### Fixed
+- Version `0.23.0` introduced a regression removing the support for mutating json content provided in `httpx_mock.add_response`. 
+  - This is fixed, you can now expect the JSON return being as it was when provided to `httpx_mock.add_response`:
+```python
+    mutating_json = {"content": "request 1"}
+    # This will return {"content": "request 1"}
+    httpx_mock.add_response(json=mutating_json)
+
+    mutating_json["content"] = "request 2"
+    # This will return {"content": "request 2"}
+    httpx_mock.add_response(json=mutating_json)
+```
+
 ## [0.23.0] - 2023-08-02
 ### Removed
 - Python `3.7` and `3.8` are no longer supported.
 
 ### Fixed
-- `httpx_mock.add_response` is now returning a new `httpx.Response` instance upon each matching request. Preventing unnecessary cascading streams.
+- `httpx_mock.add_response` is now returning a new `httpx.Response` instance upon each matching request. Preventing unnecessary recursion in streams.
 
 ## [0.22.0] - 2023-04-12
 ### Changed
@@ -248,7 +262,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - First release, should be considered as unstable for now as design might change.
 
-[Unreleased]: https://github.com/Colin-b/pytest_httpx/compare/v0.23.0...HEAD
+[Unreleased]: https://github.com/Colin-b/pytest_httpx/compare/v0.23.1...HEAD
+[0.23.1]: https://github.com/Colin-b/pytest_httpx/compare/v0.23.0...v0.23.1
 [0.23.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.22.0...v0.23.0
 [0.22.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.21.3...v0.22.0
 [0.21.3]: https://github.com/Colin-b/pytest_httpx/compare/v0.21.2...v0.21.3

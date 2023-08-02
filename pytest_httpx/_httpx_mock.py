@@ -1,3 +1,4 @@
+import copy
 import inspect
 import re
 from typing import List, Union, Optional, Callable, Tuple, Pattern, Any, Dict, Awaitable
@@ -124,6 +125,8 @@ class HTTPXMock:
         :param match_headers: HTTP headers identifying the request(s) to match. Must be a dictionary.
         :param match_content: Full HTTP body identifying the request(s) to match. Must be bytes.
         """
+
+        json = copy.deepcopy(json) if json is not None else None
 
         def response_callback(request: httpx.Request) -> httpx.Response:
             return httpx.Response(
