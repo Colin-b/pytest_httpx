@@ -1702,6 +1702,22 @@ async def test_reset_is_removing_requests(httpx_mock: HTTPXMock) -> None:
 
 
 @pytest.mark.asyncio
+async def test_mutating_json(httpx_mock: HTTPXMock) -> None:
+    mutating_json = {"content": "request 1"}
+    httpx_mock.add_response(json=mutating_json)
+
+    mutating_json["content"] = "request 2"
+    httpx_mock.add_response(json=mutating_json)
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get("https://test_url")
+        assert response.json() == {"content": "request 1"}
+
+        response = await client.get("https://test_url")
+        assert response.json() == {"content": "request 2"}
+
+
+@pytest.mark.asyncio
 async def test_streams_are_not_cascading_resulting_in_maximum_recursion(
     httpx_mock: HTTPXMock,
 ) -> None:

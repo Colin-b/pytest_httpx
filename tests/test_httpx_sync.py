@@ -1410,3 +1410,18 @@ def test_reset_is_removing_requests(httpx_mock: HTTPXMock) -> None:
 
     httpx_mock.reset(assert_all_responses_were_requested=False)
     assert len(httpx_mock.get_requests()) == 0
+
+
+def test_mutating_json(httpx_mock: HTTPXMock) -> None:
+    mutating_json = {"content": "request 1"}
+    httpx_mock.add_response(json=mutating_json)
+
+    mutating_json["content"] = "request 2"
+    httpx_mock.add_response(json=mutating_json)
+
+    with httpx.Client() as client:
+        response = client.get("https://test_url")
+        assert response.json() == {"content": "request 1"}
+
+        response = client.get("https://test_url")
+        assert response.json() == {"content": "request 2"}
