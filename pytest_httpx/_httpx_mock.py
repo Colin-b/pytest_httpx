@@ -16,7 +16,7 @@ class _RequestMatcher:
         method: Optional[str] = None,
         match_headers: Optional[Dict[str, Any]] = None,
         match_content: Optional[bytes] = None,
-        match_json_content: Optional[Union[dict[str, Any], str, float, int]] = None,
+        match_json_content: Optional[Any] = None,
     ):
         self.nb_calls = 0
         self.url = httpx.URL(url) if url and isinstance(url, str) else url
