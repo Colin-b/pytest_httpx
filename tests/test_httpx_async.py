@@ -1143,6 +1143,49 @@ Match all requests with b'This is the body' body"""
 
 
 @pytest.mark.asyncio
+async def test_json_content_matching(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(match_json_content={"a": 1, "b": 2})
+
+    async with httpx.AsyncClient() as client:
+        response = await client.post("https://test_url", json={"b": 2, "a": 1})
+        assert response.read() == b""
+
+
+@pytest.mark.asyncio
+async def test_json_content_not_matching(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(match_json_content={"a": 1, "b": 2})
+
+    async with httpx.AsyncClient() as client:
+        with pytest.raises(httpx.TimeoutException) as exception_info:
+            await client.post("https://test_url", json={"c": 3, "b": 2, "a": 1})
+        assert (
+            str(exception_info.value)
+            == """No response can be found for POST request on https://test_url with {"c": 3, "b": 2, "a": 1} body amongst:
+Match all requests with {'a': 1, 'b': 2} json body"""
+        )
+
+    # Clean up responses to avoid assertion failure
+    httpx_mock.reset(assert_all_responses_were_requested=False)
+
+
+@pytest.mark.asyncio
+async def test_json_content_not_matching_invalid_json(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(match_json_content={"a": 1, "b": 2})
+
+    async with httpx.AsyncClient() as client:
+        with pytest.raises(httpx.TimeoutException) as exception_info:
+            await client.post("https://test_url", content=b"<test>foobar</test>")
+        assert (
+            str(exception_info.value)
+            == """No response can be found for POST request on https://test_url with <test>foobar</test> body amongst:
+Match all requests with {'a': 1, 'b': 2} json body"""
+        )
+
+    # Clean up responses to avoid assertion failure
+    httpx_mock.reset(assert_all_responses_were_requested=False)
+
+
+@pytest.mark.asyncio
 async def test_headers_and_content_matching(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(
         match_headers={"user-agent": f"python-httpx/{httpx.__version__}"},
