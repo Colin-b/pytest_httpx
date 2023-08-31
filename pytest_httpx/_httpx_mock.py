@@ -256,6 +256,8 @@ class HTTPXMock:
             request_description += f" with {dict({name: value for name, value in request.headers.items() if name in expect_headers})} headers"
             if expect_body:
                 request_description += f" and {request.read()} body"
+            elif expect_json:
+                request_description += f" and {request.read().decode('utf-8')} body"
         elif expect_body:
             request_description += f" with {request.read()} body"
         elif expect_json:
