@@ -1,4 +1,5 @@
 import re
+from typing import Any
 
 import httpx
 import pytest
@@ -889,6 +890,47 @@ def test_content_not_matching(httpx_mock: HTTPXMock) -> None:
             str(exception_info.value)
             == """No response can be found for POST request on https://test_url with b'This is the body2' body amongst:
 Match all requests with b'This is the body' body"""
+        )
+
+    # Clean up responses to avoid assertion failure
+    httpx_mock.reset(assert_all_responses_were_requested=False)
+
+
+@pytest.mark.parametrize("json", [{"a": 1, "b": 2}, "somestring", "25", 25.3])
+def test_json_content_matching(json: Any, httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(match_json_content=json)
+
+    with httpx.Client() as client:
+        response = client.post("https://test_url", json=json)
+        assert response.read() == b""
+
+
+def test_json_content_not_matching(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(match_json_content={"a": 1, "b": 2})
+
+    with httpx.Client() as client:
+        with pytest.raises(httpx.TimeoutException) as exception_info:
+            client.post("https://test_url", json={"c": 3, "b": 2, "a": 1})
+        assert (
+            str(exception_info.value)
+            == """No response can be found for POST request on https://test_url with {"c": 3, "b": 2, "a": 1} body amongst:
+Match all requests with {'a': 1, 'b': 2} json body"""
+        )
+
+    # Clean up responses to avoid assertion failure
+    httpx_mock.reset(assert_all_responses_were_requested=False)
+
+
+def test_json_content_not_matching_invalid_json(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(match_json_content={"a": 1, "b": 2})
+
+    with httpx.Client() as client:
+        with pytest.raises(httpx.TimeoutException) as exception_info:
+            client.post("https://test_url", content=b"<test>foobar</test>")
+        assert (
+            str(exception_info.value)
+            == """No response can be found for POST request on https://test_url with <test>foobar</test> body amongst:
+Match all requests with {'a': 1, 'b': 2} json body"""
         )
 
     # Clean up responses to avoid assertion failure
