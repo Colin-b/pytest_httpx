@@ -5,6 +5,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Fixed
+- If httpx lower cases a header name (like authorization) make sure the header is still displayed in the error if another parameter doesn't match
+
 
 ## [0.23.1] - 2023-08-02
 ### Fixed
