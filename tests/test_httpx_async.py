@@ -1117,21 +1117,19 @@ Match all requests with {{'user-agent': 'python-httpx/{httpx.__version__}', 'hos
 
 
 @pytest.mark.asyncio
-async def test_url_not_matching_authorizaiton_headers_matching(httpx_mock: HTTPXMock):
+async def test_url_not_matching_upper_case_headers_matching(httpx_mock: HTTPXMock):
     httpx_mock.add_response(
         method="GET",
-        url="http://test_url?q=b",
-        match_headers={"Authorization": "Bearer: Something"},
+        url="https://test_url?q=b",
+        match_headers={"MyHeader": "Something"},
     )
     async with httpx.AsyncClient() as client:
         with pytest.raises(httpx.TimeoutException) as exception_info:
-            await client.get(
-                "http://test_url", headers={"Authorization": "Bearer: Something"}
-            )
+            await client.get("https://test_url", headers={"MyHeader": "Something"})
         assert (
             str(exception_info.value)
-            == """No response can be found for GET request on http://test_url with {'Authorization': 'Bearer: Something'} headers amongst:
-Match GET requests on http://test_url?q=b with {'Authorization': 'Bearer: Something'} headers"""
+            == """No response can be found for GET request on https://test_url with {'MyHeader': 'Something'} headers amongst:
+Match GET requests on https://test_url?q=b with {'MyHeader': 'Something'} headers"""
         )
 
     # Clean up responses to avoid assertion failure
