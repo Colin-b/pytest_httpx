@@ -5,7 +5,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
-### Changed
+### Fixed
 - Add `:Any` type hint to `**matchers` function arguments to satisfy strict type checking mode in pyright
 
 ## [0.23.1] - 2023-08-02
