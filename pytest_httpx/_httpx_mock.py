@@ -106,7 +106,7 @@ class HTTPXMock:
         html: Optional[str] = None,
         stream: Any = None,
         json: Any = None,
-        **matchers,
+        **matchers: Any,
     ) -> None:
         """
         Mock the response that will be sent if a request match.
@@ -148,7 +148,7 @@ class HTTPXMock:
             [httpx.Request],
             Union[Optional[httpx.Response], Awaitable[Optional[httpx.Response]]],
         ],
-        **matchers,
+        **matchers: Any,
     ) -> None:
         """
         Mock the action that will take place if a request match.
@@ -163,7 +163,7 @@ class HTTPXMock:
         """
         self._callbacks.append((_RequestMatcher(**matchers), callback))
 
-    def add_exception(self, exception: Exception, **matchers) -> None:
+    def add_exception(self, exception: Exception, **matchers: Any) -> None:
         """
         Raise an exception if a request match.
 
@@ -275,7 +275,7 @@ class HTTPXMock:
         matcher.nb_calls += 1
         return callback
 
-    def get_requests(self, **matchers) -> List[httpx.Request]:
+    def get_requests(self, **matchers: Any) -> List[httpx.Request]:
         """
         Return all requests sent that match (empty list if no requests were matched).
 
@@ -288,7 +288,7 @@ class HTTPXMock:
         matcher = _RequestMatcher(**matchers)
         return [request for request in self._requests if matcher.match(request)]
 
-    def get_request(self, **matchers) -> Optional[httpx.Request]:
+    def get_request(self, **matchers: Any) -> Optional[httpx.Request]:
         """
         Return the single request that match (or None).
 
