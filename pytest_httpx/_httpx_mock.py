@@ -61,8 +61,18 @@ class _RequestMatcher:
         if not self.headers:
             return True
 
+        encoding = request.headers.encoding
+        request_headers = {}
+        # Can be cleaned based on the outcome of https://github.com/encode/httpx/discussions/2841
+        for raw_name, raw_value in request.headers.raw:
+            if raw_name in request_headers:
+                request_headers[raw_name] += b", " + raw_value
+            else:
+                request_headers[raw_name] = raw_value
+
         return all(
-            request.headers.get(header_name) == header_value
+            request_headers.get(header_name.encode(encoding))
+            == header_value.encode(encoding)
             for header_name, header_value in self.headers.items()
         )
 
@@ -123,7 +133,7 @@ class HTTPXMock:
         html: Optional[str] = None,
         stream: Any = None,
         json: Any = None,
-        **matchers,
+        **matchers: Any,
     ) -> None:
         """
         Mock the response that will be sent if a request match.
@@ -166,7 +176,7 @@ class HTTPXMock:
             [httpx.Request],
             Union[Optional[httpx.Response], Awaitable[Optional[httpx.Response]]],
         ],
-        **matchers,
+        **matchers: Any,
     ) -> None:
         """
         Mock the action that will take place if a request match.
@@ -182,7 +192,7 @@ class HTTPXMock:
         """
         self._callbacks.append((_RequestMatcher(**matchers), callback))
 
-    def add_exception(self, exception: Exception, **matchers) -> None:
+    def add_exception(self, exception: Exception, **matchers: Any) -> None:
         """
         Raise an exception if a request match.
 
@@ -240,9 +250,11 @@ class HTTPXMock:
 
     def _explain_that_no_response_was_found(self, request: httpx.Request) -> str:
         matchers = [matcher for matcher, _ in self._callbacks]
+        headers_encoding = request.headers.encoding
         expect_headers = set(
             [
-                header
+                # httpx uses lower cased header names as internal key
+                header.lower().encode(headers_encoding)
                 for matcher in matchers
                 if matcher.headers
                 for header in matcher.headers
@@ -253,7 +265,17 @@ class HTTPXMock:
 
         request_description = f"{request.method} request on {request.url}"
         if expect_headers:
-            request_description += f" with {dict({name: value for name, value in request.headers.items() if name in expect_headers})} headers"
+            present_headers = {}
+            # Can be cleaned based on the outcome of https://github.com/encode/httpx/discussions/2841
+            for name, lower_name, value in request.headers._list:
+                if lower_name in expect_headers:
+                    name = name.decode(headers_encoding)
+                    if name in present_headers:
+                        present_headers[name] += f", {value.decode(headers_encoding)}"
+                    else:
+                        present_headers[name] = value.decode(headers_encoding)
+
+            request_description += f" with {present_headers} headers"
             if expect_body:
                 request_description += f" and {request.read()} body"
             elif expect_json:
@@ -300,7 +322,7 @@ class HTTPXMock:
         matcher.nb_calls += 1
         return callback
 
-    def get_requests(self, **matchers) -> List[httpx.Request]:
+    def get_requests(self, **matchers: Any) -> List[httpx.Request]:
         """
         Return all requests sent that match (empty list if no requests were matched).
 
@@ -313,7 +335,7 @@ class HTTPXMock:
         matcher = _RequestMatcher(**matchers)
         return [request for request in self._requests if matcher.match(request)]
 
-    def get_request(self, **matchers) -> Optional[httpx.Request]:
+    def get_request(self, **matchers: Any) -> Optional[httpx.Request]:
         """
         Return the single request that match (or None).
 

@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Added `match_json_content` which allows matching a json decoded body against an arbitrary python object for equality.
 
+### Changed
+- Even if it was never documented as a feature, the `match_headers` parameter was not considering header names case when matching.
+  - As this might have been considered a feature by some users, the fact that `match_headers` will now respect casing is documented as a breaking change.
+
+### Fixed
+- Matching on headers does not ignore name case anymore, the name must now be cased as sent (as some servers might expect a specific case).
+- Error message in case a request does not match will now include request headers with mismatching name case as well.
+- Error message in case a request does not match will now include request headers when not provided as lower-cased to `match_headers`.
+- Add `:Any` type hint to `**matchers` function arguments to satisfy strict type checking mode in [`pyright`](https://microsoft.github.io/pyright/#/).
+
 ## [0.23.1] - 2023-08-02
 ### Fixed
 - Version `0.23.0` introduced a regression removing the support for mutating json content provided in `httpx_mock.add_response`. 
