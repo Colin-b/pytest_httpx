@@ -1117,7 +1117,7 @@ Match all requests with {{'user-agent': 'python-httpx/{httpx.__version__}', 'hos
 
 
 @pytest.mark.asyncio
-async def test_url_not_matching_upper_case_headers_matching(httpx_mock: HTTPXMock):
+async def test_url_not_matching_upper_case_headers_matching(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(
         method="GET",
         url="https://test_url?q=b",
