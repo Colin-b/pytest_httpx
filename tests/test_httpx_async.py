@@ -1094,6 +1094,17 @@ async def test_headers_matching(httpx_mock: HTTPXMock) -> None:
 
 
 @pytest.mark.asyncio
+async def test_headers_matching_ignores_case(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(
+        match_headers={"User-Agent": f"python-httpx/{httpx.__version__}"}
+    )
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get("https://test_url")
+        assert response.content == b""
+
+
+@pytest.mark.asyncio
 async def test_headers_not_matching(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(
         match_headers={
@@ -1117,7 +1128,9 @@ Match all requests with {{'user-agent': 'python-httpx/{httpx.__version__}', 'hos
 
 
 @pytest.mark.asyncio
-async def test_url_not_matching_upper_case_headers_matching(httpx_mock: HTTPXMock) -> None:
+async def test_url_not_matching_upper_case_headers_matching(
+    httpx_mock: HTTPXMock,
+) -> None:
     httpx_mock.add_response(
         method="GET",
         url="https://test_url?q=b",
@@ -1128,7 +1141,7 @@ async def test_url_not_matching_upper_case_headers_matching(httpx_mock: HTTPXMoc
             await client.get("https://test_url", headers={"MyHeader": "Something"})
         assert (
             str(exception_info.value)
-            == """No response can be found for GET request on https://test_url with {'MyHeader': 'Something'} headers amongst:
+            == """No response can be found for GET request on https://test_url with {'myheader': 'Something'} headers amongst:
 Match GET requests on https://test_url?q=b with {'MyHeader': 'Something'} headers"""
         )
 

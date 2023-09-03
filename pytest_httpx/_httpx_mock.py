@@ -222,7 +222,7 @@ class HTTPXMock:
         matchers = [matcher for matcher, _ in self._callbacks]
         expect_headers = set(
             [
-                header
+                header.lower()
                 for matcher in matchers
                 if matcher.headers
                 for header in matcher.headers
@@ -233,9 +233,9 @@ class HTTPXMock:
         request_description = f"{request.method} request on {request.url}"
         if expect_headers:
             present_headers = {
-                name: request.headers.get(name)
-                for name in expect_headers
-                if request.headers.get(name) is not None
+                name: value
+                for name, value in request.headers.items()
+                if name in expect_headers
             }
             request_description += f" with {present_headers} headers"
             if expect_body:

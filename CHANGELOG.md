@@ -6,8 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Fixed
-- If `httpx` lower cases a header name (like authorization), make sure the header is still displayed in the error if another parameter doesn't match.
-- Add `:Any` type hint to `**matchers` function arguments to satisfy strict type checking mode in pyright
+- Do not exclude a request header from the error message when a request is not matched if the header name was not provided as lower-cased to `match_headers`.
+  - It is now explicit that `httpx` sends headers as lower cased.
+- Add `:Any` type hint to `**matchers` function arguments to satisfy strict type checking mode in [`pyright`](https://microsoft.github.io/pyright/#/).
 
 ## [0.23.1] - 2023-08-02
 ### Fixed

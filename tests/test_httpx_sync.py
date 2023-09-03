@@ -150,7 +150,7 @@ def test_url_not_matching_upper_case_headers_matching(httpx_mock: HTTPXMock) -> 
             client.get("https://test_url", headers={"MyHeader": "Something"})
         assert (
             str(exception_info.value)
-            == """No response can be found for GET request on https://test_url with {'MyHeader': 'Something'} headers amongst:
+            == """No response can be found for GET request on https://test_url with {'myheader': 'Something'} headers amongst:
 Match GET requests on https://test_url?q=b with {'MyHeader': 'Something'} headers"""
         )
 
@@ -861,6 +861,16 @@ def test_request_retrieval_with_more_than_one(testdir: Testdir) -> None:
 def test_headers_matching(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(
         match_headers={"user-agent": f"python-httpx/{httpx.__version__}"}
+    )
+
+    with httpx.Client() as client:
+        response = client.get("https://test_url")
+        assert response.content == b""
+
+
+def test_headers_matching_ignores_case(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(
+        match_headers={"User-Agent": f"python-httpx/{httpx.__version__}"}
     )
 
     with httpx.Client() as client:
