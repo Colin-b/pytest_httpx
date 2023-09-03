@@ -139,7 +139,7 @@ def test_response_with_html_string_body(httpx_mock: HTTPXMock) -> None:
         assert response.text == "<body>test content</body>"
 
 
-def test_url_not_matching_upper_case_headers_matching(httpx_mock: HTTPXMock):
+def test_url_not_matching_upper_case_headers_matching(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(
         method="GET",
         url="https://test_url?q=b",
