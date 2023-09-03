@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Fixed
+- If `httpx` lower cases a header name (like authorization), make sure the header is still displayed in the error if another parameter doesn't match.
 - Add `:Any` type hint to `**matchers` function arguments to satisfy strict type checking mode in pyright
 
 ## [0.23.1] - 2023-08-02
