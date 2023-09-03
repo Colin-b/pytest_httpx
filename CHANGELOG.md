@@ -5,9 +5,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Changed
+- Even if it was never documented as a feature, the `match_headers` parameter was not considering header names case when matching.
+  - As this might have been considered a feature by some users, the fact that `match_headers` will now respect casing is documented as a breaking change.
+
 ### Fixed
-- Do not exclude a request header from the error message when a request is not matched if the header name was not provided as lower-cased to `match_headers`.
-  - It is now explicit that `httpx` sends headers as lower cased.
+- Matching on headers does not ignore name case anymore, the name must now be cased as sent (as some servers might expect a specific case).
+- Error message in case a request does not match will now include request headers with mismatching name case as well.
+- Error message in case a request does not match will now include request headers when not provided as lower-cased to `match_headers`.
 - Add `:Any` type hint to `**matchers` function arguments to satisfy strict type checking mode in [`pyright`](https://microsoft.github.io/pyright/#/).
 
 ## [0.23.1] - 2023-08-02
