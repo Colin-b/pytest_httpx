@@ -232,11 +232,11 @@ class HTTPXMock:
 
         request_description = f"{request.method} request on {request.url}"
         if expect_headers:
-            present_headers = dict(
-                (name, request.headers.get(name))
+            present_headers = {
+                name: request.headers.get(name)
                 for name in expect_headers
                 if request.headers.get(name) is not None
-            )
+            }
             request_description += f" with {present_headers} headers"
             if expect_body:
                 request_description += f" and {request.read()} body"
