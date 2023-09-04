@@ -35,7 +35,6 @@ class _RequestMatcher:
             and self._method_match(request)
             and self._headers_match(request)
             and self._content_match(request)
-            and self._match_json(request)
         )
 
     def _url_match(self, request: httpx.Request) -> bool:
@@ -80,20 +79,16 @@ class _RequestMatcher:
             for header_name, header_value in self.headers.items()
         )
 
-    def _match_json(self, request: httpx.Request) -> bool:
-        if self.json is None:
+    def _content_match(self, request: httpx.Request) -> bool:
+        if self.content is None and self.json is None:
             return True
+        if self.content is not None:
+            return request.read() == self.content
         try:
             # httpx._content.encode_json hard codes utf-8 encoding.
             return json.loads(request.read().decode("utf-8")) == self.json
         except json.decoder.JSONDecodeError:
             return False
-
-    def _content_match(self, request: httpx.Request) -> bool:
-        if self.content is None:
-            return True
-
-        return request.read() == self.content
 
     def __str__(self) -> str:
         matcher_description = f"Match {self.method or 'all'} requests"
