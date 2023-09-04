@@ -184,7 +184,8 @@ def test_content_matching(httpx_mock: HTTPXMock):
 
 #### Matching on HTTP json body
 
-Use `match_json_content` parameter to specify the json that will be matched with the json decoded HTTP body to reply to.
+Use `match_json` parameter to specify the json that will be matched with the json decoded HTTP body to reply to.
+Only one of `match_json` and `match_content` should be used. 
 
 Maching is performed on equality after json decoding the body.
 
@@ -193,7 +194,7 @@ import httpx
 from pytest_httpx import HTTPXMock
 
 def test_json_matching(httpx_mock: HTTPXMock):
-    httpx_mock.add_response(match_json_content={"a": "json", "b": 2})
+    httpx_mock.add_response(match_json={"a": "json", "b": 2})
 
     with httpx.Client() as client:
         response = client.post("https://test_url", json={"a": "json", "b": 2})

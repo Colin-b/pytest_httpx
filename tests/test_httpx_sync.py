@@ -992,24 +992,29 @@ Match all requests with b'This is the body' body"""
     httpx_mock.reset(assert_all_responses_were_requested=False)
 
 
+def test_match_json_and_match_content_error(httpx_mock: HTTPXMock) -> None:
+    with pytest.raises(ValueError):
+        httpx_mock.add_response(match_json={"a": 1}, match_content=b"<foo></bar/>")
+
+
 @pytest.mark.parametrize("json", [{"a": 1, "b": 2}, "somestring", "25", 25.3])
-def test_json_content_matching(json: Any, httpx_mock: HTTPXMock) -> None:
-    httpx_mock.add_response(match_json_content=json)
+def test_match_json_matching(json: Any, httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(match_json=json)
 
     with httpx.Client() as client:
         response = client.post("https://test_url", json=json)
         assert response.read() == b""
 
 
-def test_json_content_not_matching(httpx_mock: HTTPXMock) -> None:
-    httpx_mock.add_response(match_json_content={"a": 1, "b": 2})
+def test_match_json_not_matching(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(match_json={"a": 1, "b": 2})
 
     with httpx.Client() as client:
         with pytest.raises(httpx.TimeoutException) as exception_info:
             client.post("https://test_url", json={"c": 3, "b": 2, "a": 1})
         assert (
             str(exception_info.value)
-            == """No response can be found for POST request on https://test_url with {"c": 3, "b": 2, "a": 1} body amongst:
+            == """No response can be found for POST request on https://test_url with b'{"c": 3, "b": 2, "a": 1}' body amongst:
 Match all requests with {'a': 1, 'b': 2} json body"""
         )
 
@@ -1017,15 +1022,15 @@ Match all requests with {'a': 1, 'b': 2} json body"""
     httpx_mock.reset(assert_all_responses_were_requested=False)
 
 
-def test_json_content_not_matching_invalid_json(httpx_mock: HTTPXMock) -> None:
-    httpx_mock.add_response(match_json_content={"a": 1, "b": 2})
+def test_match_json_not_matching_invalid_json(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(match_json={"a": 1, "b": 2})
 
     with httpx.Client() as client:
         with pytest.raises(httpx.TimeoutException) as exception_info:
             client.post("https://test_url", content=b"<test>foobar</test>")
         assert (
             str(exception_info.value)
-            == """No response can be found for POST request on https://test_url with <test>foobar</test> body amongst:
+            == """No response can be found for POST request on https://test_url with b'<test>foobar</test>' body amongst:
 Match all requests with {'a': 1, 'b': 2} json body"""
         )
 

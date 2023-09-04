@@ -1246,8 +1246,14 @@ Match all requests with b'This is the body' body"""
 
 
 @pytest.mark.asyncio
-async def test_json_content_matching(httpx_mock: HTTPXMock) -> None:
-    httpx_mock.add_response(match_json_content={"a": 1, "b": 2})
+async def test_match_json_and_match_content_error(httpx_mock: HTTPXMock) -> None:
+    with pytest.raises(ValueError):
+        httpx_mock.add_response(match_json={"a": 1}, match_content=b"<foo></bar/>")
+
+
+@pytest.mark.asyncio
+async def test_match_json_matching(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(match_json={"a": 1, "b": 2})
 
     async with httpx.AsyncClient() as client:
         response = await client.post("https://test_url", json={"b": 2, "a": 1})
@@ -1255,15 +1261,15 @@ async def test_json_content_matching(httpx_mock: HTTPXMock) -> None:
 
 
 @pytest.mark.asyncio
-async def test_json_content_not_matching(httpx_mock: HTTPXMock) -> None:
-    httpx_mock.add_response(match_json_content={"a": 1, "b": 2})
+async def test_match_json_not_matching(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(match_json={"a": 1, "b": 2})
 
     async with httpx.AsyncClient() as client:
         with pytest.raises(httpx.TimeoutException) as exception_info:
             await client.post("https://test_url", json={"c": 3, "b": 2, "a": 1})
         assert (
             str(exception_info.value)
-            == """No response can be found for POST request on https://test_url with {"c": 3, "b": 2, "a": 1} body amongst:
+            == """No response can be found for POST request on https://test_url with b'{"c": 3, "b": 2, "a": 1}' body amongst:
 Match all requests with {'a': 1, 'b': 2} json body"""
         )
 
@@ -1272,9 +1278,9 @@ Match all requests with {'a': 1, 'b': 2} json body"""
 
 
 @pytest.mark.asyncio
-async def test_headers_and_json_content_not_matching(httpx_mock: HTTPXMock) -> None:
+async def test_headers_and_match_json_not_matching(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(
-        match_json_content={"a": 1, "b": 2},
+        match_json={"a": 1, "b": 2},
         match_headers={"foo": "bar"},
     )
 
@@ -1283,7 +1289,7 @@ async def test_headers_and_json_content_not_matching(httpx_mock: HTTPXMock) -> N
             await client.post("https://test_url", json={"c": 3, "b": 2, "a": 1})
         assert (
             str(exception_info.value)
-            == """No response can be found for POST request on https://test_url with {} headers and {"c": 3, "b": 2, "a": 1} body amongst:
+            == """No response can be found for POST request on https://test_url with {} headers and b'{"c": 3, "b": 2, "a": 1}' body amongst:
 Match all requests with {'foo': 'bar'} headers and {'a': 1, 'b': 2} json body"""
         )
 
@@ -1292,15 +1298,15 @@ Match all requests with {'foo': 'bar'} headers and {'a': 1, 'b': 2} json body"""
 
 
 @pytest.mark.asyncio
-async def test_json_content_not_matching_invalid_json(httpx_mock: HTTPXMock) -> None:
-    httpx_mock.add_response(match_json_content={"a": 1, "b": 2})
+async def test_match_json_not_matching_invalid_json(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(match_json={"a": 1, "b": 2})
 
     async with httpx.AsyncClient() as client:
         with pytest.raises(httpx.TimeoutException) as exception_info:
             await client.post("https://test_url", content=b"<test>foobar</test>")
         assert (
             str(exception_info.value)
-            == """No response can be found for POST request on https://test_url with <test>foobar</test> body amongst:
+            == """No response can be found for POST request on https://test_url with b'<test>foobar</test>' body amongst:
 Match all requests with {'a': 1, 'b': 2} json body"""
         )
 
