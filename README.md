@@ -5,7 +5,7 @@
 <a href="https://github.com/Colin-b/pytest_httpx/actions"><img alt="Build status" src="https://github.com/Colin-b/pytest_httpx/workflows/Release/badge.svg"></a>
 <a href="https://github.com/Colin-b/pytest_httpx/actions"><img alt="Coverage" src="https://img.shields.io/badge/coverage-100%25-brightgreen"></a>
 <a href="https://github.com/psf/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
-<a href="https://github.com/Colin-b/pytest_httpx/actions"><img alt="Number of tests" src="https://img.shields.io/badge/tests-190 passed-blue"></a>
+<a href="https://github.com/Colin-b/pytest_httpx/actions"><img alt="Number of tests" src="https://img.shields.io/badge/tests-192 passed-blue"></a>
 <a href="https://pypi.org/project/pytest-httpx/"><img alt="Number of downloads" src="https://img.shields.io/pypi/dm/pytest_httpx"></a>
 </p>
 
@@ -186,14 +186,22 @@ def test_content_matching(httpx_mock: HTTPXMock):
 
 Use `match_json` parameter to specify the JSON decoded HTTP body to reply to.
 
-Matching is performed on equality.
+Matching is performed on equality. You can however use `unittest.mock.ANY` to do partial matching.
 
 ```python
 import httpx
 from pytest_httpx import HTTPXMock
+from unittest.mock import ANY
 
 def test_json_matching(httpx_mock: HTTPXMock):
     httpx_mock.add_response(match_json={"a": "json", "b": 2})
+
+    with httpx.Client() as client:
+        response = client.post("https://test_url", json={"a": "json", "b": 2})
+
+        
+def test_partial_json_matching(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(match_json={"a": "json", "b": ANY})
 
     with httpx.Client() as client:
         response = client.post("https://test_url", json={"a": "json", "b": 2})

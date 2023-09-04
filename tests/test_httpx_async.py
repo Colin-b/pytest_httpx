@@ -6,6 +6,7 @@ import time
 import httpx
 import pytest
 from pytest import Testdir
+from unittest.mock import ANY
 
 import pytest_httpx
 from pytest_httpx import HTTPXMock
@@ -1248,6 +1249,15 @@ Match all requests with b'This is the body' body"""
 @pytest.mark.asyncio
 async def test_json_matching(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(match_json={"a": 1, "b": 2})
+
+    async with httpx.AsyncClient() as client:
+        response = await client.post("https://test_url", json={"b": 2, "a": 1})
+        assert response.read() == b""
+
+
+@pytest.mark.asyncio
+async def test_json_partial_matching(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(match_json={"a": 1, "b": ANY})
 
     async with httpx.AsyncClient() as client:
         response = await client.post("https://test_url", json={"b": 2, "a": 1})

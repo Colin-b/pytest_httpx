@@ -1,5 +1,6 @@
 import re
 from typing import Any
+from unittest.mock import ANY
 
 import httpx
 import pytest
@@ -1004,6 +1005,14 @@ def test_match_json_and_match_content_error(httpx_mock: HTTPXMock) -> None:
 
 def test_json_matching(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(match_json={"a": 1, "b": 2})
+
+    with httpx.Client() as client:
+        response = client.post("https://test_url", json={"b": 2, "a": 1})
+        assert response.read() == b""
+
+
+def test_json_partial_matching(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(match_json={"a": 1, "b": ANY})
 
     with httpx.Client() as client:
         response = client.post("https://test_url", json={"b": 2, "a": 1})
