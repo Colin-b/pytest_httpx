@@ -5,7 +5,7 @@
 <a href="https://github.com/Colin-b/pytest_httpx/actions"><img alt="Build status" src="https://github.com/Colin-b/pytest_httpx/workflows/Release/badge.svg"></a>
 <a href="https://github.com/Colin-b/pytest_httpx/actions"><img alt="Coverage" src="https://img.shields.io/badge/coverage-100%25-brightgreen"></a>
 <a href="https://github.com/psf/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
-<a href="https://github.com/Colin-b/pytest_httpx/actions"><img alt="Number of tests" src="https://img.shields.io/badge/tests-171 passed-blue"></a>
+<a href="https://github.com/Colin-b/pytest_httpx/actions"><img alt="Number of tests" src="https://img.shields.io/badge/tests-192 passed-blue"></a>
 <a href="https://pypi.org/project/pytest-httpx/"><img alt="Number of downloads" src="https://img.shields.io/pypi/dm/pytest_httpx"></a>
 </p>
 
@@ -158,7 +158,7 @@ from pytest_httpx import HTTPXMock
 
 
 def test_headers_matching(httpx_mock: HTTPXMock):
-    httpx_mock.add_response(match_headers={'user-agent': 'python-httpx/0.23.0'})
+    httpx_mock.add_response(match_headers={'User-Agent': 'python-httpx/0.24.1'})
 
     with httpx.Client() as client:
         response = client.get("https://test_url")
@@ -181,6 +181,33 @@ def test_content_matching(httpx_mock: HTTPXMock):
     with httpx.Client() as client:
         response = client.post("https://test_url", content=b"This is the body")
 ```
+
+##### Matching on HTTP JSON body
+
+Use `match_json` parameter to specify the JSON decoded HTTP body to reply to.
+
+Matching is performed on equality. You can however use `unittest.mock.ANY` to do partial matching.
+
+```python
+import httpx
+from pytest_httpx import HTTPXMock
+from unittest.mock import ANY
+
+def test_json_matching(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(match_json={"a": "json", "b": 2})
+
+    with httpx.Client() as client:
+        response = client.post("https://test_url", json={"a": "json", "b": 2})
+
+        
+def test_partial_json_matching(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(match_json={"a": "json", "b": ANY})
+
+    with httpx.Client() as client:
+        response = client.post("https://test_url", json={"a": "json", "b": 2})
+```
+        
+Note that `match_content` cannot be provided if `match_json` is also provided.
 
 ### Add JSON response
 
@@ -515,7 +542,7 @@ def test_timeout(httpx_mock: HTTPXMock):
 ## Check sent requests
 
 The best way to ensure the content of your requests is still to use the `match_headers` and / or `match_content` parameters when adding a response.
-In the same spirit, ensuring that no request was issued does not necessarily requires any code.
+In the same spirit, ensuring that no request was issued does not necessarily require any code.
 
 In any case, you always have the ability to retrieve the requests that were issued.
 
