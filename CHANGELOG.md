@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
-- Added `match_json` which allows matching a json decoded body against an arbitrary python object for equality.
+- Added `match_json` parameter which allows matching on JSON decoded body (matching against python representation instead of bytes).
 
 ### Changed
 - Even if it was never documented as a feature, the `match_headers` parameter was not considering header names case when matching.

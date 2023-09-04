@@ -1246,12 +1246,6 @@ Match all requests with b'This is the body' body"""
 
 
 @pytest.mark.asyncio
-async def test_match_json_and_match_content_error(httpx_mock: HTTPXMock) -> None:
-    with pytest.raises(ValueError):
-        httpx_mock.add_response(match_json={"a": 1}, match_content=b"<foo></bar/>")
-
-
-@pytest.mark.asyncio
 async def test_json_matching(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(match_json={"a": 1, "b": 2})
 

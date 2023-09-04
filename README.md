@@ -5,7 +5,7 @@
 <a href="https://github.com/Colin-b/pytest_httpx/actions"><img alt="Build status" src="https://github.com/Colin-b/pytest_httpx/workflows/Release/badge.svg"></a>
 <a href="https://github.com/Colin-b/pytest_httpx/actions"><img alt="Coverage" src="https://img.shields.io/badge/coverage-100%25-brightgreen"></a>
 <a href="https://github.com/psf/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
-<a href="https://github.com/Colin-b/pytest_httpx/actions"><img alt="Number of tests" src="https://img.shields.io/badge/tests-181 passed-blue"></a>
+<a href="https://github.com/Colin-b/pytest_httpx/actions"><img alt="Number of tests" src="https://img.shields.io/badge/tests-190 passed-blue"></a>
 <a href="https://pypi.org/project/pytest-httpx/"><img alt="Number of downloads" src="https://img.shields.io/pypi/dm/pytest_httpx"></a>
 </p>
 
@@ -182,12 +182,11 @@ def test_content_matching(httpx_mock: HTTPXMock):
         response = client.post("https://test_url", content=b"This is the body")
 ```
 
-#### Matching on HTTP json body
+##### Matching on HTTP JSON body
 
-Use `match_json` parameter to specify the json that will be matched with the json decoded HTTP body to reply to.
-Only one of `match_json` and `match_content` should be used. 
+Use `match_json` parameter to specify the JSON decoded HTTP body to reply to.
 
-Maching is performed on equality after json decoding the body.
+Matching is performed on equality.
 
 ```python
 import httpx
@@ -200,6 +199,7 @@ def test_json_matching(httpx_mock: HTTPXMock):
         response = client.post("https://test_url", json={"a": "json", "b": 2})
 ```
         
+Note that `match_content` cannot be provided if `match_json` is also provided.
 
 ### Add JSON response
 

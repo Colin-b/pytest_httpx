@@ -24,7 +24,7 @@ class _RequestMatcher:
         self.headers = match_headers
         if match_content is not None and match_json is not None:
             raise ValueError(
-                "Only one parameter of match_json or match_content can be supplied."
+                "Only one way of matching against the body can be provided. If you want to match against the JSON decoded representation, use match_json. Otherwise, use match_content."
             )
         self.content = match_content
         self.json = match_json
@@ -150,7 +150,7 @@ class HTTPXMock:
         :param method: HTTP method identifying the request(s) to match.
         :param match_headers: HTTP headers identifying the request(s) to match. Must be a dictionary.
         :param match_content: Full HTTP body identifying the request(s) to match. Must be bytes.
-        :param match_json: Any object that should match json.loads(request.body.decode(encoding))
+        :param match_json: JSON decoded HTTP body identifying the request(s) to match. Must be JSON encodable.
         """
 
         json = copy.deepcopy(json) if json is not None else None
@@ -187,7 +187,7 @@ class HTTPXMock:
         :param method: HTTP method identifying the request(s) to match.
         :param match_headers: HTTP headers identifying the request(s) to match. Must be a dictionary.
         :param match_content: Full HTTP body identifying the request(s) to match. Must be bytes.
-        :param match_json: Any object that should match json.loads(request.body.decode(encoding))
+        :param match_json: JSON decoded HTTP body identifying the request(s) to match. Must be JSON encodable.
         """
         self._callbacks.append((_RequestMatcher(**matchers), callback))
 
@@ -201,7 +201,7 @@ class HTTPXMock:
         :param method: HTTP method identifying the request(s) to match.
         :param match_headers: HTTP headers identifying the request(s) to match. Must be a dictionary.
         :param match_content: Full HTTP body identifying the request(s) to match. Must be bytes.
-        :param match_json: Any object that should match json.loads(request.body.decode(encoding))
+        :param match_json: JSON decoded HTTP body identifying the request(s) to match. Must be JSON encodable.
         """
 
         def exception_callback(request: httpx.Request) -> None:
@@ -327,9 +327,10 @@ class HTTPXMock:
 
         :param url: Full URL identifying the requests to retrieve.
         Can be a str, a re.Pattern instance or a httpx.URL instance.
-        :param method: HTTP method identifying the requests to retrieve. Must be a upper cased string value.
+        :param method: HTTP method identifying the requests to retrieve. Must be an upper-cased string value.
         :param match_headers: HTTP headers identifying the requests to retrieve. Must be a dictionary.
         :param match_content: Full HTTP body identifying the requests to retrieve. Must be bytes.
+        :param match_json: JSON decoded HTTP body identifying the requests to retrieve. Must be JSON encodable.
         """
         matcher = _RequestMatcher(**matchers)
         return [request for request in self._requests if matcher.match(request)]
@@ -340,9 +341,10 @@ class HTTPXMock:
 
         :param url: Full URL identifying the request to retrieve.
         Can be a str, a re.Pattern instance or a httpx.URL instance.
-        :param method: HTTP method identifying the request to retrieve. Must be a upper cased string value.
+        :param method: HTTP method identifying the request to retrieve. Must be an upper-cased string value.
         :param match_headers: HTTP headers identifying the request to retrieve. Must be a dictionary.
         :param match_content: Full HTTP body identifying the request to retrieve. Must be bytes.
+        :param match_json: JSON decoded HTTP body identifying the request to retrieve. Must be JSON encodable.
         :raises AssertionError: in case more than one request match.
         """
         requests = self.get_requests(**matchers)

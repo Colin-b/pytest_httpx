@@ -993,16 +993,20 @@ Match all requests with b'This is the body' body"""
 
 
 def test_match_json_and_match_content_error(httpx_mock: HTTPXMock) -> None:
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError) as exception_info:
         httpx_mock.add_response(match_json={"a": 1}, match_content=b"<foo></bar/>")
 
+    assert (
+        str(exception_info.value)
+        == "Only one way of matching against the body can be provided. If you want to match against the JSON decoded representation, use match_json. Otherwise, use match_content."
+    )
 
-@pytest.mark.parametrize("json", [{"a": 1, "b": 2}, "somestring", "25", 25.3])
-def test_json_matching(json: Any, httpx_mock: HTTPXMock) -> None:
-    httpx_mock.add_response(match_json=json)
+
+def test_json_matching(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(match_json={"a": 1, "b": 2})
 
     with httpx.Client() as client:
-        response = client.post("https://test_url", json=json)
+        response = client.post("https://test_url", json={"b": 2, "a": 1})
         assert response.read() == b""
 
 
@@ -1022,7 +1026,26 @@ Match all requests with {'a': 1, 'b': 2} json body"""
     httpx_mock.reset(assert_all_responses_were_requested=False)
 
 
-def test_json_invalid_json(httpx_mock: HTTPXMock) -> None:
+def test_headers_and_json_not_matching(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(
+        match_json={"a": 1, "b": 2},
+        match_headers={"foo": "bar"},
+    )
+
+    with httpx.Client() as client:
+        with pytest.raises(httpx.TimeoutException) as exception_info:
+            client.post("https://test_url", json={"c": 3, "b": 2, "a": 1})
+        assert (
+            str(exception_info.value)
+            == """No response can be found for POST request on https://test_url with {} headers and b'{"c": 3, "b": 2, "a": 1}' body amongst:
+Match all requests with {'foo': 'bar'} headers and {'a': 1, 'b': 2} json body"""
+        )
+
+    # Clean up responses to avoid assertion failure
+    httpx_mock.reset(assert_all_responses_were_requested=False)
+
+
+def test_match_json_invalid_json(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(match_json={"a": 1, "b": 2})
 
     with httpx.Client() as client:
