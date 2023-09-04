@@ -998,7 +998,7 @@ def test_match_json_and_match_content_error(httpx_mock: HTTPXMock) -> None:
 
 
 @pytest.mark.parametrize("json", [{"a": 1, "b": 2}, "somestring", "25", 25.3])
-def test_match_json_matching(json: Any, httpx_mock: HTTPXMock) -> None:
+def test_json_matching(json: Any, httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(match_json=json)
 
     with httpx.Client() as client:
@@ -1006,7 +1006,7 @@ def test_match_json_matching(json: Any, httpx_mock: HTTPXMock) -> None:
         assert response.read() == b""
 
 
-def test_match_json_not_matching(httpx_mock: HTTPXMock) -> None:
+def test_json_not_matching(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(match_json={"a": 1, "b": 2})
 
     with httpx.Client() as client:
@@ -1022,7 +1022,7 @@ Match all requests with {'a': 1, 'b': 2} json body"""
     httpx_mock.reset(assert_all_responses_were_requested=False)
 
 
-def test_match_json_not_matching_invalid_json(httpx_mock: HTTPXMock) -> None:
+def test_json_invalid_json(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(match_json={"a": 1, "b": 2})
 
     with httpx.Client() as client:

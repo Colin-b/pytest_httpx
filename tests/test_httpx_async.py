@@ -1252,7 +1252,7 @@ async def test_match_json_and_match_content_error(httpx_mock: HTTPXMock) -> None
 
 
 @pytest.mark.asyncio
-async def test_match_json_matching(httpx_mock: HTTPXMock) -> None:
+async def test_json_matching(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(match_json={"a": 1, "b": 2})
 
     async with httpx.AsyncClient() as client:
@@ -1261,7 +1261,7 @@ async def test_match_json_matching(httpx_mock: HTTPXMock) -> None:
 
 
 @pytest.mark.asyncio
-async def test_match_json_not_matching(httpx_mock: HTTPXMock) -> None:
+async def test_json_not_matching(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(match_json={"a": 1, "b": 2})
 
     async with httpx.AsyncClient() as client:
@@ -1278,7 +1278,7 @@ Match all requests with {'a': 1, 'b': 2} json body"""
 
 
 @pytest.mark.asyncio
-async def test_headers_and_match_json_not_matching(httpx_mock: HTTPXMock) -> None:
+async def test_headers_and_json_not_matching(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(
         match_json={"a": 1, "b": 2},
         match_headers={"foo": "bar"},
@@ -1298,7 +1298,7 @@ Match all requests with {'foo': 'bar'} headers and {'a': 1, 'b': 2} json body"""
 
 
 @pytest.mark.asyncio
-async def test_match_json_not_matching_invalid_json(httpx_mock: HTTPXMock) -> None:
+async def test_match_json_invalid_json(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(match_json={"a": 1, "b": 2})
 
     async with httpx.AsyncClient() as client:
