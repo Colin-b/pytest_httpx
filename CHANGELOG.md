@@ -5,6 +5,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- Added `match_json` which allows matching a json decoded body against an arbitrary python object for equality.
+
 ### Changed
 - Even if it was never documented as a feature, the `match_headers` parameter was not considering header names case when matching.
   - As this might have been considered a feature by some users, the fact that `match_headers` will now respect casing is documented as a breaking change.

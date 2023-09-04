@@ -1,5 +1,6 @@
 import copy
 import inspect
+import json
 import re
 from typing import List, Union, Optional, Callable, Tuple, Pattern, Any, Dict, Awaitable
 
@@ -15,12 +16,18 @@ class _RequestMatcher:
         method: Optional[str] = None,
         match_headers: Optional[Dict[str, Any]] = None,
         match_content: Optional[bytes] = None,
+        match_json: Optional[Any] = None,
     ):
         self.nb_calls = 0
         self.url = httpx.URL(url) if url and isinstance(url, str) else url
         self.method = method.upper() if method else method
         self.headers = match_headers
+        if match_content is not None and match_json is not None:
+            raise ValueError(
+                "Only one parameter of match_json or match_content can be supplied."
+            )
         self.content = match_content
+        self.json = match_json
 
     def match(self, request: httpx.Request) -> bool:
         return (
@@ -73,10 +80,15 @@ class _RequestMatcher:
         )
 
     def _content_match(self, request: httpx.Request) -> bool:
-        if self.content is None:
+        if self.content is None and self.json is None:
             return True
-
-        return request.read() == self.content
+        if self.content is not None:
+            return request.read() == self.content
+        try:
+            # httpx._content.encode_json hard codes utf-8 encoding.
+            return json.loads(request.read().decode("utf-8")) == self.json
+        except json.decoder.JSONDecodeError:
+            return False
 
     def __str__(self) -> str:
         matcher_description = f"Match {self.method or 'all'} requests"
@@ -86,8 +98,12 @@ class _RequestMatcher:
             matcher_description += f" with {self.headers} headers"
             if self.content is not None:
                 matcher_description += f" and {self.content} body"
+            elif self.json is not None:
+                matcher_description += f" and {self.json} json body"
         elif self.content is not None:
             matcher_description += f" with {self.content} body"
+        elif self.json is not None:
+            matcher_description += f" with {self.json} json body"
         return matcher_description
 
 
@@ -110,7 +126,7 @@ class HTTPXMock:
         self,
         status_code: int = 200,
         http_version: str = "HTTP/1.1",
-        headers: _httpx_internals.HeaderTypes = None,
+        headers: Optional[_httpx_internals.HeaderTypes] = None,
         content: Optional[bytes] = None,
         text: Optional[str] = None,
         html: Optional[str] = None,
@@ -134,6 +150,7 @@ class HTTPXMock:
         :param method: HTTP method identifying the request(s) to match.
         :param match_headers: HTTP headers identifying the request(s) to match. Must be a dictionary.
         :param match_content: Full HTTP body identifying the request(s) to match. Must be bytes.
+        :param match_json: Any object that should match json.loads(request.body.decode(encoding))
         """
 
         json = copy.deepcopy(json) if json is not None else None
@@ -170,6 +187,7 @@ class HTTPXMock:
         :param method: HTTP method identifying the request(s) to match.
         :param match_headers: HTTP headers identifying the request(s) to match. Must be a dictionary.
         :param match_content: Full HTTP body identifying the request(s) to match. Must be bytes.
+        :param match_json: Any object that should match json.loads(request.body.decode(encoding))
         """
         self._callbacks.append((_RequestMatcher(**matchers), callback))
 
@@ -183,6 +201,7 @@ class HTTPXMock:
         :param method: HTTP method identifying the request(s) to match.
         :param match_headers: HTTP headers identifying the request(s) to match. Must be a dictionary.
         :param match_content: Full HTTP body identifying the request(s) to match. Must be bytes.
+        :param match_json: Any object that should match json.loads(request.body.decode(encoding))
         """
 
         def exception_callback(request: httpx.Request) -> None:
@@ -240,7 +259,12 @@ class HTTPXMock:
                 for header in matcher.headers
             ]
         )
-        expect_body = any([matcher.content is not None for matcher in matchers])
+        expect_body = any(
+            [
+                matcher.content is not None or matcher.json is not None
+                for matcher in matchers
+            ]
+        )
 
         request_description = f"{request.method} request on {request.url}"
         if expect_headers:
