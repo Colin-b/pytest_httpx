@@ -5,6 +5,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Changed
+- Requires [`httpx`](https://www.python-httpx.org)==0.25.\*
+
+### Removed
+- `pytest` `6` is no longer supported.
+
+### Added
+- `python` `3.12` is supported.
 
 ## [0.24.0] - 2023-09-04
 ### Added

@@ -8,8 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.9', '3.10', '3.11']
-        pytest-major-version: ['6', '7']
+        python-version: ['3.9', '3.10', '3.11', '3.12']
 
     steps:
     - uses: actions/checkout@v2
@@ -20,8 +19,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        python -m pip install pytest~=${{ matrix.pytest-major-version }}.0
         python -m pip install -e .[testing]
-    - name: Test with pytest v${{ matrix.pytest-major-version }}
+    - name: Test
       run: |
         pytest --cov=pytest_httpx --cov-fail-under=100 --cov-report=term-missing --runpytest=subprocess
