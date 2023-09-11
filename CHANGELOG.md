@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.25.0] - 2023-09-11
+### Changed
+- Requires [`httpx`](https://www.python-httpx.org)==0.25.\*
+
+### Removed
+- `pytest` `6` is no longer supported.
+
 ## [0.24.0] - 2023-09-04
 ### Added
 - Added `match_json` parameter which allows matching on JSON decoded body (matching against python representation instead of bytes).
@@ -276,7 +283,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - First release, should be considered as unstable for now as design might change.
 
-[Unreleased]: https://github.com/Colin-b/pytest_httpx/compare/v0.24.0...HEAD
+[Unreleased]: https://github.com/Colin-b/pytest_httpx/compare/v0.25.0...HEAD
+[0.25.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.24.0...v0.25.0
 [0.24.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.23.1...v0.24.0
 [0.23.1]: https://github.com/Colin-b/pytest_httpx/compare/v0.23.0...v0.23.1
 [0.23.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.22.0...v0.23.0
