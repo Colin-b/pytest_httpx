@@ -48,7 +48,7 @@ setup(
             "pytest-cov==4.*",
         ]
     },
-    python_requires=">=3.9",
+    python_requires=">=3.8",
     project_urls={
         "GitHub": "https://github.com/Colin-b/pytest_httpx",
         "Changelog": "https://github.com/Colin-b/pytest_httpx/blob/master/CHANGELOG.md",

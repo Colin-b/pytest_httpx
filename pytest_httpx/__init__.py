@@ -1,5 +1,4 @@
-from collections.abc import Generator
-from typing import List
+from typing import Generator, List
 
 import httpx
 import pytest
