@@ -1011,6 +1011,22 @@ Match all requests with http://my_test_proxy proxy URL"""
     httpx_mock.reset(assert_all_responses_were_requested=False)
 
 
+def test_proxy_not_existing(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(proxy_url="http://my_test_proxy")
+
+    with httpx.Client() as client:
+        with pytest.raises(httpx.TimeoutException) as exception_info:
+            client.get("http://test_url")
+        assert (
+            str(exception_info.value)
+            == """No response can be found for GET request on http://test_url with no proxy URL amongst:
+Match all requests with http://my_test_proxy proxy URL"""
+        )
+
+    # Clean up responses to avoid assertion failure
+    httpx_mock.reset(assert_all_responses_were_requested=False)
+
+
 def test_requests_retrieval_content_matching(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response()
 

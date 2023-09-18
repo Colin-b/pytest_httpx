@@ -61,6 +61,7 @@ class RequestDescription:
             extra_description.append(f"{self.request.read()} body")
 
         if self.expect_proxy:
-            extra_description.append(f"{_proxy_url(self.real_transport)} proxy URL")
+            proxy_url = _proxy_url(self.real_transport)
+            extra_description.append(f"{proxy_url if proxy_url else 'no'} proxy URL")
 
         return " and ".join(extra_description)
