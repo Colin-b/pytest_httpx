@@ -1230,6 +1230,119 @@ async def test_content_matching(httpx_mock: HTTPXMock) -> None:
 
 
 @pytest.mark.asyncio
+async def test_proxy_matching(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(proxy_url="http://user:pwd@my_other_proxy/")
+
+    async with httpx.AsyncClient(
+        proxies={
+            "http://": "http://my_test_proxy",
+            "https://": "http://user:pwd@my_other_proxy",
+        }
+    ) as client:
+        response = await client.get("https://test_url")
+        assert response.read() == b""
+
+
+@pytest.mark.asyncio
+async def test_proxy_not_matching(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(proxy_url="http://my_test_proxy")
+
+    async with httpx.AsyncClient(
+        proxies={
+            "http://": "http://my_test_proxy",
+            "https://": "http://user:pwd@my_other_proxy",
+        }
+    ) as client:
+        with pytest.raises(httpx.TimeoutException) as exception_info:
+            await client.get("http://test_url")
+        assert (
+            str(exception_info.value)
+            == """No response can be found for GET request on http://test_url with http://my_test_proxy/ proxy URL amongst:
+Match all requests with http://my_test_proxy proxy URL"""
+        )
+
+    # Clean up responses to avoid assertion failure
+    httpx_mock.reset(assert_all_responses_were_requested=False)
+
+
+@pytest.mark.asyncio
+async def test_proxy_not_existing(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(proxy_url="http://my_test_proxy")
+
+    async with httpx.AsyncClient() as client:
+        with pytest.raises(httpx.TimeoutException) as exception_info:
+            await client.get("http://test_url")
+        assert (
+            str(exception_info.value)
+            == """No response can be found for GET request on http://test_url with no proxy URL amongst:
+Match all requests with http://my_test_proxy proxy URL"""
+        )
+
+    # Clean up responses to avoid assertion failure
+    httpx_mock.reset(assert_all_responses_were_requested=False)
+
+
+@pytest.mark.asyncio
+async def test_requests_retrieval_content_matching(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response()
+
+    async with httpx.AsyncClient() as client:
+        await client.post("https://test_url", content=b"This is the body")
+        await client.post("https://test_url2", content=b"This is the body")
+        await client.post("https://test_url2", content=b"This is the body2")
+
+    assert len(httpx_mock.get_requests(match_content=b"This is the body")) == 2
+
+
+@pytest.mark.asyncio
+async def test_requests_retrieval_json_matching(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response()
+
+    async with httpx.AsyncClient() as client:
+        await client.post("https://test_url", json=["my_str"])
+        await client.post("https://test_url2", json=["my_str"])
+        await client.post("https://test_url2", json=["my_str2"])
+
+    assert len(httpx_mock.get_requests(match_json=["my_str"])) == 2
+
+
+@pytest.mark.asyncio
+async def test_requests_retrieval_proxy_matching(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response()
+
+    async with httpx.AsyncClient(
+        proxies={
+            "http://": "http://my_test_proxy",
+            "https://": "http://user:pwd@my_other_proxy",
+        }
+    ) as client:
+        await client.get("https://test_url")
+        await client.get("https://test_url2")
+        await client.get("http://test_url2")
+
+    assert (
+        len(httpx_mock.get_requests(proxy_url="http://user:pwd@my_other_proxy/")) == 2
+    )
+
+
+@pytest.mark.asyncio
+async def test_request_retrieval_proxy_matching(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response()
+
+    async with httpx.AsyncClient(
+        proxies={
+            "http://": "http://my_test_proxy",
+            "https://": "http://user:pwd@my_other_proxy",
+        }
+    ) as client:
+        await client.get("https://test_url")
+        await client.get("https://test_url2")
+        await client.get("http://test_url2")
+
+    assert httpx_mock.get_request(proxy_url="http://my_test_proxy/")
+
+
+@pytest.mark.asyncio
 async def test_content_not_matching(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(match_content=b"This is the body")
 

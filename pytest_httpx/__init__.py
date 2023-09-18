@@ -51,7 +51,7 @@ def httpx_mock(
         "_transport_for_url",
         lambda self, url: real_sync_transport(self, url)
         if url.host in non_mocked_hosts
-        else _PytestSyncTransport(mock),
+        else _PytestSyncTransport(real_sync_transport(self, url), mock),
     )
     # Mock asynchronous requests
     real_async_transport = httpx.AsyncClient._transport_for_url
@@ -60,7 +60,7 @@ def httpx_mock(
         "_transport_for_url",
         lambda self, url: real_async_transport(self, url)
         if url.host in non_mocked_hosts
-        else _PytestAsyncTransport(mock),
+        else _PytestAsyncTransport(real_async_transport(self, url), mock),
     )
     yield mock
     mock.reset(assert_all_responses_were_requested)

@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.26.0] - 2023-09-18
+### Added
+- Added `proxy_url` parameter which allows matching on proxy URL.
+
 ## [0.25.0] - 2023-09-11
 ### Changed
 - Requires [`httpx`](https://www.python-httpx.org)==0.25.\*
@@ -283,7 +287,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - First release, should be considered as unstable for now as design might change.
 
-[Unreleased]: https://github.com/Colin-b/pytest_httpx/compare/v0.25.0...HEAD
+[Unreleased]: https://github.com/Colin-b/pytest_httpx/compare/v0.26.0...HEAD
+[0.26.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.25.0...v0.26.0
 [0.25.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.24.0...v0.25.0
 [0.24.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.23.1...v0.24.0
 [0.23.1]: https://github.com/Colin-b/pytest_httpx/compare/v0.23.0...v0.23.1
