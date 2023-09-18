@@ -5,7 +5,7 @@
 <a href="https://github.com/Colin-b/pytest_httpx/actions"><img alt="Build status" src="https://github.com/Colin-b/pytest_httpx/workflows/Release/badge.svg"></a>
 <a href="https://github.com/Colin-b/pytest_httpx/actions"><img alt="Coverage" src="https://img.shields.io/badge/coverage-100%25-brightgreen"></a>
 <a href="https://github.com/psf/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
-<a href="https://github.com/Colin-b/pytest_httpx/actions"><img alt="Number of tests" src="https://img.shields.io/badge/tests-192 passed-blue"></a>
+<a href="https://github.com/Colin-b/pytest_httpx/actions"><img alt="Number of tests" src="https://img.shields.io/badge/tests-204 passed-blue"></a>
 <a href="https://pypi.org/project/pytest-httpx/"><img alt="Number of downloads" src="https://img.shields.io/pypi/dm/pytest_httpx"></a>
 </p>
 
@@ -144,6 +144,26 @@ def test_head(httpx_mock: HTTPXMock):
     with httpx.Client() as client:
         response = client.head("https://test_url")
     
+```
+
+#### Matching on proxy URL
+
+`proxy_url` parameter can either be a string, a python [re.Pattern](https://docs.python.org/3/library/re.html) instance or a [httpx.URL](https://www.python-httpx.org/api/#url) instance.
+
+Matching is performed on the full proxy URL, query parameters included.
+
+Order of parameters in the query string does not matter, however order of values do matter if the same parameter is provided more than once.
+
+```python
+import httpx
+from pytest_httpx import HTTPXMock
+
+
+def test_proxy_url(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(proxy_url="http://test_proxy_url?a=1&b=2")
+
+    with httpx.Client(proxies={"https://": "http://test_proxy_url?a=2&b=1"}) as client:
+        response = client.get("https://test_url")
 ```
 
 #### Matching on HTTP headers
@@ -586,6 +606,8 @@ You can add criteria so that requests will be returned only in case of a more sp
 
 Matching is performed on the full URL, query parameters included.
 
+Order of parameters in the query string does not matter, however order of values do matter if the same parameter is provided more than once.
+
 #### Matching on HTTP method
 
 Use `method` parameter to specify the HTTP method (POST, PUT, DELETE, PATCH, HEAD) of the requests to retrieve.
@@ -593,6 +615,14 @@ Use `method` parameter to specify the HTTP method (POST, PUT, DELETE, PATCH, HEA
 `method` parameter must be a string. It will be upper-cased, so it can be provided lower cased.
 
 Matching is performed on equality.
+
+#### Matching on proxy URL
+
+`proxy_url` parameter can either be a string, a python [re.Pattern](https://docs.python.org/3/library/re.html) instance or a [httpx.URL](https://www.python-httpx.org/api/#url) instance.
+
+Matching is performed on the full proxy URL, query parameters included.
+
+Order of parameters in the query string does not matter, however order of values do matter if the same parameter is provided more than once.
 
 #### Matching on HTTP headers
 
@@ -605,6 +635,14 @@ Matching is performed on equality for each provided header.
 Use `match_content` parameter to specify the full HTTP body executing the callback.
 
 Matching is performed on equality.
+
+##### Matching on HTTP JSON body
+
+Use `match_json` parameter to specify the JSON decoded HTTP body executing the callback.
+
+Matching is performed on equality. You can however use `unittest.mock.ANY` to do partial matching.
+
+Note that `match_content` cannot be provided if `match_json` is also provided.
 
 ## Do not mock some requests
 
