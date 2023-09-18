@@ -1,117 +1,21 @@
 import copy
 import inspect
-import json
-import re
-from typing import List, Union, Optional, Callable, Tuple, Pattern, Any, Dict, Awaitable
+from typing import Union, Optional, Callable, Any, Awaitable
 
 import httpx
 
 from pytest_httpx import _httpx_internals
-
-
-class _RequestMatcher:
-    def __init__(
-        self,
-        url: Optional[Union[str, Pattern[str], httpx.URL]] = None,
-        method: Optional[str] = None,
-        match_headers: Optional[Dict[str, Any]] = None,
-        match_content: Optional[bytes] = None,
-        match_json: Optional[Any] = None,
-    ):
-        self.nb_calls = 0
-        self.url = httpx.URL(url) if url and isinstance(url, str) else url
-        self.method = method.upper() if method else method
-        self.headers = match_headers
-        if match_content is not None and match_json is not None:
-            raise ValueError(
-                "Only one way of matching against the body can be provided. If you want to match against the JSON decoded representation, use match_json. Otherwise, use match_content."
-            )
-        self.content = match_content
-        self.json = match_json
-
-    def match(self, request: httpx.Request) -> bool:
-        return (
-            self._url_match(request)
-            and self._method_match(request)
-            and self._headers_match(request)
-            and self._content_match(request)
-        )
-
-    def _url_match(self, request: httpx.Request) -> bool:
-        if not self.url:
-            return True
-
-        if isinstance(self.url, re.Pattern):
-            return self.url.match(str(request.url)) is not None
-
-        # Compare query parameters apart as order of parameters should not matter
-        request_params = dict(request.url.params)
-        params = dict(self.url.params)
-
-        # Remove the query parameters from the original URL to compare everything besides query parameters
-        request_url = request.url.copy_with(query=None)
-        url = self.url.copy_with(query=None)
-
-        return (request_params == params) and (url == request_url)
-
-    def _method_match(self, request: httpx.Request) -> bool:
-        if not self.method:
-            return True
-
-        return request.method == self.method
-
-    def _headers_match(self, request: httpx.Request) -> bool:
-        if not self.headers:
-            return True
-
-        encoding = request.headers.encoding
-        request_headers = {}
-        # Can be cleaned based on the outcome of https://github.com/encode/httpx/discussions/2841
-        for raw_name, raw_value in request.headers.raw:
-            if raw_name in request_headers:
-                request_headers[raw_name] += b", " + raw_value
-            else:
-                request_headers[raw_name] = raw_value
-
-        return all(
-            request_headers.get(header_name.encode(encoding))
-            == header_value.encode(encoding)
-            for header_name, header_value in self.headers.items()
-        )
-
-    def _content_match(self, request: httpx.Request) -> bool:
-        if self.content is None and self.json is None:
-            return True
-        if self.content is not None:
-            return request.read() == self.content
-        try:
-            # httpx._content.encode_json hard codes utf-8 encoding.
-            return json.loads(request.read().decode("utf-8")) == self.json
-        except json.decoder.JSONDecodeError:
-            return False
-
-    def __str__(self) -> str:
-        matcher_description = f"Match {self.method or 'all'} requests"
-        if self.url:
-            matcher_description += f" on {self.url}"
-        if self.headers:
-            matcher_description += f" with {self.headers} headers"
-            if self.content is not None:
-                matcher_description += f" and {self.content} body"
-            elif self.json is not None:
-                matcher_description += f" and {self.json} json body"
-        elif self.content is not None:
-            matcher_description += f" with {self.content} body"
-        elif self.json is not None:
-            matcher_description += f" with {self.json} json body"
-        return matcher_description
+from pytest_httpx._pretty_print import RequestDescription
+from pytest_httpx._request_matcher import _RequestMatcher
 
 
 class HTTPXMock:
     def __init__(self) -> None:
-        self._requests: List[httpx.Request] = []
-        self._callbacks: List[
-            Tuple[
+        self._requests: list[
+            tuple[Union[httpx.BaseTransport, httpx.AsyncBaseTransport], httpx.Request]
+        ] = []
+        self._callbacks: list[
+            tuple[
                 _RequestMatcher,
                 Callable[
                     [httpx.Request],
@@ -148,6 +52,8 @@ class HTTPXMock:
         :param url: Full URL identifying the request(s) to match.
         Can be a str, a re.Pattern instance or a httpx.URL instance.
         :param method: HTTP method identifying the request(s) to match.
+        :param proxy_url: Full proxy URL identifying the request(s) to match.
+        Can be a str, a re.Pattern instance or a httpx.URL instance.
         :param match_headers: HTTP headers identifying the request(s) to match. Must be a dictionary.
         :param match_content: Full HTTP body identifying the request(s) to match. Must be bytes.
         :param match_json: JSON decoded HTTP body identifying the request(s) to match. Must be JSON encodable.
@@ -185,6 +91,8 @@ class HTTPXMock:
         :param url: Full URL identifying the request(s) to match.
         Can be a str, a re.Pattern instance or a httpx.URL instance.
         :param method: HTTP method identifying the request(s) to match.
+        :param proxy_url: Full proxy URL identifying the request(s) to match.
+        Can be a str, a re.Pattern instance or a httpx.URL instance.
         :param match_headers: HTTP headers identifying the request(s) to match. Must be a dictionary.
         :param match_content: Full HTTP body identifying the request(s) to match. Must be bytes.
         :param match_json: JSON decoded HTTP body identifying the request(s) to match. Must be JSON encodable.
@@ -199,6 +107,8 @@ class HTTPXMock:
         :param url: Full URL identifying the request(s) to match.
         Can be a str, a re.Pattern instance or a httpx.URL instance.
         :param method: HTTP method identifying the request(s) to match.
+        :param proxy_url: Full proxy URL identifying the request(s) to match.
+        Can be a str, a re.Pattern instance or a httpx.URL instance.
         :param match_headers: HTTP headers identifying the request(s) to match. Must be a dictionary.
         :param match_content: Full HTTP body identifying the request(s) to match. Must be bytes.
         :param match_json: JSON decoded HTTP body identifying the request(s) to match. Must be JSON encodable.
@@ -213,11 +123,12 @@ class HTTPXMock:
 
     def _handle_request(
         self,
+        real_transport: httpx.BaseTransport,
         request: httpx.Request,
     ) -> httpx.Response:
-        self._requests.append(request)
+        self._requests.append((real_transport, request))
 
-        callback = self._get_callback(request)
+        callback = self._get_callback(real_transport, request)
         if callback:
             response = callback(request)
 
@@ -225,16 +136,18 @@ class HTTPXMock:
                 return _unread(response)
 
         raise httpx.TimeoutException(
-            self._explain_that_no_response_was_found(request), request=request
+            self._explain_that_no_response_was_found(real_transport, request),
+            request=request,
         )
 
     async def _handle_async_request(
         self,
+        real_transport: httpx.AsyncBaseTransport,
         request: httpx.Request,
     ) -> httpx.Response:
-        self._requests.append(request)
+        self._requests.append((real_transport, request))
 
-        callback = self._get_callback(request)
+        callback = self._get_callback(real_transport, request)
         if callback:
             response = callback(request)
 
@@ -244,56 +157,29 @@ class HTTPXMock:
                 return _unread(response)
 
         raise httpx.TimeoutException(
-            self._explain_that_no_response_was_found(request), request=request
+            self._explain_that_no_response_was_found(real_transport, request),
+            request=request,
         )
 
-    def _explain_that_no_response_was_found(self, request: httpx.Request) -> str:
+    def _explain_that_no_response_was_found(
+        self,
+        real_transport: Union[httpx.BaseTransport, httpx.AsyncBaseTransport],
+        request: httpx.Request,
+    ) -> str:
         matchers = [matcher for matcher, _ in self._callbacks]
-        headers_encoding = request.headers.encoding
-        expect_headers = set(
-            [
-                # httpx uses lower cased header names as internal key
-                header.lower().encode(headers_encoding)
-                for matcher in matchers
-                if matcher.headers
-                for header in matcher.headers
-            ]
-        )
-        expect_body = any(
-            [
-                matcher.content is not None or matcher.json is not None
-                for matcher in matchers
-            ]
-        )
 
-        request_description = f"{request.method} request on {request.url}"
-        if expect_headers:
-            present_headers = {}
-            # Can be cleaned based on the outcome of https://github.com/encode/httpx/discussions/2841
-            for name, lower_name, value in request.headers._list:
-                if lower_name in expect_headers:
-                    name = name.decode(headers_encoding)
-                    if name in present_headers:
-                        present_headers[name] += f", {value.decode(headers_encoding)}"
-                    else:
-                        present_headers[name] = value.decode(headers_encoding)
-
-            request_description += f" with {present_headers} headers"
-            if expect_body:
-                request_description += f" and {request.read()} body"
-        elif expect_body:
-            request_description += f" with {request.read()} body"
+        message = f"No response can be found for {RequestDescription(real_transport, request, matchers)}"
 
         matchers_description = "\n".join([str(matcher) for matcher in matchers])
-
-        message = f"No response can be found for {request_description}"
         if matchers_description:
             message += f" amongst:\n{matchers_description}"
 
         return message
 
     def _get_callback(
-        self, request: httpx.Request
+        self,
+        real_transport: Union[httpx.BaseTransport, httpx.AsyncBaseTransport],
+        request: httpx.Request,
     ) -> Optional[
         Callable[
             [httpx.Request],
@@ -303,7 +189,7 @@ class HTTPXMock:
         callbacks = [
             (matcher, callback)
             for matcher, callback in self._callbacks
-            if matcher.match(request)
+            if matcher.match(real_transport, request)
         ]
 
         # No callback match this request
@@ -321,19 +207,25 @@ class HTTPXMock:
         matcher.nb_calls += 1
         return callback
 
-    def get_requests(self, **matchers: Any) -> List[httpx.Request]:
+    def get_requests(self, **matchers: Any) -> list[httpx.Request]:
         """
         Return all requests sent that match (empty list if no requests were matched).
 
         :param url: Full URL identifying the requests to retrieve.
         Can be a str, a re.Pattern instance or a httpx.URL instance.
         :param method: HTTP method identifying the requests to retrieve. Must be an upper-cased string value.
+        :param proxy_url: Full proxy URL identifying the requests to retrieve.
+        Can be a str, a re.Pattern instance or a httpx.URL instance.
         :param match_headers: HTTP headers identifying the requests to retrieve. Must be a dictionary.
         :param match_content: Full HTTP body identifying the requests to retrieve. Must be bytes.
         :param match_json: JSON decoded HTTP body identifying the requests to retrieve. Must be JSON encodable.
         """
         matcher = _RequestMatcher(**matchers)
-        return [request for request in self._requests if matcher.match(request)]
+        return [
+            request
+            for real_transport, request in self._requests
+            if matcher.match(real_transport, request)
+        ]
 
     def get_request(self, **matchers: Any) -> Optional[httpx.Request]:
         """
@@ -342,6 +234,8 @@ class HTTPXMock:
         :param url: Full URL identifying the request to retrieve.
         Can be a str, a re.Pattern instance or a httpx.URL instance.
         :param method: HTTP method identifying the request to retrieve. Must be an upper-cased string value.
+        :param proxy_url: Full proxy URL identifying the request to retrieve.
+        Can be a str, a re.Pattern instance or a httpx.URL instance.
         :param match_headers: HTTP headers identifying the request to retrieve. Must be a dictionary.
         :param match_content: Full HTTP body identifying the request to retrieve. Must be bytes.
         :param match_json: JSON decoded HTTP body identifying the request to retrieve. Must be JSON encodable.
@@ -364,7 +258,7 @@ class HTTPXMock:
                 not not_called
             ), f"The following responses are mocked but not requested:\n{matchers_description}"
 
-    def _reset_callbacks(self) -> List[_RequestMatcher]:
+    def _reset_callbacks(self) -> list[_RequestMatcher]:
         callbacks_not_executed = [
             matcher for matcher, _ in self._callbacks if not matcher.nb_calls
         ]
@@ -373,19 +267,21 @@ class HTTPXMock:
 
 
 class _PytestSyncTransport(httpx.BaseTransport):
-    def __init__(self, mock: HTTPXMock):
-        self.mock = mock
+    def __init__(self, real_transport: httpx.BaseTransport, mock: HTTPXMock):
+        self._real_transport = real_transport
+        self._mock = mock
 
-    def handle_request(self, *args, **kwargs) -> httpx.Response:
-        return self.mock._handle_request(*args, **kwargs)
+    def handle_request(self, request: httpx.Request) -> httpx.Response:
+        return self._mock._handle_request(self._real_transport, request)
 
 
 class _PytestAsyncTransport(httpx.AsyncBaseTransport):
-    def __init__(self, mock: HTTPXMock):
-        self.mock = mock
+    def __init__(self, real_transport: httpx.AsyncBaseTransport, mock: HTTPXMock):
+        self._real_transport = real_transport
+        self._mock = mock
 
-    async def handle_async_request(self, *args, **kwargs) -> httpx.Response:
-        return await self.mock._handle_async_request(*args, **kwargs)
+    async def handle_async_request(self, request: httpx.Request) -> httpx.Response:
+        return await self._mock._handle_async_request(self._real_transport, request)
 
 
 def _unread(response: httpx.Response) -> httpx.Response:
