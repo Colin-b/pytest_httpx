@@ -1,6 +1,6 @@
 import copy
 import inspect
-from typing import Union, Optional, Callable, Any, Awaitable
+from typing import Union, Optional, Callable, Any, Awaitable, List
 
 import httpx
 
@@ -207,7 +207,7 @@ class HTTPXMock:
         matcher.nb_calls += 1
         return callback
 
-    def get_requests(self, **matchers: Any) -> list[httpx.Request]:
+    def get_requests(self, **matchers: Any) -> List[httpx.Request]:
         """
         Return all requests sent that match (empty list if no requests were matched).
 
@@ -258,7 +258,7 @@ class HTTPXMock:
                 not not_called
             ), f"The following responses are mocked but not requested:\n{matchers_description}"
 
-    def _reset_callbacks(self) -> list[_RequestMatcher]:
+    def _reset_callbacks(self) -> List[_RequestMatcher]:
         callbacks_not_executed = [
             matcher for matcher, _ in self._callbacks if not matcher.nb_calls
         ]

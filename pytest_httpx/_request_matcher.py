@@ -1,6 +1,6 @@
 import json
 import re
-from typing import Optional, Union, Pattern, Any
+from typing import Optional, Union, Pattern, Any, Dict
 
 import httpx
 
@@ -30,7 +30,7 @@ class _RequestMatcher:
         url: Optional[Union[str, Pattern[str], httpx.URL]] = None,
         method: Optional[str] = None,
         proxy_url: Optional[Union[str, Pattern[str], httpx.URL]] = None,
-        match_headers: Optional[dict[str, Any]] = None,
+        match_headers: Optional[Dict[str, Any]] = None,
         match_content: Optional[bytes] = None,
         match_json: Optional[Any] = None,
     ):

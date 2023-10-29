@@ -7,7 +7,7 @@ from typing import (
     Iterable,
     AsyncIterator,
     Iterator,
-    Optional,
+    Optional, List,
 )
 
 import httpcore
@@ -41,7 +41,7 @@ class IteratorStream(AsyncIteratorByteStream, IteratorByteStream):
         IteratorByteStream.__init__(self, stream=Stream())
 
 
-def _to_httpx_url(url: httpcore.URL, headers: list[tuple[bytes, bytes]]) -> httpx.URL:
+def _to_httpx_url(url: httpcore.URL, headers: List[Tuple[bytes, bytes]]) -> httpx.URL:
     for name, value in headers:
         if b"Proxy-Authorization" == name:
             return httpx.URL(

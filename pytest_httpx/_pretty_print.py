@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Union, List
 
 import httpx
 
@@ -11,7 +11,7 @@ class RequestDescription:
         self,
         real_transport: Union[httpx.BaseTransport, httpx.AsyncBaseTransport],
         request: httpx.Request,
-        matchers: list[_RequestMatcher],
+        matchers: List[_RequestMatcher],
     ):
         self.real_transport = real_transport
         self.request = request

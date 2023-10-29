@@ -28,9 +28,11 @@ setup(
         "Typing :: Typed",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
         "Topic :: Software Development :: Build Tools",
         "Topic :: Internet :: WWW/HTTP",
         "Framework :: Pytest",
@@ -39,7 +41,7 @@ setup(
     packages=find_packages(exclude=["tests*"]),
     package_data={"pytest_httpx": ["py.typed"]},
     entry_points={"pytest11": ["pytest_httpx = pytest_httpx"]},
-    install_requires=["httpx==0.25.*", "pytest==7.*"],
+    install_requires=["httpx>=0.23.0", "pytest==7.*"],
     extras_require={
         "testing": [
             # Used to run async test functions
@@ -48,7 +50,7 @@ setup(
             "pytest-cov==4.*",
         ]
     },
-    python_requires=">=3.9",
+    python_requires=">=3.8",
     project_urls={
         "GitHub": "https://github.com/Colin-b/pytest_httpx",
         "Changelog": "https://github.com/Colin-b/pytest_httpx/blob/master/CHANGELOG.md",
