@@ -52,7 +52,7 @@ class _RequestMatcher:
 
     def match(
         self,
-        real_transport: Union[httpx.BaseTransport, httpx.AsyncBaseTransport],
+        real_transport: Union[httpx.HTTPTransport, httpx.AsyncHTTPTransport],
         request: httpx.Request,
     ) -> bool:
         return (
@@ -106,7 +106,7 @@ class _RequestMatcher:
             return False
 
     def _proxy_match(
-        self, real_transport: Union[httpx.BaseTransport, httpx.AsyncBaseTransport]
+        self, real_transport: Union[httpx.HTTPTransport, httpx.AsyncHTTPTransport]
     ) -> bool:
         if not self.proxy_url:
             return True

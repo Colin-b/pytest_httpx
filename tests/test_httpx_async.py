@@ -2015,3 +2015,26 @@ async def test_streams_are_not_cascading_resulting_in_maximum_recursion(
         tasks = [client.get("https://example.com/") for _ in range(950)]
         await asyncio.gather(*tasks)
     # No need to assert anything, this test case ensure that no error was raised by the gather
+
+
+@pytest.mark.asyncio
+async def test_custom_transport(httpx_mock: HTTPXMock) -> None:
+    class CustomTransport(httpx.AsyncHTTPTransport):
+        def __init__(self, prefix: str, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.prefix = prefix
+
+        async def handle_async_request(
+            self,
+            request: httpx.Request,
+        ) -> httpx.Response:
+            httpx_response = await super().handle_async_request(request)
+            httpx_response.headers["x-prefix"] = self.prefix
+            return httpx_response
+
+    httpx_mock.add_response()
+
+    async with httpx.AsyncClient(transport=CustomTransport(prefix="test")) as client:
+        response = await client.post("https://test_url", content=b"This is the body")
+        assert response.read() == b""
+        assert response.headers["x-prefix"] == "test"

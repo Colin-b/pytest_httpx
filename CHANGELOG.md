@@ -5,6 +5,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Fixed
+- Custom HTTP transport are now handled (parent call to `handle_async_request` or `handle_request`).
+
+### Changed
+- Only HTTP transport are now mocked, this should not have any impact, however if it does, please feel free to open an issue describing your use case.
 
 ## [0.26.0] - 2023-09-18
 ### Added

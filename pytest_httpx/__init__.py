@@ -5,11 +5,7 @@ import httpx
 import pytest
 from pytest import MonkeyPatch
 
-from pytest_httpx._httpx_mock import (
-    HTTPXMock,
-    _PytestSyncTransport,
-    _PytestAsyncTransport,
-)
+from pytest_httpx._httpx_mock import HTTPXMock
 from pytest_httpx._httpx_internals import IteratorStream
 from pytest_httpx.version import __version__
 
@@ -45,22 +41,36 @@ def httpx_mock(
     mock = HTTPXMock()
 
     # Mock synchronous requests
-    real_sync_transport = httpx.Client._transport_for_url
+    real_handle_request = httpx.HTTPTransport.handle_request
+
+    def mocked_handle_request(
+        transport: httpx.HTTPTransport, request: httpx.Request
+    ) -> httpx.Response:
+        if request.url.host in non_mocked_hosts:
+            return real_handle_request(transport, request)
+        return mock._handle_request(transport, request)
+
     monkeypatch.setattr(
-        httpx.Client,
-        "_transport_for_url",
-        lambda self, url: real_sync_transport(self, url)
-        if url.host in non_mocked_hosts
-        else _PytestSyncTransport(real_sync_transport(self, url), mock),
+        httpx.HTTPTransport,
+        "handle_request",
+        mocked_handle_request,
     )
+
     # Mock asynchronous requests
-    real_async_transport = httpx.AsyncClient._transport_for_url
+    real_handle_async_request = httpx.AsyncHTTPTransport.handle_async_request
+
+    async def mocked_handle_async_request(
+        transport: httpx.AsyncHTTPTransport, request: httpx.Request
+    ) -> httpx.Response:
+        if request.url.host in non_mocked_hosts:
+            return await real_handle_async_request(transport, request)
+        return await mock._handle_async_request(transport, request)
+
     monkeypatch.setattr(
-        httpx.AsyncClient,
-        "_transport_for_url",
-        lambda self, url: real_async_transport(self, url)
-        if url.host in non_mocked_hosts
-        else _PytestAsyncTransport(real_async_transport(self, url), mock),
+        httpx.AsyncHTTPTransport,
+        "handle_async_request",
+        mocked_handle_async_request,
     )
+
     yield mock
     mock.reset(assert_all_responses_were_requested)
