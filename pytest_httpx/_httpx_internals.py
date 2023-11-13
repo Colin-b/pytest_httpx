@@ -61,12 +61,9 @@ def _to_httpx_url(url: httpcore.URL, headers: list[tuple[bytes, bytes]]) -> http
 
 
 def _proxy_url(
-    real_transport: Union[httpx.BaseTransport, httpx.AsyncBaseTransport]
+    real_transport: Union[httpx.HTTPTransport, httpx.AsyncHTTPTransport]
 ) -> Optional[httpx.URL]:
-    if isinstance(real_transport, httpx.HTTPTransport):
-        if isinstance(real_pool := real_transport._pool, httpcore.HTTPProxy):
-            return _to_httpx_url(real_pool._proxy_url, real_pool._proxy_headers)
-
-    if isinstance(real_transport, httpx.AsyncHTTPTransport):
-        if isinstance(real_pool := real_transport._pool, httpcore.AsyncHTTPProxy):
-            return _to_httpx_url(real_pool._proxy_url, real_pool._proxy_headers)
+    if isinstance(
+        real_pool := real_transport._pool, (httpcore.HTTPProxy, httpcore.AsyncHTTPProxy)
+    ):
+        return _to_httpx_url(real_pool._proxy_url, real_pool._proxy_headers)

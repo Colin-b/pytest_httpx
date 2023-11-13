@@ -5,7 +5,6 @@ import time
 
 import httpx
 import pytest
-from httpx import Request, Response
 from pytest import Testdir
 from unittest.mock import ANY
 
@@ -2027,8 +2026,8 @@ async def test_custom_transport(httpx_mock: HTTPXMock) -> None:
 
         async def handle_async_request(
             self,
-            request: Request,
-        ) -> Response:
+            request: httpx.Request,
+        ) -> httpx.Response:
             httpx_response = await super().handle_async_request(request)
             httpx_response.headers["x-prefix"] = self.prefix
             return httpx_response
