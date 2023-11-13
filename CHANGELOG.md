@@ -5,6 +5,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- Explicit support for python `3.12`.
+
 ### Fixed
 - Custom HTTP transport are now handled (parent call to `handle_async_request` or `handle_request`).
 
