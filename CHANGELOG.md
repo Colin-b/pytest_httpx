@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.27.0] - 2023-11-13
+### Added
+- Explicit support for python `3.12`.
+
+### Fixed
+- Custom HTTP transport are now handled (parent call to `handle_async_request` or `handle_request`).
+
+### Changed
+- Only HTTP transport are now mocked, this should not have any impact, however if it does, please feel free to open an issue describing your use case.
+
 ## [0.26.0] - 2023-09-18
 ### Added
 - Added `proxy_url` parameter which allows matching on proxy URL.
@@ -287,7 +297,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - First release, should be considered as unstable for now as design might change.
 
-[Unreleased]: https://github.com/Colin-b/pytest_httpx/compare/v0.26.0...HEAD
+[Unreleased]: https://github.com/Colin-b/pytest_httpx/compare/v0.27.0...HEAD
+[0.27.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.26.0...v0.27.0
 [0.26.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.25.0...v0.26.0
 [0.25.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.24.0...v0.25.0
 [0.24.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.23.1...v0.24.0

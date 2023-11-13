@@ -12,7 +12,7 @@ from pytest_httpx._request_matcher import _RequestMatcher
 class HTTPXMock:
     def __init__(self) -> None:
         self._requests: list[
-            tuple[Union[httpx.BaseTransport, httpx.AsyncBaseTransport], httpx.Request]
+            tuple[Union[httpx.HTTPTransport, httpx.AsyncHTTPTransport], httpx.Request]
         ] = []
         self._callbacks: list[
             tuple[
@@ -123,7 +123,7 @@ class HTTPXMock:
 
     def _handle_request(
         self,
-        real_transport: httpx.BaseTransport,
+        real_transport: httpx.HTTPTransport,
         request: httpx.Request,
     ) -> httpx.Response:
         self._requests.append((real_transport, request))
@@ -142,7 +142,7 @@ class HTTPXMock:
 
     async def _handle_async_request(
         self,
-        real_transport: httpx.AsyncBaseTransport,
+        real_transport: httpx.AsyncHTTPTransport,
         request: httpx.Request,
     ) -> httpx.Response:
         self._requests.append((real_transport, request))
@@ -178,7 +178,7 @@ class HTTPXMock:
 
     def _get_callback(
         self,
-        real_transport: Union[httpx.BaseTransport, httpx.AsyncBaseTransport],
+        real_transport: Union[httpx.HTTPTransport, httpx.AsyncHTTPTransport],
         request: httpx.Request,
     ) -> Optional[
         Callable[
@@ -264,24 +264,6 @@ class HTTPXMock:
         ]
         self._callbacks.clear()
         return callbacks_not_executed
-
-
-class _PytestSyncTransport(httpx.BaseTransport):
-    def __init__(self, real_transport: httpx.BaseTransport, mock: HTTPXMock):
-        self._real_transport = real_transport
-        self._mock = mock
-
-    def handle_request(self, request: httpx.Request) -> httpx.Response:
-        return self._mock._handle_request(self._real_transport, request)
-
-
-class _PytestAsyncTransport(httpx.AsyncBaseTransport):
-    def __init__(self, real_transport: httpx.AsyncBaseTransport, mock: HTTPXMock):
-        self._real_transport = real_transport
-        self._mock = mock
-
-    async def handle_async_request(self, request: httpx.Request) -> httpx.Response:
-        return await self._mock._handle_async_request(self._real_transport, request)
 
 
 def _unread(response: httpx.Response) -> httpx.Response:

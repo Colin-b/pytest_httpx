@@ -1,5 +1,4 @@
 import re
-from typing import Any
 from unittest.mock import ANY
 
 import httpx
@@ -1706,3 +1705,25 @@ def test_mutating_json(httpx_mock: HTTPXMock) -> None:
 
         response = client.get("https://test_url")
         assert response.json() == {"content": "request 2"}
+
+
+def test_custom_transport(httpx_mock: HTTPXMock) -> None:
+    class CustomTransport(httpx.HTTPTransport):
+        def __init__(self, prefix: str, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.prefix = prefix
+
+        def handle_request(
+            self,
+            request: httpx.Request,
+        ) -> httpx.Response:
+            httpx_response = super().handle_request(request)
+            httpx_response.headers["x-prefix"] = self.prefix
+            return httpx_response
+
+    httpx_mock.add_response()
+
+    with httpx.Client(transport=CustomTransport(prefix="test")) as client:
+        response = client.post("https://test_url", content=b"This is the body")
+        assert response.read() == b""
+        assert response.headers["x-prefix"] == "test"
