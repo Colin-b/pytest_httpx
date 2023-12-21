@@ -979,12 +979,7 @@ def test_content_matching(httpx_mock: HTTPXMock) -> None:
 def test_proxy_matching(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(proxy_url="http://user:pwd@my_other_proxy/")
 
-    with httpx.Client(
-        proxies={
-            "http://": "http://my_test_proxy",
-            "https://": "http://user:pwd@my_other_proxy",
-        }
-    ) as client:
+    with httpx.Client(proxy="http://user:pwd@my_other_proxy") as client:
         response = client.get("https://test_url")
         assert response.read() == b""
 
@@ -992,12 +987,7 @@ def test_proxy_matching(httpx_mock: HTTPXMock) -> None:
 def test_proxy_not_matching(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(proxy_url="http://my_test_proxy")
 
-    with httpx.Client(
-        proxies={
-            "http://": "http://my_test_proxy",
-            "https://": "http://user:pwd@my_other_proxy",
-        }
-    ) as client:
+    with httpx.Client(proxy="http://my_test_proxy") as client:
         with pytest.raises(httpx.TimeoutException) as exception_info:
             client.get("http://test_url")
         assert (
@@ -1052,9 +1042,9 @@ def test_requests_retrieval_proxy_matching(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response()
 
     with httpx.Client(
-        proxies={
-            "http://": "http://my_test_proxy",
-            "https://": "http://user:pwd@my_other_proxy",
+        mounts={
+            "http://": httpx.HTTPTransport(proxy="http://my_test_proxy"),
+            "https://": httpx.HTTPTransport(proxy="http://user:pwd@my_other_proxy"),
         }
     ) as client:
         client.get("https://test_url")
@@ -1070,9 +1060,9 @@ def test_request_retrieval_proxy_matching(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response()
 
     with httpx.Client(
-        proxies={
-            "http://": "http://my_test_proxy",
-            "https://": "http://user:pwd@my_other_proxy",
+        mounts={
+            "http://": httpx.HTTPTransport(proxy="http://my_test_proxy"),
+            "https://": httpx.HTTPTransport(proxy="http://user:pwd@my_other_proxy"),
         }
     ) as client:
         client.get("https://test_url")
