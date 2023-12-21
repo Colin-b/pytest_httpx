@@ -160,9 +160,9 @@ from pytest_httpx import HTTPXMock
 
 
 def test_proxy_url(httpx_mock: HTTPXMock):
-    httpx_mock.add_response(proxy_url="http://test_proxy_url?a=1&b=2")
+    httpx_mock.add_response(proxy_url="http://test_proxy_url?b=1&a=2")
 
-    with httpx.Client(proxies={"https://": "http://test_proxy_url?a=2&b=1"}) as client:
+    with httpx.Client(proxy="http://test_proxy_url?a=2&b=1") as client:
         response = client.get("https://test_url")
 ```
 
