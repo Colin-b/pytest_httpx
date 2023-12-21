@@ -1233,12 +1233,7 @@ async def test_content_matching(httpx_mock: HTTPXMock) -> None:
 async def test_proxy_matching(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(proxy_url="http://user:pwd@my_other_proxy/")
 
-    async with httpx.AsyncClient(
-        proxies={
-            "http://": "http://my_test_proxy",
-            "https://": "http://user:pwd@my_other_proxy",
-        }
-    ) as client:
+    async with httpx.AsyncClient(proxy="http://user:pwd@my_other_proxy") as client:
         response = await client.get("https://test_url")
         assert response.read() == b""
 
@@ -1247,12 +1242,7 @@ async def test_proxy_matching(httpx_mock: HTTPXMock) -> None:
 async def test_proxy_not_matching(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(proxy_url="http://my_test_proxy")
 
-    async with httpx.AsyncClient(
-        proxies={
-            "http://": "http://my_test_proxy",
-            "https://": "http://user:pwd@my_other_proxy",
-        }
-    ) as client:
+    async with httpx.AsyncClient(proxy="http://my_test_proxy") as client:
         with pytest.raises(httpx.TimeoutException) as exception_info:
             await client.get("http://test_url")
         assert (
@@ -1311,9 +1301,11 @@ async def test_requests_retrieval_proxy_matching(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response()
 
     async with httpx.AsyncClient(
-        proxies={
-            "http://": "http://my_test_proxy",
-            "https://": "http://user:pwd@my_other_proxy",
+        mounts={
+            "http://": httpx.AsyncHTTPTransport(proxy="http://my_test_proxy"),
+            "https://": httpx.AsyncHTTPTransport(
+                proxy="http://user:pwd@my_other_proxy"
+            ),
         }
     ) as client:
         await client.get("https://test_url")
@@ -1330,9 +1322,11 @@ async def test_request_retrieval_proxy_matching(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response()
 
     async with httpx.AsyncClient(
-        proxies={
-            "http://": "http://my_test_proxy",
-            "https://": "http://user:pwd@my_other_proxy",
+        mounts={
+            "http://": httpx.AsyncHTTPTransport(proxy="http://my_test_proxy"),
+            "https://": httpx.AsyncHTTPTransport(
+                proxy="http://user:pwd@my_other_proxy"
+            ),
         }
     ) as client:
         await client.get("https://test_url")
