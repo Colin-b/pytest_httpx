@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- Add support for [`pytest`](https://docs.pytest.org)==8.\* ([`pytest`](https://docs.pytest.org)==7.\* is still supported for now).  (many thanks to [`Yossi Rozantsev`](https://github.com/Apakottur))
 
 ## [0.28.0] - 2023-12-21
 ### Changed
