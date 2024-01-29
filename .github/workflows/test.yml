@@ -9,6 +9,7 @@ jobs:
     strategy:
       matrix:
         python-version: ['3.9', '3.10', '3.11', '3.12']
+        pytest-major-version: ['7', '8']
 
     steps:
     - uses: actions/checkout@v4
@@ -19,6 +20,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
+        python -m pip install pytest~=${{ matrix.pytest-major-version }}.0
         python -m pip install -e .[testing]
     - name: Test
       run: |
