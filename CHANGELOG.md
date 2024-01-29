@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.29.0] - 2024-01-29
+### Added
+- Add support for [`pytest`](https://docs.pytest.org)==8.\* ([`pytest`](https://docs.pytest.org)==7.\* is still supported for now).  (many thanks to [`Yossi Rozantsev`](https://github.com/Apakottur))
+
 ## [0.28.0] - 2023-12-21
 ### Changed
 - Requires [`httpx`](https://www.python-httpx.org)==0.26.\*
@@ -301,7 +305,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - First release, should be considered as unstable for now as design might change.
 
-[Unreleased]: https://github.com/Colin-b/pytest_httpx/compare/v0.28.0...HEAD
+[Unreleased]: https://github.com/Colin-b/pytest_httpx/compare/v0.29.0...HEAD
+[0.29.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.28.0...v0.29.0
 [0.28.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.27.0...v0.28.0
 [0.27.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.26.0...v0.27.0
 [0.26.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.25.0...v0.26.0
