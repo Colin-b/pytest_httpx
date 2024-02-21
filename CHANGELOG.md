@@ -5,6 +5,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [0.30.0] - 2024-02-21
+### Changed
+- Requires [`httpx`](https://www.python-httpx.org)==0.27.\*
+
 ### Fixed
 - Switch from `setup.py` to `pyproject.toml` (many thanks to [`Felix Scherz`](https://github.com/felixscherz)).
 
@@ -307,7 +312,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - First release, should be considered as unstable for now as design might change.
 
-[Unreleased]: https://github.com/Colin-b/pytest_httpx/compare/v0.29.0...HEAD
+[Unreleased]: https://github.com/Colin-b/pytest_httpx/compare/v0.30.0...HEAD
+[0.30.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.29.0...v0.30.0
 [0.29.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.28.0...v0.29.0
 [0.28.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.27.0...v0.28.0
 [0.27.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.26.0...v0.27.0
