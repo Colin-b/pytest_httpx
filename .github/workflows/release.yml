@@ -19,7 +19,7 @@ jobs:
     - name: Create packages
       run: |
         python -m pip install build
-        python -m build
+        python -m build .
     - name: Publish packages
       run: |
         python -m pip install twine
