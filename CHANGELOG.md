@@ -5,10 +5,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Fixed
+- Switch from `setup.py` to `pyproject.toml` (many thanks to [`Felix Scherz`](https://github.com/felixscherz)).
 
 ## [0.29.0] - 2024-01-29
 ### Added
-- Add support for [`pytest`](https://docs.pytest.org)==8.\* ([`pytest`](https://docs.pytest.org)==7.\* is still supported for now).  (many thanks to [`Yossi Rozantsev`](https://github.com/Apakottur))
+- Add support for [`pytest`](https://docs.pytest.org)==8.\* ([`pytest`](https://docs.pytest.org)==7.\* is still supported for now) (many thanks to [`Yossi Rozantsev`](https://github.com/Apakottur)).
 
 ## [0.28.0] - 2023-12-21
 ### Changed
@@ -97,7 +99,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.20.0] - 2022-02-05
 ### Added
-- Add support for [`pytest`](https://docs.pytest.org)==7.\* ([`pytest`](https://docs.pytest.org)==6.\* is still supported for now).  (many thanks to [`Craig Blaszczyk`](https://github.com/jakul))
+- Add support for [`pytest`](https://docs.pytest.org)==7.\* ([`pytest`](https://docs.pytest.org)==6.\* is still supported for now) (many thanks to [`Craig Blaszczyk`](https://github.com/jakul)).
 
 ## [0.19.0] - 2022-01-26
 ### Changed

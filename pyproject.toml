@@ -1,14 +1,13 @@
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["setuptools", "setuptools_scm"]
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "pytest-httpx"
-dynamic = ["version"]
 description = "Send responses to httpx."
 readme = "README.md"
-license = "MIT"
 requires-python = ">=3.9"
+license = {file = "LICENSE"}
 authors = [
     { name = "Colin Bounouar", email = "colin.bounouar.dev@gmail.com" },
 ]
@@ -41,28 +40,27 @@ dependencies = [
     "httpx==0.26.*",
     "pytest>=7,<9",
 ]
+dynamic = ["version"]
+
+[project.urls]
+documentation = "https://colin-b.github.io/pytest_httpx/"
+repository = "https://github.com/Colin-b/pytest_httpx"
+changelog = "https://github.com/Colin-b/pytest_httpx/blob/master/CHANGELOG.md"
+issues = "https://github.com/Colin-b/pytest_httpx/issues"
 
 [project.optional-dependencies]
 testing = [
-    "pytest-asyncio==0.23.*",
+    # Used to check coverage
     "pytest-cov==4.*",
+    # Used to run async tests
+    "pytest-asyncio==0.23.*",
 ]
 
 [project.entry-points.pytest11]
 pytest_httpx = "pytest_httpx"
 
-[project.urls]
-Changelog = "https://github.com/Colin-b/pytest_httpx/blob/master/CHANGELOG.md"
-Download = "https://pypi.org/project/pytest-httpx/"
-GitHub = "https://github.com/Colin-b/pytest_httpx"
-Homepage = "https://colin-b.github.io/pytest_httpx/"
-Issues = "https://github.com/Colin-b/pytest_httpx/issues"
+[tool.setuptools.packages.find]
+exclude = ["tests*"]
 
-[tool.hatch.version]
-path = "pytest_httpx/version.py"
-
-[tool.hatch.build.targets.sdist]
-include = [
-    "/pytest_httpx",
-]
-
+[tool.setuptools.dynamic]
+version = {attr = "pytest_httpx.version.__version__"}
