@@ -1,0 +1,68 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "pytest-httpx"
+dynamic = ["version"]
+description = "Send responses to httpx."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.9"
+authors = [
+    { name = "Colin Bounouar", email = "colin.bounouar.dev@gmail.com" },
+]
+maintainers = [
+    { name = "Colin Bounouar", email = "colin.bounouar.dev@gmail.com" },
+]
+keywords = [
+    "httpx",
+    "mock",
+    "pytest",
+    "testing",
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Framework :: Pytest",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Natural Language :: English",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Internet :: WWW/HTTP",
+    "Topic :: Software Development :: Build Tools",
+    "Typing :: Typed",
+]
+dependencies = [
+    "httpx==0.26.*",
+    "pytest>=7,<9",
+]
+
+[project.optional-dependencies]
+testing = [
+    "pytest-asyncio==0.23.*",
+    "pytest-cov==4.*",
+]
+
+[project.entry-points.pytest11]
+pytest_httpx = "pytest_httpx"
+
+[project.urls]
+Changelog = "https://github.com/Colin-b/pytest_httpx/blob/master/CHANGELOG.md"
+Download = "https://pypi.org/project/pytest-httpx/"
+GitHub = "https://github.com/Colin-b/pytest_httpx"
+Homepage = "https://colin-b.github.io/pytest_httpx/"
+Issues = "https://github.com/Colin-b/pytest_httpx/issues"
+
+[tool.hatch.version]
+path = "pytest_httpx/version.py"
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/pytest_httpx",
+]
+
