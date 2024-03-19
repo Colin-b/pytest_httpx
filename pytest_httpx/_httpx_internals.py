@@ -30,8 +30,7 @@ class IteratorStream(AsyncIteratorByteStream, IteratorByteStream):
     def __init__(self, stream: Iterable[bytes]):
         class Stream:
             def __iter__(self) -> Iterator[bytes]:
-                for chunk in stream:
-                    yield chunk
+                yield from stream
 
             async def __aiter__(self) -> AsyncIterator[bytes]:
                 for chunk in stream:
