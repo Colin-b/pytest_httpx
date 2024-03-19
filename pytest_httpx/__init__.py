@@ -22,7 +22,7 @@ def assert_all_responses_were_requested() -> bool:
 
 
 @pytest.fixture
-def non_mocked_hosts() -> List[str]:
+def non_mocked_hosts() -> list[str]:
     return []
 
 
@@ -30,7 +30,7 @@ def non_mocked_hosts() -> List[str]:
 def httpx_mock(
     monkeypatch: MonkeyPatch,
     assert_all_responses_were_requested: bool,
-    non_mocked_hosts: List[str],
+    non_mocked_hosts: list[str],
 ) -> Generator[HTTPXMock, None, None]:
     # Ensure redirections to www hosts are handled transparently.
     missing_www = [

@@ -1,6 +1,7 @@
 import copy
 import inspect
-from typing import Union, Optional, Callable, Any, Awaitable
+from typing import Union, Optional, Callable, Any
+from collections.abc import Awaitable
 
 import httpx
 
