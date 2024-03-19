@@ -16,7 +16,6 @@ maintainers = [
 ]
 keywords = [
     "httpx",
-    "mock",
     "pytest",
     "testing",
 ]
