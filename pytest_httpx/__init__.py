@@ -1,11 +1,12 @@
+import warnings
 from collections.abc import Generator
 from typing import List
 
 import httpx
 import pytest
-from pytest import MonkeyPatch
+from pytest import Config, FixtureRequest, MonkeyPatch
 
-from pytest_httpx._httpx_mock import HTTPXMock
+from pytest_httpx._httpx_mock import HTTPXMock, HTTPXMockOptions
 from pytest_httpx._httpx_internals import IteratorStream
 from pytest_httpx.version import __version__
 
@@ -14,6 +15,14 @@ __all__ = (
     "IteratorStream",
     "__version__",
 )
+
+
+FIXTURE_DEPRECATION_MSG = """\
+The assert_all_responses_were_requested and non_mocked_hosts fixtures are deprecated.
+Use the following marker instead:
+
+{options!r}
+"""
 
 
 @pytest.fixture
@@ -31,12 +40,26 @@ def httpx_mock(
     monkeypatch: MonkeyPatch,
     assert_all_responses_were_requested: bool,
     non_mocked_hosts: List[str],
+    request: FixtureRequest,
 ) -> Generator[HTTPXMock, None, None]:
-    # Ensure redirections to www hosts are handled transparently.
-    missing_www = [
-        f"www.{host}" for host in non_mocked_hosts if not host.startswith("www.")
-    ]
-    non_mocked_hosts += missing_www
+    marker = request.node.get_closest_marker("httpx_mock")
+
+    if marker:
+        options = HTTPXMockOptions.from_marker(marker)
+    else:
+        deprecated_usage = not assert_all_responses_were_requested or non_mocked_hosts
+        options = HTTPXMockOptions(
+            assert_all_responses_were_requested=assert_all_responses_were_requested,
+            non_mocked_hosts=non_mocked_hosts,
+        )
+        if deprecated_usage:
+            warnings.warn(
+                FIXTURE_DEPRECATION_MSG.format(options=options), DeprecationWarning
+            )
+
+    # Make sure we use options instead
+    del non_mocked_hosts
+    del assert_all_responses_were_requested
 
     mock = HTTPXMock()
 
@@ -46,7 +69,7 @@ def httpx_mock(
     def mocked_handle_request(
         transport: httpx.HTTPTransport, request: httpx.Request
     ) -> httpx.Response:
-        if request.url.host in non_mocked_hosts:
+        if request.url.host in options.non_mocked_hosts:
             return real_handle_request(transport, request)
         return mock._handle_request(transport, request)
 
@@ -62,7 +85,7 @@ def httpx_mock(
     async def mocked_handle_async_request(
         transport: httpx.AsyncHTTPTransport, request: httpx.Request
     ) -> httpx.Response:
-        if request.url.host in non_mocked_hosts:
+        if request.url.host in options.non_mocked_hosts:
             return await real_handle_async_request(transport, request)
         return await mock._handle_async_request(transport, request)
 
@@ -73,4 +96,12 @@ def httpx_mock(
     )
 
     yield mock
-    mock.reset(assert_all_responses_were_requested)
+    mock.reset(options.assert_all_responses_were_requested)
+
+
+def pytest_configure(config: Config) -> None:
+    config.addinivalue_line(
+        "markers",
+        "httpx_mock(*, assert_all_responses_were_requested=True, "
+        "non_mocked_hosts=[]): Configure httpx_mock fixture.",
+    )

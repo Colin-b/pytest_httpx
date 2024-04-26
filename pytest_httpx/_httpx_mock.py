@@ -1,8 +1,11 @@
 import copy
 import inspect
+from functools import cached_property
+from operator import methodcaller
 from typing import Union, Optional, Callable, Any, Awaitable
 
 import httpx
+from pytest import Mark
 
 from pytest_httpx import _httpx_internals
 from pytest_httpx._pretty_print import RequestDescription
@@ -264,6 +267,51 @@ class HTTPXMock:
         ]
         self._callbacks.clear()
         return callbacks_not_executed
+
+
+class HTTPXMockOptions:
+    def __init__(
+        self,
+        *,
+        assert_all_responses_were_requested: bool = True,
+        non_mocked_hosts: Optional[list[str]] = None,
+    ) -> None:
+        if non_mocked_hosts is None:
+            non_mocked_hosts = []
+
+        self.assert_all_responses_were_requested = assert_all_responses_were_requested
+
+        # The original non_mocked_hosts list is shown in the __repr__, see the
+        # non_mocked_hosts property for more.
+        self._non_mocked_hosts = non_mocked_hosts
+
+    @classmethod
+    def from_marker(cls, marker: Mark) -> "HTTPXMockOptions":
+        """Initialise from a marker so that the marker kwargs raise an error if
+        incorrect.
+        """
+        __tracebackhide__ = methodcaller("errisinstance", TypeError)
+        return cls(**marker.kwargs)
+
+    @cached_property
+    def non_mocked_hosts(self) -> list[str]:
+        # Ensure redirections to www hosts are handled transparently.
+        missing_www = [
+            f"www.{host}"
+            for host in self._non_mocked_hosts
+            if not host.startswith("www.")
+        ]
+        return [*self._non_mocked_hosts, *missing_www]
+
+    def __repr__(self) -> str:
+        kwargs = []
+        if not self.assert_all_responses_were_requested:
+            kwargs.append(
+                f"assert_all_responses_were_requested={self.assert_all_responses_were_requested!r}"
+            )
+        if self._non_mocked_hosts:
+            kwargs.append(f"non_mocked_hosts={self._non_mocked_hosts!r}")
+        return f"pytest.mark.httpx_mock(" + ", ".join(kwargs) + ")"
 
 
 def _unread(response: httpx.Response) -> httpx.Response:

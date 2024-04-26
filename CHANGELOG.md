@@ -5,6 +5,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- The `httpx_mock` fixture is now configured using a marker.
+  ```python
+  # Apply marker to whole module
+  pytestmark = pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
+  
+  # Or to specific tests
+  @pytest.mark.httpx_mock(non_mocked_hosts=[...])
+  def test_foo(httpx_mock):
+      ...
+  ```
+### Deprecated
+- `assert_all_responses_were_requested` fixture
+- `non_mocked_hosts` fixture
 
 ## [0.30.0] - 2024-02-21
 ### Changed
