@@ -56,14 +56,18 @@ async def test_something_async(httpx_mock):
 
 If all registered responses are not sent back during test execution, the test case will fail at teardown.
 
-This behavior can be disabled thanks to the `assert_all_responses_were_requested` fixture:
+This behavior can be disabled thanks to the `httpx_mock` marker:
 
 ```python
 import pytest
 
-@pytest.fixture
-def assert_all_responses_were_requested() -> bool:
-    return False
+# For whole module
+pytestmark = pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
+
+# For specific test
+@pytest.mark.httpx_mock(assert_all_responses_were_requested=True)
+def test_something(httpx_mock):
+    ...
 ```
 
 Default response is a HTTP/1.1 200 (OK) without any body.
@@ -456,14 +460,18 @@ Callback should expect one parameter, the received [`httpx.Request`](https://www
 
 If all callbacks are not executed during test execution, the test case will fail at teardown.
 
-This behavior can be disabled thanks to the `assert_all_responses_were_requested` fixture:
+This behavior can be disabled thanks to the `httpx_mock` marker:
 
 ```python
 import pytest
 
-@pytest.fixture
-def assert_all_responses_were_requested() -> bool:
-    return False
+# For whole module
+pytestmark = pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
+
+# For specific test
+@pytest.mark.httpx_mock(assert_all_responses_were_requested=True)
+def test_something(httpx_mock):
+    ...
 ```
 
 Note that callbacks are considered as responses, and thus are [selected the same way](#how-response-is-selected).
@@ -650,14 +658,18 @@ By default, `pytest-httpx` will mock every request.
 
 But, for instance, in case you want to write integration tests with other servers, you might want to let some requests go through.
 
-To do so, you can use the `non_mocked_hosts` fixture:
+To do so, you can use the `httpx_mock` marker:
 
 ```python
 import pytest
 
-@pytest.fixture
-def non_mocked_hosts() -> list:
-    return ["my_local_test_host", "my_other_test_host"]
+# For whole module
+pytestmark = pytest.mark.httpx_mock(non_mocked_hosts=["my_local_test_host", "my_other_test_host"])
+
+# For specific test
+@pytest.mark.httpx_mock(non_mocked_hosts=["my_local_test_host"])
+def test_something(httpx_mock):
+    ...
 ```
 
 Every other requested hosts will be mocked as in the following example
@@ -666,11 +678,7 @@ Every other requested hosts will be mocked as in the following example
 import pytest
 import httpx
 
-@pytest.fixture
-def non_mocked_hosts() -> list:
-    return ["my_local_test_host"]
-
-
+@pytest.mark.httpx_mock(non_mocked_hosts=["my_local_test_host"])
 def test_partial_mock(httpx_mock):
     httpx_mock.add_response()
 
