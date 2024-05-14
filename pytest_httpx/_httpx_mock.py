@@ -23,6 +23,7 @@ class HTTPXMock:
                         Optional[httpx.Response], Awaitable[Optional[httpx.Response]]
                     ],
                 ],
+                bool,
             ]
         ] = []
 
@@ -36,6 +37,7 @@ class HTTPXMock:
         html: Optional[str] = None,
         stream: Any = None,
         json: Any = None,
+        assert_requested=True,
         **matchers: Any,
     ) -> None:
         """
@@ -73,7 +75,9 @@ class HTTPXMock:
                 stream=stream,
             )
 
-        self.add_callback(response_callback, **matchers)
+        self.add_callback(
+            response_callback, assert_requested=assert_requested, **matchers
+        )
 
     def add_callback(
         self,
@@ -81,6 +85,7 @@ class HTTPXMock:
             [httpx.Request],
             Union[Optional[httpx.Response], Awaitable[Optional[httpx.Response]]],
         ],
+        assert_requested=True,
         **matchers: Any,
     ) -> None:
         """
@@ -97,9 +102,13 @@ class HTTPXMock:
         :param match_content: Full HTTP body identifying the request(s) to match. Must be bytes.
         :param match_json: JSON decoded HTTP body identifying the request(s) to match. Must be JSON encodable.
         """
-        self._callbacks.append((_RequestMatcher(**matchers), callback))
+        self._callbacks.append(
+            (_RequestMatcher(**matchers), callback, assert_requested)
+        )
 
-    def add_exception(self, exception: Exception, **matchers: Any) -> None:
+    def add_exception(
+        self, exception: Exception, assert_requested=True, **matchers: Any
+    ) -> None:
         """
         Raise an exception if a request match.
 
@@ -119,7 +128,9 @@ class HTTPXMock:
                 exception.request = request
             raise exception
 
-        self.add_callback(exception_callback, **matchers)
+        self.add_callback(
+            exception_callback, assert_requested=assert_requested, **matchers
+        )
 
     def _handle_request(
         self,
@@ -166,7 +177,7 @@ class HTTPXMock:
         real_transport: Union[httpx.BaseTransport, httpx.AsyncBaseTransport],
         request: httpx.Request,
     ) -> str:
-        matchers = [matcher for matcher, _ in self._callbacks]
+        matchers = [matcher for matcher, _, _ in self._callbacks]
 
         message = f"No response can be found for {RequestDescription(real_transport, request, matchers)}"
 
@@ -188,7 +199,7 @@ class HTTPXMock:
     ]:
         callbacks = [
             (matcher, callback)
-            for matcher, callback in self._callbacks
+            for matcher, callback, _ in self._callbacks
             if matcher.match(real_transport, request)
         ]
 
@@ -260,7 +271,9 @@ class HTTPXMock:
 
     def _reset_callbacks(self) -> list[_RequestMatcher]:
         callbacks_not_executed = [
-            matcher for matcher, _ in self._callbacks if not matcher.nb_calls
+            matcher
+            for matcher, _, assert_requested in self._callbacks
+            if not matcher.nb_calls and assert_requested
         ]
         self._callbacks.clear()
         return callbacks_not_executed

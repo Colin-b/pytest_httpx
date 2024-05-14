@@ -109,6 +109,26 @@ def test_httpx_mock_unused_callback_without_assertion(testdir: Testdir) -> None:
     result.assert_outcomes(passed=1)
 
 
+def test_httpx_mock_unused_single_unused_callback(testdir: Testdir) -> None:
+    """
+    Unused callbacks should not fail test case if assert_all_responses_were_requested fixture is set to False.
+    """
+    testdir.makepyfile(
+        """
+        import pytest
+        
+        def test_httpx_mock_unused_callback_without_assertion(httpx_mock):
+            def unused(*args, **kwargs):
+                pass
+        
+            httpx_mock.add_callback(unused, assert_requested=False)
+
+    """
+    )
+    result = testdir.runpytest()
+    result.assert_outcomes(passed=1)
+
+
 def test_httpx_mock_non_mocked_hosts_sync(testdir: Testdir) -> None:
     """
     Non mocked hosts should go through while other requests should be mocked.
