@@ -29,6 +29,7 @@ class HTTPXMock:
                 ],
             ]
         ] = []
+        self._requests_not_matched: list[httpx.Request] = []
 
     def add_response(
         self,
@@ -164,6 +165,7 @@ class HTTPXMock:
         real_transport: Union[httpx.AsyncHTTPTransport, httpx.HTTPTransport],
         request: httpx.Request,
     ) -> NoReturn:
+        self._requests_not_matched.append(request)
         raise httpx.TimeoutException(
             self._explain_that_no_response_was_found(real_transport, request),
             request=request,
