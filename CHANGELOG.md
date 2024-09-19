@@ -16,6 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   def test_foo(httpx_mock):
       ...
   ```
+  - The following options are available:
+    - `assert_all_responses_were_requested` (boolean), defaulting to `True`.
+    - `non_mocked_hosts` (iterable), defaulting to an empty list, meaning all hosts are mocked.
 
 ### Removed
 - `pytest` `7` is not supported anymore (`pytest` `8` has been out for 9 months already).
