@@ -1618,7 +1618,7 @@ def test_reset_is_removing_requests(httpx_mock: HTTPXMock) -> None:
 
     assert len(httpx_mock.get_requests()) == 1
 
-    httpx_mock.reset(assert_all_responses_were_requested=False)
+    httpx_mock.reset()
     assert len(httpx_mock.get_requests()) == 0
 
 

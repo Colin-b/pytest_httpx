@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - The following options are available:
     - `assert_all_responses_were_requested` (boolean), defaulting to `True`.
     - `non_mocked_hosts` (iterable), defaulting to an empty list, meaning all hosts are mocked.
+- `httpx_mock.reset` do not expect any parameter anymore and will only reset the mock state (no assertions will be performed).
 
 ### Removed
 - `pytest` `7` is not supported anymore (`pytest` `8` has been out for 9 months already).

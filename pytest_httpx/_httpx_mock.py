@@ -13,6 +13,41 @@ from pytest_httpx._pretty_print import RequestDescription
 from pytest_httpx._request_matcher import _RequestMatcher
 
 
+class HTTPXMockOptions:
+    def __init__(
+        self,
+        *,
+        assert_all_responses_were_requested: bool = True,
+        non_mocked_hosts: Optional[list[str]] = None,
+    ) -> None:
+        if non_mocked_hosts is None:
+            non_mocked_hosts = []
+
+        self.assert_all_responses_were_requested = assert_all_responses_were_requested
+
+        # The original non_mocked_hosts list is shown in the __repr__, see the
+        # non_mocked_hosts property for more.
+        self._non_mocked_hosts = non_mocked_hosts
+
+    @classmethod
+    def from_marker(cls, marker: Mark) -> "HTTPXMockOptions":
+        """Initialise from a marker so that the marker kwargs raise an error if
+        incorrect.
+        """
+        __tracebackhide__ = methodcaller("errisinstance", TypeError)
+        return cls(**marker.kwargs)
+
+    @cached_property
+    def non_mocked_hosts(self) -> list[str]:
+        # Ensure redirections to www hosts are handled transparently.
+        missing_www = [
+            f"www.{host}"
+            for host in self._non_mocked_hosts
+            if not host.startswith("www.")
+        ]
+        return [*self._non_mocked_hosts, *missing_www]
+
+
 class HTTPXMock:
     def __init__(self) -> None:
         self._requests: list[
@@ -257,59 +292,23 @@ class HTTPXMock:
         ), f"More than one request ({len(requests)}) matched, use get_requests instead."
         return requests[0] if requests else None
 
-    # TODO reset should not expose any parameter
-    def reset(self, assert_all_responses_were_requested: bool) -> None:
+    def reset(self) -> None:
         self._requests.clear()
-        not_called = self._reset_callbacks()
+        self._callbacks.clear()
+        self._requests_not_matched.clear()
 
-        if assert_all_responses_were_requested:
-            matchers_description = "\n".join([str(matcher) for matcher in not_called])
+    def _assert_options(self, options: HTTPXMockOptions) -> None:
+        if options.assert_all_responses_were_requested:
+            callbacks_not_executed = [
+                matcher for matcher, _ in self._callbacks if not matcher.nb_calls
+            ]
+            matchers_description = "\n".join(
+                [str(matcher) for matcher in callbacks_not_executed]
+            )
 
             assert (
-                not not_called
+                not callbacks_not_executed
             ), f"The following responses are mocked but not requested:\n{matchers_description}"
-
-    def _reset_callbacks(self) -> list[_RequestMatcher]:
-        callbacks_not_executed = [
-            matcher for matcher, _ in self._callbacks if not matcher.nb_calls
-        ]
-        self._callbacks.clear()
-        return callbacks_not_executed
-
-
-class HTTPXMockOptions:
-    def __init__(
-        self,
-        *,
-        assert_all_responses_were_requested: bool = True,
-        non_mocked_hosts: Optional[list[str]] = None,
-    ) -> None:
-        if non_mocked_hosts is None:
-            non_mocked_hosts = []
-
-        self.assert_all_responses_were_requested = assert_all_responses_were_requested
-
-        # The original non_mocked_hosts list is shown in the __repr__, see the
-        # non_mocked_hosts property for more.
-        self._non_mocked_hosts = non_mocked_hosts
-
-    @classmethod
-    def from_marker(cls, marker: Mark) -> "HTTPXMockOptions":
-        """Initialise from a marker so that the marker kwargs raise an error if
-        incorrect.
-        """
-        __tracebackhide__ = methodcaller("errisinstance", TypeError)
-        return cls(**marker.kwargs)
-
-    @cached_property
-    def non_mocked_hosts(self) -> list[str]:
-        # Ensure redirections to www hosts are handled transparently.
-        missing_www = [
-            f"www.{host}"
-            for host in self._non_mocked_hosts
-            if not host.startswith("www.")
-        ]
-        return [*self._non_mocked_hosts, *missing_www]
 
 
 def _unread(response: httpx.Response) -> httpx.Response:

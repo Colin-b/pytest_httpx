@@ -58,7 +58,10 @@ def httpx_mock(
     )
 
     yield mock
-    mock.reset(options.assert_all_responses_were_requested)
+    try:
+        mock._assert_options(options)
+    finally:
+        mock.reset()
 
 
 def pytest_configure(config: Config) -> None:
