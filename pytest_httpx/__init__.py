@@ -31,7 +31,7 @@ def assert_all_responses_were_requested() -> bool:
 
 
 @pytest.fixture
-def non_mocked_hosts() -> List[str]:
+def non_mocked_hosts() -> list[str]:
     return []
 
 
@@ -39,7 +39,7 @@ def non_mocked_hosts() -> List[str]:
 def httpx_mock(
     monkeypatch: MonkeyPatch,
     assert_all_responses_were_requested: bool,
-    non_mocked_hosts: List[str],
+    non_mocked_hosts: list[str],
     request: FixtureRequest,
 ) -> Generator[HTTPXMock, None, None]:
     marker = request.node.get_closest_marker("httpx_mock")

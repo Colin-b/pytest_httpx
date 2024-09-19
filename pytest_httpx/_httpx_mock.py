@@ -2,7 +2,8 @@ import copy
 import inspect
 from functools import cached_property
 from operator import methodcaller
-from typing import Union, Optional, Callable, Any, Awaitable
+from typing import Union, Optional, Callable, Any
+from collections.abc import Awaitable
 
 import httpx
 from pytest import Mark

@@ -20,6 +20,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `assert_all_responses_were_requested` fixture
 - `non_mocked_hosts` fixture
 
+### Removed
+- `pytest` `7` is not supported anymore (`pytest` `8` has been out for 9 months already).
+
 ## [0.30.0] - 2024-02-21
 ### Changed
 - Requires [`httpx`](https://www.python-httpx.org)==0.27.\*

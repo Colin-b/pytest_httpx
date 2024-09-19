@@ -2,13 +2,10 @@ import base64
 from typing import (
     Union,
     Dict,
-    Sequence,
     Tuple,
-    Iterable,
-    AsyncIterator,
-    Iterator,
     Optional,
 )
+from collections.abc import Sequence, Iterable, AsyncIterator, Iterator
 
 import httpcore
 import httpx
@@ -19,10 +16,10 @@ from httpx._content import IteratorByteStream, AsyncIteratorByteStream
 # Those types are internally defined within httpx._types
 HeaderTypes = Union[
     httpx.Headers,
-    Dict[str, str],
-    Dict[bytes, bytes],
-    Sequence[Tuple[str, str]],
-    Sequence[Tuple[bytes, bytes]],
+    dict[str, str],
+    dict[bytes, bytes],
+    Sequence[tuple[str, str]],
+    Sequence[tuple[bytes, bytes]],
 ]
 
 
@@ -30,8 +27,7 @@ class IteratorStream(AsyncIteratorByteStream, IteratorByteStream):
     def __init__(self, stream: Iterable[bytes]):
         class Stream:
             def __iter__(self) -> Iterator[bytes]:
-                for chunk in stream:
-                    yield chunk
+                yield from stream
 
             async def __aiter__(self) -> AsyncIterator[bytes]:
                 for chunk in stream:
