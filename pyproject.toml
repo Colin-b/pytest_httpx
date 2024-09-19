@@ -60,3 +60,7 @@ pytest_httpx = "pytest_httpx"
 
 [tool.setuptools.dynamic]
 version = {attr = "pytest_httpx.version.__version__"}
+
+[tool.pytest.ini_options]
+# Silence deprecation warnings about option "asyncio_default_fixture_loop_scope"
+asyncio_default_fixture_loop_scope = "function"
