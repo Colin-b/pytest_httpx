@@ -118,12 +118,12 @@ def test_httpx_mock_non_mocked_hosts_sync(testdir: Testdir) -> None:
         def test_httpx_mock_non_mocked_hosts_sync(httpx_mock):
             httpx_mock.add_response()
             
-            with httpx.Client(timeout=httpx.Timeout(None, connect=0.1)) as client:
+            with httpx.Client() as client:
                 # Mocked request
                 client.get("https://foo.tld")
             
                 # Non mocked request
-                with pytest.raises(httpx.ConnectTimeout):
+                with pytest.raises(httpx.ConnectError):
                     client.get("https://localhost:5005")
             
             # Assert that a single request was mocked
@@ -149,12 +149,12 @@ def test_httpx_mock_non_mocked_hosts_async(testdir: Testdir) -> None:
         async def test_httpx_mock_non_mocked_hosts_async(httpx_mock):
             httpx_mock.add_response()
             
-            async with httpx.AsyncClient(timeout=httpx.Timeout(None, connect=0.1)) as client:
+            async with httpx.AsyncClient() as client:
                 # Mocked request
                 await client.get("https://foo.tld")
             
                 # Non mocked request
-                with pytest.raises(httpx.ConnectTimeout):
+                with pytest.raises(httpx.ConnectError):
                     await client.get("https://localhost:5005")
             
             # Assert that a single request was mocked
