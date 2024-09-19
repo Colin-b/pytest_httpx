@@ -18,11 +18,11 @@ class RequestDescription:
 
         headers_encoding = request.headers.encoding
         self.expected_headers = {
-                # httpx uses lower cased header names as internal key
-                header.lower().encode(headers_encoding)
-                for matcher in matchers
-                if matcher.headers
-                for header in matcher.headers
+            # httpx uses lower cased header names as internal key
+            header.lower().encode(headers_encoding)
+            for matcher in matchers
+            if matcher.headers
+            for header in matcher.headers
         }
         self.expect_body = any(
             [
