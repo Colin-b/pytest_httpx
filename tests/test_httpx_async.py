@@ -61,6 +61,7 @@ async def test_url_query_string_matching(httpx_mock: HTTPXMock) -> None:
 
 
 @pytest.mark.asyncio
+@pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
 async def test_url_not_matching(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url="https://test_url")
 
@@ -73,11 +74,9 @@ async def test_url_not_matching(httpx_mock: HTTPXMock) -> None:
 Match all requests on https://test_url"""
         )
 
-    # Clean up responses to avoid assertion failure
-    httpx_mock.reset(assert_all_responses_were_requested=False)
-
 
 @pytest.mark.asyncio
+@pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
 async def test_url_query_string_not_matching(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url="https://test_url?a=1&a=2")
 
@@ -90,9 +89,6 @@ async def test_url_query_string_not_matching(httpx_mock: HTTPXMock) -> None:
             == """No response can be found for GET request on https://test_url?a=2&a=1 amongst:
 Match all requests on https://test_url?a=1&a=2"""
         )
-
-    # Clean up responses to avoid assertion failure
-    httpx_mock.reset(assert_all_responses_were_requested=False)
 
 
 @pytest.mark.asyncio
@@ -108,6 +104,7 @@ async def test_method_matching(httpx_mock: HTTPXMock) -> None:
 
 
 @pytest.mark.asyncio
+@pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
 async def test_method_not_matching(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(method="get")
 
@@ -119,9 +116,6 @@ async def test_method_not_matching(httpx_mock: HTTPXMock) -> None:
             == """No response can be found for POST request on https://test_url amongst:
 Match GET requests"""
         )
-
-    # Clean up responses to avoid assertion failure
-    httpx_mock.reset(assert_all_responses_were_requested=False)
 
 
 @pytest.mark.asyncio
@@ -1107,6 +1101,7 @@ async def test_multi_value_headers_matching(httpx_mock: HTTPXMock) -> None:
 
 
 @pytest.mark.asyncio
+@pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
 async def test_multi_value_headers_not_matching_single_value_issued(
     httpx_mock: HTTPXMock,
 ) -> None:
@@ -1127,11 +1122,9 @@ async def test_multi_value_headers_not_matching_single_value_issued(
 Match all requests with {'my-custom-header': 'value1'} headers"""
         )
 
-    # Clean up responses to avoid assertion failure
-    httpx_mock.reset(assert_all_responses_were_requested=False)
-
 
 @pytest.mark.asyncio
+@pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
 async def test_multi_value_headers_not_matching_multi_value_issued(
     httpx_mock: HTTPXMock,
 ) -> None:
@@ -1152,11 +1145,9 @@ async def test_multi_value_headers_not_matching_multi_value_issued(
 Match all requests with {'my-custom-header': 'value1, value2'} headers"""
         )
 
-    # Clean up responses to avoid assertion failure
-    httpx_mock.reset(assert_all_responses_were_requested=False)
-
 
 @pytest.mark.asyncio
+@pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
 async def test_headers_matching_respect_case(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(
         match_headers={"user-agent": f"python-httpx/{httpx.__version__}"}
@@ -1171,11 +1162,9 @@ async def test_headers_matching_respect_case(httpx_mock: HTTPXMock) -> None:
 Match all requests with {{'user-agent': 'python-httpx/{httpx.__version__}'}} headers"""
         )
 
-    # Clean up responses to avoid assertion failure
-    httpx_mock.reset(assert_all_responses_were_requested=False)
-
 
 @pytest.mark.asyncio
+@pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
 async def test_headers_not_matching(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(
         match_headers={
@@ -1194,11 +1183,9 @@ async def test_headers_not_matching(httpx_mock: HTTPXMock) -> None:
 Match all requests with {{'User-Agent': 'python-httpx/{httpx.__version__}', 'Host': 'test_url2', 'Host2': 'test_url'}} headers"""
         )
 
-    # Clean up responses to avoid assertion failure
-    httpx_mock.reset(assert_all_responses_were_requested=False)
-
 
 @pytest.mark.asyncio
+@pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
 async def test_url_not_matching_upper_case_headers_matching(
     httpx_mock: HTTPXMock,
 ) -> None:
@@ -1215,9 +1202,6 @@ async def test_url_not_matching_upper_case_headers_matching(
             == """No response can be found for GET request on https://test_url with {'MyHeader': 'Something'} headers amongst:
 Match GET requests on https://test_url?q=b with {'MyHeader': 'Something'} headers"""
         )
-
-    # Clean up responses to avoid assertion failure
-    httpx_mock.reset(assert_all_responses_were_requested=False)
 
 
 @pytest.mark.asyncio
@@ -1239,6 +1223,7 @@ async def test_proxy_matching(httpx_mock: HTTPXMock) -> None:
 
 
 @pytest.mark.asyncio
+@pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
 async def test_proxy_not_matching(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(proxy_url="http://my_test_proxy")
 
@@ -1251,11 +1236,9 @@ async def test_proxy_not_matching(httpx_mock: HTTPXMock) -> None:
 Match all requests with http://my_test_proxy proxy URL"""
         )
 
-    # Clean up responses to avoid assertion failure
-    httpx_mock.reset(assert_all_responses_were_requested=False)
-
 
 @pytest.mark.asyncio
+@pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
 async def test_proxy_not_existing(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(proxy_url="http://my_test_proxy")
 
@@ -1267,9 +1250,6 @@ async def test_proxy_not_existing(httpx_mock: HTTPXMock) -> None:
             == """No response can be found for GET request on http://test_url with no proxy URL amongst:
 Match all requests with http://my_test_proxy proxy URL"""
         )
-
-    # Clean up responses to avoid assertion failure
-    httpx_mock.reset(assert_all_responses_were_requested=False)
 
 
 @pytest.mark.asyncio
@@ -1337,6 +1317,7 @@ async def test_request_retrieval_proxy_matching(httpx_mock: HTTPXMock) -> None:
 
 
 @pytest.mark.asyncio
+@pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
 async def test_content_not_matching(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(match_content=b"This is the body")
 
@@ -1348,9 +1329,6 @@ async def test_content_not_matching(httpx_mock: HTTPXMock) -> None:
             == """No response can be found for POST request on https://test_url with b'This is the body2' body amongst:
 Match all requests with b'This is the body' body"""
         )
-
-    # Clean up responses to avoid assertion failure
-    httpx_mock.reset(assert_all_responses_were_requested=False)
 
 
 @pytest.mark.asyncio
@@ -1372,6 +1350,7 @@ async def test_json_partial_matching(httpx_mock: HTTPXMock) -> None:
 
 
 @pytest.mark.asyncio
+@pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
 async def test_json_not_matching(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(match_json={"a": 1, "b": 2})
 
@@ -1384,11 +1363,9 @@ async def test_json_not_matching(httpx_mock: HTTPXMock) -> None:
 Match all requests with {'a': 1, 'b': 2} json body"""
         )
 
-    # Clean up responses to avoid assertion failure
-    httpx_mock.reset(assert_all_responses_were_requested=False)
-
 
 @pytest.mark.asyncio
+@pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
 async def test_headers_and_json_not_matching(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(
         match_json={"a": 1, "b": 2},
@@ -1404,11 +1381,9 @@ async def test_headers_and_json_not_matching(httpx_mock: HTTPXMock) -> None:
 Match all requests with {'foo': 'bar'} headers and {'a': 1, 'b': 2} json body"""
         )
 
-    # Clean up responses to avoid assertion failure
-    httpx_mock.reset(assert_all_responses_were_requested=False)
-
 
 @pytest.mark.asyncio
+@pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
 async def test_match_json_invalid_json(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(match_json={"a": 1, "b": 2})
 
@@ -1420,9 +1395,6 @@ async def test_match_json_invalid_json(httpx_mock: HTTPXMock) -> None:
             == """No response can be found for POST request on https://test_url with b'<test>foobar</test>' body amongst:
 Match all requests with {'a': 1, 'b': 2} json body"""
         )
-
-    # Clean up responses to avoid assertion failure
-    httpx_mock.reset(assert_all_responses_were_requested=False)
 
 
 @pytest.mark.asyncio
@@ -1438,6 +1410,7 @@ async def test_headers_and_content_matching(httpx_mock: HTTPXMock) -> None:
 
 
 @pytest.mark.asyncio
+@pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
 async def test_headers_not_matching_and_content_matching(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(
         match_headers={
@@ -1456,11 +1429,9 @@ async def test_headers_not_matching_and_content_matching(httpx_mock: HTTPXMock) 
 Match all requests with {{'User-Agent': 'python-httpx/{httpx.__version__}', 'Host': 'test_url2'}} headers and b'This is the body' body"""
         )
 
-    # Clean up responses to avoid assertion failure
-    httpx_mock.reset(assert_all_responses_were_requested=False)
-
 
 @pytest.mark.asyncio
+@pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
 async def test_headers_matching_and_content_not_matching(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(
         match_headers={
@@ -1479,11 +1450,9 @@ async def test_headers_matching_and_content_not_matching(httpx_mock: HTTPXMock) 
 Match all requests with {{'User-Agent': 'python-httpx/{httpx.__version__}', 'Host': 'test_url'}} headers and b'This is the body2' body"""
         )
 
-    # Clean up responses to avoid assertion failure
-    httpx_mock.reset(assert_all_responses_were_requested=False)
-
 
 @pytest.mark.asyncio
+@pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
 async def test_headers_and_content_not_matching(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(
         match_headers={
@@ -1502,9 +1471,6 @@ async def test_headers_and_content_not_matching(httpx_mock: HTTPXMock) -> None:
 Match all requests with {{'User-Agent': 'python-httpx/{httpx.__version__}', 'Host': 'test_url2'}} headers and b'This is the body2' body"""
         )
 
-    # Clean up responses to avoid assertion failure
-    httpx_mock.reset(assert_all_responses_were_requested=False)
-
 
 @pytest.mark.asyncio
 async def test_url_and_headers_and_content_matching(httpx_mock: HTTPXMock) -> None:
@@ -1520,6 +1486,7 @@ async def test_url_and_headers_and_content_matching(httpx_mock: HTTPXMock) -> No
 
 
 @pytest.mark.asyncio
+@pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
 async def test_headers_not_matching_and_url_and_content_matching(
     httpx_mock: HTTPXMock,
 ) -> None:
@@ -1541,11 +1508,9 @@ async def test_headers_not_matching_and_url_and_content_matching(
 Match all requests on https://test_url with {{'User-Agent': 'python-httpx/{httpx.__version__}', 'Host': 'test_url2'}} headers and b'This is the body' body"""
         )
 
-    # Clean up responses to avoid assertion failure
-    httpx_mock.reset(assert_all_responses_were_requested=False)
-
 
 @pytest.mark.asyncio
+@pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
 async def test_url_and_headers_not_matching_and_content_matching(
     httpx_mock: HTTPXMock,
 ) -> None:
@@ -1567,11 +1532,9 @@ async def test_url_and_headers_not_matching_and_content_matching(
 Match all requests on https://test_url2 with {{'User-Agent': 'python-httpx/{httpx.__version__}', 'Host': 'test_url2'}} headers and b'This is the body' body"""
         )
 
-    # Clean up responses to avoid assertion failure
-    httpx_mock.reset(assert_all_responses_were_requested=False)
-
 
 @pytest.mark.asyncio
+@pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
 async def test_url_and_headers_matching_and_content_not_matching(
     httpx_mock: HTTPXMock,
 ) -> None:
@@ -1593,11 +1556,9 @@ async def test_url_and_headers_matching_and_content_not_matching(
 Match all requests on https://test_url with {{'User-Agent': 'python-httpx/{httpx.__version__}', 'Host': 'test_url'}} headers and b'This is the body2' body"""
         )
 
-    # Clean up responses to avoid assertion failure
-    httpx_mock.reset(assert_all_responses_were_requested=False)
-
 
 @pytest.mark.asyncio
+@pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
 async def test_headers_matching_and_url_and_content_not_matching(
     httpx_mock: HTTPXMock,
 ) -> None:
@@ -1619,11 +1580,9 @@ async def test_headers_matching_and_url_and_content_not_matching(
 Match all requests on https://test_url2 with {{'User-Agent': 'python-httpx/{httpx.__version__}', 'Host': 'test_url'}} headers and b'This is the body2' body"""
         )
 
-    # Clean up responses to avoid assertion failure
-    httpx_mock.reset(assert_all_responses_were_requested=False)
-
 
 @pytest.mark.asyncio
+@pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
 async def test_url_matching_and_headers_and_content_not_matching(
     httpx_mock: HTTPXMock,
 ) -> None:
@@ -1645,11 +1604,9 @@ async def test_url_matching_and_headers_and_content_not_matching(
 Match all requests on https://test_url with {{'User-Agent': 'python-httpx/{httpx.__version__}', 'Host': 'test_url2'}} headers and b'This is the body2' body"""
         )
 
-    # Clean up responses to avoid assertion failure
-    httpx_mock.reset(assert_all_responses_were_requested=False)
-
 
 @pytest.mark.asyncio
+@pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
 async def test_url_and_headers_and_content_not_matching(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(
         url="https://test_url2",
@@ -1669,9 +1626,6 @@ async def test_url_and_headers_and_content_not_matching(httpx_mock: HTTPXMock) -
 Match all requests on https://test_url2 with {{'User-Agent': 'python-httpx/{httpx.__version__}', 'Host': 'test_url2'}} headers and b'This is the body2' body"""
         )
 
-    # Clean up responses to avoid assertion failure
-    httpx_mock.reset(assert_all_responses_were_requested=False)
-
 
 @pytest.mark.asyncio
 async def test_method_and_url_and_headers_and_content_matching(
@@ -1690,6 +1644,7 @@ async def test_method_and_url_and_headers_and_content_matching(
 
 
 @pytest.mark.asyncio
+@pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
 async def test_headers_not_matching_and_method_and_url_and_content_matching(
     httpx_mock: HTTPXMock,
 ) -> None:
@@ -1712,11 +1667,9 @@ async def test_headers_not_matching_and_method_and_url_and_content_matching(
 Match POST requests on https://test_url with {{'User-Agent': 'python-httpx/{httpx.__version__}', 'Host': 'test_url2'}} headers and b'This is the body' body"""
         )
 
-    # Clean up responses to avoid assertion failure
-    httpx_mock.reset(assert_all_responses_were_requested=False)
-
 
 @pytest.mark.asyncio
+@pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
 async def test_url_and_headers_not_matching_and_method_and_content_matching(
     httpx_mock: HTTPXMock,
 ) -> None:
@@ -1739,11 +1692,9 @@ async def test_url_and_headers_not_matching_and_method_and_content_matching(
 Match POST requests on https://test_url2 with {{'User-Agent': 'python-httpx/{httpx.__version__}', 'Host': 'test_url2'}} headers and b'This is the body' body"""
         )
 
-    # Clean up responses to avoid assertion failure
-    httpx_mock.reset(assert_all_responses_were_requested=False)
-
 
 @pytest.mark.asyncio
+@pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
 async def test_method_and_url_and_headers_matching_and_content_not_matching(
     httpx_mock: HTTPXMock,
 ) -> None:
@@ -1766,11 +1717,9 @@ async def test_method_and_url_and_headers_matching_and_content_not_matching(
 Match POST requests on https://test_url with {{'User-Agent': 'python-httpx/{httpx.__version__}', 'Host': 'test_url'}} headers and b'This is the body2' body"""
         )
 
-    # Clean up responses to avoid assertion failure
-    httpx_mock.reset(assert_all_responses_were_requested=False)
-
 
 @pytest.mark.asyncio
+@pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
 async def test_method_and_headers_matching_and_url_and_content_not_matching(
     httpx_mock: HTTPXMock,
 ) -> None:
@@ -1793,11 +1742,9 @@ async def test_method_and_headers_matching_and_url_and_content_not_matching(
 Match POST requests on https://test_url2 with {{'User-Agent': 'python-httpx/{httpx.__version__}', 'Host': 'test_url'}} headers and b'This is the body2' body"""
         )
 
-    # Clean up responses to avoid assertion failure
-    httpx_mock.reset(assert_all_responses_were_requested=False)
-
 
 @pytest.mark.asyncio
+@pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
 async def test_method_and_url_matching_and_headers_and_content_not_matching(
     httpx_mock: HTTPXMock,
 ) -> None:
@@ -1820,11 +1767,9 @@ async def test_method_and_url_matching_and_headers_and_content_not_matching(
 Match POST requests on https://test_url with {{'User-Agent': 'python-httpx/{httpx.__version__}', 'Host': 'test_url2'}} headers and b'This is the body2' body"""
         )
 
-    # Clean up responses to avoid assertion failure
-    httpx_mock.reset(assert_all_responses_were_requested=False)
-
 
 @pytest.mark.asyncio
+@pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
 async def test_method_matching_and_url_and_headers_and_content_not_matching(
     httpx_mock: HTTPXMock,
 ) -> None:
@@ -1847,11 +1792,9 @@ async def test_method_matching_and_url_and_headers_and_content_not_matching(
 Match POST requests on https://test_url2 with {{'User-Agent': 'python-httpx/{httpx.__version__}', 'Host': 'test_url2'}} headers and b'This is the body2' body"""
         )
 
-    # Clean up responses to avoid assertion failure
-    httpx_mock.reset(assert_all_responses_were_requested=False)
-
 
 @pytest.mark.asyncio
+@pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
 async def test_method_and_url_and_headers_and_content_not_matching(
     httpx_mock: HTTPXMock,
 ) -> None:
@@ -1873,9 +1816,6 @@ async def test_method_and_url_and_headers_and_content_not_matching(
             == f"""No response can be found for POST request on https://test_url with {{'Host': 'test_url', 'User-Agent': 'python-httpx/{httpx.__version__}'}} headers and b'This is the body' body amongst:
 Match PUT requests on https://test_url2 with {{'User-Agent': 'python-httpx/{httpx.__version__}', 'Host': 'test_url2'}} headers and b'This is the body2' body"""
         )
-
-    # Clean up responses to avoid assertion failure
-    httpx_mock.reset(assert_all_responses_were_requested=False)
 
 
 @pytest.mark.asyncio

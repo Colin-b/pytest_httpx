@@ -257,6 +257,7 @@ class HTTPXMock:
         ), f"More than one request ({len(requests)}) matched, use get_requests instead."
         return requests[0] if requests else None
 
+    # TODO reset should not expose any parameter
     def reset(self, assert_all_responses_were_requested: bool) -> None:
         self._requests.clear()
         not_called = self._reset_callbacks()
