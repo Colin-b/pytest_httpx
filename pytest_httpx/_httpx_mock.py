@@ -2,7 +2,7 @@ import copy
 import inspect
 from functools import cached_property
 from operator import methodcaller
-from typing import Union, Optional, Callable, Any
+from typing import Union, Optional, Callable, Any, NoReturn
 from collections.abc import Awaitable
 
 import httpx
@@ -139,10 +139,7 @@ class HTTPXMock:
             if response:
                 return _unread(response)
 
-        raise httpx.TimeoutException(
-            self._explain_that_no_response_was_found(real_transport, request),
-            request=request,
-        )
+        self._request_not_matched(real_transport, request)
 
     async def _handle_async_request(
         self,
@@ -160,6 +157,13 @@ class HTTPXMock:
                     response = await response
                 return _unread(response)
 
+        self._request_not_matched(real_transport, request)
+
+    def _request_not_matched(
+        self,
+        real_transport: Union[httpx.AsyncHTTPTransport, httpx.HTTPTransport],
+        request: httpx.Request,
+    ) -> NoReturn:
         raise httpx.TimeoutException(
             self._explain_that_no_response_was_found(real_transport, request),
             request=request,
