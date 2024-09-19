@@ -58,8 +58,5 @@ testing = [
 [project.entry-points.pytest11]
 pytest_httpx = "pytest_httpx"
 
-[tool.setuptools.packages.find]
-exclude = ["tests*"]
-
 [tool.setuptools.dynamic]
 version = {attr = "pytest_httpx.version.__version__"}
