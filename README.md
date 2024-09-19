@@ -572,6 +572,21 @@ def test_timeout(httpx_mock: HTTPXMock):
 The best way to ensure the content of your requests is still to use the `match_headers` and / or `match_content` parameters when adding a response.
 In the same spirit, ensuring that no request was issued does not necessarily require any code.
 
+Note that default behavior is to send an `httpx.TimeoutException` in case no response can be found. 
+However, should your test swallow exceptions, you can use the `httpx_mock` marker to ensure that only expected requests have been issued:
+
+```python
+import pytest
+
+# For whole module
+pytestmark = pytest.mark.httpx_mock(assert_all_requests_were_expected=True)
+
+# For specific test
+@pytest.mark.httpx_mock(assert_all_requests_were_expected=True)
+def test_something(httpx_mock):
+    ...
+```
+
 In any case, you always have the ability to retrieve the requests that were issued.
 
 As in the following samples:

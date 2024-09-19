@@ -1,6 +1,5 @@
 import copy
 import inspect
-from functools import cached_property
 from operator import methodcaller
 from typing import Union, Optional, Callable, Any, NoReturn
 from collections.abc import Awaitable
@@ -18,16 +17,20 @@ class HTTPXMockOptions:
         self,
         *,
         assert_all_responses_were_requested: bool = True,
+        assert_all_requests_were_expected: bool = False,
         non_mocked_hosts: Optional[list[str]] = None,
     ) -> None:
+        self.assert_all_responses_were_requested = assert_all_responses_were_requested
+        self.assert_all_requests_were_expected = assert_all_requests_were_expected
+
         if non_mocked_hosts is None:
             non_mocked_hosts = []
 
-        self.assert_all_responses_were_requested = assert_all_responses_were_requested
-
-        # The original non_mocked_hosts list is shown in the __repr__, see the
-        # non_mocked_hosts property for more.
-        self._non_mocked_hosts = non_mocked_hosts
+        # Ensure redirections to www hosts are handled transparently.
+        missing_www = [
+            f"www.{host}" for host in non_mocked_hosts if not host.startswith("www.")
+        ]
+        self.non_mocked_hosts = [*non_mocked_hosts, *missing_www]
 
     @classmethod
     def from_marker(cls, marker: Mark) -> "HTTPXMockOptions":
@@ -36,16 +39,6 @@ class HTTPXMockOptions:
         """
         __tracebackhide__ = methodcaller("errisinstance", TypeError)
         return cls(**marker.kwargs)
-
-    @cached_property
-    def non_mocked_hosts(self) -> list[str]:
-        # Ensure redirections to www hosts are handled transparently.
-        missing_www = [
-            f"www.{host}"
-            for host in self._non_mocked_hosts
-            if not host.startswith("www.")
-        ]
-        return [*self._non_mocked_hosts, *missing_www]
 
 
 class HTTPXMock:
@@ -309,6 +302,11 @@ class HTTPXMock:
             assert (
                 not callbacks_not_executed
             ), f"The following responses are mocked but not requested:\n{matchers_description}"
+
+        if options.assert_all_requests_were_expected:
+            assert (
+                not self._requests_not_matched
+            ), f"The following requests were not expected:\n{self._requests_not_matched}"
 
 
 def _unread(response: httpx.Response) -> httpx.Response:
