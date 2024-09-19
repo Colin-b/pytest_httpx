@@ -17,15 +17,13 @@ class RequestDescription:
         self.request = request
 
         headers_encoding = request.headers.encoding
-        self.expected_headers = set(
-            [
+        self.expected_headers = {
                 # httpx uses lower cased header names as internal key
                 header.lower().encode(headers_encoding)
                 for matcher in matchers
                 if matcher.headers
                 for header in matcher.headers
-            ]
-        )
+        }
         self.expect_body = any(
             [
                 matcher.content is not None or matcher.json is not None
