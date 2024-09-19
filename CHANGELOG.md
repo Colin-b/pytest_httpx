@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
-- The `httpx_mock` fixture is now configured using a marker.
+- The `httpx_mock` fixture is now configured using a marker (many thanks to [`Frazer McLean`](https://github.com/RazerM)).
   ```python
   # Apply marker to whole module
   pytestmark = pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
@@ -16,12 +16,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   def test_foo(httpx_mock):
       ...
   ```
-### Deprecated
-- `assert_all_responses_were_requested` fixture
-- `non_mocked_hosts` fixture
 
 ### Removed
 - `pytest` `7` is not supported anymore (`pytest` `8` has been out for 9 months already).
+- `assert_all_responses_were_requested` fixture is not available anymore, use `pytest.mark.httpx_mock(assert_all_responses_were_requested=False)` instead.
+- `non_mocked_hosts` fixture is not available anymore, use `pytest.mark.httpx_mock(non_mocked_hosts=[])` instead.
 
 ## [0.30.0] - 2024-02-21
 ### Changed

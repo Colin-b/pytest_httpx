@@ -304,16 +304,6 @@ class HTTPXMockOptions:
         ]
         return [*self._non_mocked_hosts, *missing_www]
 
-    def __repr__(self) -> str:
-        kwargs = []
-        if not self.assert_all_responses_were_requested:
-            kwargs.append(
-                f"assert_all_responses_were_requested={self.assert_all_responses_were_requested!r}"
-            )
-        if self._non_mocked_hosts:
-            kwargs.append(f"non_mocked_hosts={self._non_mocked_hosts!r}")
-        return f"pytest.mark.httpx_mock(" + ", ".join(kwargs) + ")"
-
 
 def _unread(response: httpx.Response) -> httpx.Response:
     # Allow to read the response on client side

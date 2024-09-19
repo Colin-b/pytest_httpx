@@ -41,32 +41,6 @@ def test_httpx_mock_unused_response(testdir: Testdir) -> None:
     )
 
 
-def test_httpx_mock_unused_response_without_assertion_via_fixture(
-    testdir: Testdir,
-) -> None:
-    """
-    Unused responses should not fail test case if assert_all_responses_were_requested fixture is set to False.
-    """
-    testdir.makepyfile(
-        """
-        import pytest
-        
-        @pytest.fixture
-        def assert_all_responses_were_requested() -> bool:
-            return False
-
-        def test_httpx_mock_unused_response_without_assertion(httpx_mock):
-            httpx_mock.add_response()
-    """
-    )
-    result = testdir.runpytest()
-    result.assert_outcomes(passed=1)
-    # Our deprecation warning should show how to configure an equivalent marker
-    result.stdout.re_match_lines(
-        [r".*pytest\.mark\.httpx_mock\(assert_all_responses_were_requested=False\)"]
-    )
-
-
 def test_httpx_mock_unused_response_without_assertion(testdir: Testdir) -> None:
     """
     Unused responses should not fail test case if
@@ -109,36 +83,6 @@ def test_httpx_mock_unused_callback(testdir: Testdir) -> None:
     )
 
 
-def test_httpx_mock_unused_callback_without_assertion_via_fixture(
-    testdir: Testdir,
-) -> None:
-    """
-    Unused callbacks should not fail test case if assert_all_responses_were_requested fixture is set to False.
-    """
-    testdir.makepyfile(
-        """
-        import pytest
-        
-        @pytest.fixture
-        def assert_all_responses_were_requested() -> bool:
-            return False
-
-        def test_httpx_mock_unused_callback_without_assertion(httpx_mock):
-            def unused(*args, **kwargs):
-                pass
-        
-            httpx_mock.add_callback(unused)
-
-    """
-    )
-    result = testdir.runpytest()
-    result.assert_outcomes(passed=1)
-    # Our deprecation warning should show how to configure an equivalent marker
-    result.stdout.re_match_lines(
-        [r".*pytest\.mark\.httpx_mock\(assert_all_responses_were_requested=False\)"]
-    )
-
-
 def test_httpx_mock_unused_callback_without_assertion(testdir: Testdir) -> None:
     """
     Unused callbacks should not fail test case if
@@ -161,43 +105,6 @@ def test_httpx_mock_unused_callback_without_assertion(testdir: Testdir) -> None:
     result.assert_outcomes(passed=1)
 
 
-def test_httpx_mock_non_mocked_hosts_sync_via_fixture(testdir: Testdir) -> None:
-    """
-    Non mocked hosts should go through while other requests should be mocked.
-    """
-    testdir.makepyfile(
-        """
-        import httpx
-        import pytest
-        
-        @pytest.fixture
-        def non_mocked_hosts() -> list:
-            return ["localhost"]
-
-        def test_httpx_mock_non_mocked_hosts_sync(httpx_mock):
-            httpx_mock.add_response()
-            
-            with httpx.Client() as client:
-                # Mocked request
-                client.get("https://foo.tld")
-            
-                # Non mocked request
-                with pytest.raises(httpx.ConnectError):
-                    client.get("https://localhost:5005")
-            
-            # Assert that a single request was mocked
-            assert len(httpx_mock.get_requests()) == 1
-            
-    """
-    )
-    result = testdir.runpytest()
-    result.assert_outcomes(passed=1)
-    # Our deprecation warning should show how to configure an equivalent marker
-    result.stdout.re_match_lines(
-        [r".*pytest\.mark\.httpx_mock\(non_mocked_hosts=\['localhost'\]\)"]
-    )
-
-
 def test_httpx_mock_non_mocked_hosts_sync(testdir: Testdir) -> None:
     """
     Non mocked hosts should go through while other requests should be mocked.
@@ -211,12 +118,12 @@ def test_httpx_mock_non_mocked_hosts_sync(testdir: Testdir) -> None:
         def test_httpx_mock_non_mocked_hosts_sync(httpx_mock):
             httpx_mock.add_response()
             
-            with httpx.Client() as client:
+            with httpx.Client(timeout=httpx.Timeout(None, connect=0.1)) as client:
                 # Mocked request
                 client.get("https://foo.tld")
             
                 # Non mocked request
-                with pytest.raises(httpx.ConnectError):
+                with pytest.raises(httpx.ConnectTimeout):
                     client.get("https://localhost:5005")
             
             # Assert that a single request was mocked
@@ -226,44 +133,6 @@ def test_httpx_mock_non_mocked_hosts_sync(testdir: Testdir) -> None:
     )
     result = testdir.runpytest()
     result.assert_outcomes(passed=1)
-
-
-def test_httpx_mock_non_mocked_hosts_async_via_fixture(testdir: Testdir) -> None:
-    """
-    Non mocked hosts should go through while other requests should be mocked.
-    """
-    testdir.makepyfile(
-        """
-        import httpx
-        import pytest
-        
-        @pytest.fixture
-        def non_mocked_hosts() -> list:
-            return ["localhost"]
-
-        @pytest.mark.asyncio
-        async def test_httpx_mock_non_mocked_hosts_async(httpx_mock):
-            httpx_mock.add_response()
-            
-            async with httpx.AsyncClient() as client:
-                # Mocked request
-                await client.get("https://foo.tld")
-            
-                # Non mocked request
-                with pytest.raises(httpx.ConnectError):
-                    await client.get("https://localhost:5005")
-            
-            # Assert that a single request was mocked
-            assert len(httpx_mock.get_requests()) == 1
-            
-    """
-    )
-    result = testdir.runpytest()
-    result.assert_outcomes(passed=1)
-    # Our deprecation warning should show how to configure an equivalent marker
-    result.stdout.re_match_lines(
-        [r".*pytest\.mark\.httpx_mock\(non_mocked_hosts=\['localhost'\]\)"]
-    )
 
 
 def test_httpx_mock_non_mocked_hosts_async(testdir: Testdir) -> None:
@@ -280,12 +149,12 @@ def test_httpx_mock_non_mocked_hosts_async(testdir: Testdir) -> None:
         async def test_httpx_mock_non_mocked_hosts_async(httpx_mock):
             httpx_mock.add_response()
             
-            async with httpx.AsyncClient() as client:
+            async with httpx.AsyncClient(timeout=httpx.Timeout(None, connect=0.1)) as client:
                 # Mocked request
                 await client.get("https://foo.tld")
             
                 # Non mocked request
-                with pytest.raises(httpx.ConnectError):
+                with pytest.raises(httpx.ConnectTimeout):
                     await client.get("https://localhost:5005")
             
             # Assert that a single request was mocked

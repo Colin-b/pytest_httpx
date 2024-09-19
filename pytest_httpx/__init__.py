@@ -1,6 +1,4 @@
-import warnings
 from collections.abc import Generator
-from typing import List
 
 import httpx
 import pytest
@@ -17,49 +15,13 @@ __all__ = (
 )
 
 
-FIXTURE_DEPRECATION_MSG = """\
-The assert_all_responses_were_requested and non_mocked_hosts fixtures are deprecated.
-Use the following marker instead:
-
-{options!r}
-"""
-
-
-@pytest.fixture
-def assert_all_responses_were_requested() -> bool:
-    return True
-
-
-@pytest.fixture
-def non_mocked_hosts() -> list[str]:
-    return []
-
-
 @pytest.fixture
 def httpx_mock(
     monkeypatch: MonkeyPatch,
-    assert_all_responses_were_requested: bool,
-    non_mocked_hosts: list[str],
     request: FixtureRequest,
 ) -> Generator[HTTPXMock, None, None]:
     marker = request.node.get_closest_marker("httpx_mock")
-
-    if marker:
-        options = HTTPXMockOptions.from_marker(marker)
-    else:
-        deprecated_usage = not assert_all_responses_were_requested or non_mocked_hosts
-        options = HTTPXMockOptions(
-            assert_all_responses_were_requested=assert_all_responses_were_requested,
-            non_mocked_hosts=non_mocked_hosts,
-        )
-        if deprecated_usage:
-            warnings.warn(
-                FIXTURE_DEPRECATION_MSG.format(options=options), DeprecationWarning
-            )
-
-    # Make sure we use options instead
-    del non_mocked_hosts
-    del assert_all_responses_were_requested
+    options = HTTPXMockOptions.from_marker(marker) if marker else HTTPXMockOptions()
 
     mock = HTTPXMock()
 
