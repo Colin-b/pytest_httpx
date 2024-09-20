@@ -107,36 +107,14 @@ def test_httpx_mock_unused_callback_without_assertion(testdir: Testdir) -> None:
 
 def test_httpx_mock_unexpected_request(testdir: Testdir) -> None:
     """
-    Unexpected request should not fail test case if
-    assert_all_requests_were_expected option is set to False (default).
-    """
-    testdir.makepyfile(
-        """
-        import httpx
-        import pytest
-
-        def test_httpx_mock_unexpected_request(httpx_mock):
-            with httpx.Client() as client:
-                # Non mocked request
-                with pytest.raises(httpx.TimeoutException):
-                    client.get("https://foo.tld")
-    """
-    )
-    result = testdir.runpytest()
-    result.assert_outcomes(passed=1)
-
-
-def test_httpx_mock_unexpected_request_with_assertion(testdir: Testdir) -> None:
-    """
     Unexpected request should fail test case if
-    assert_all_requests_were_expected option is set to True.
+    assert_all_requests_were_expected option is set to True (default).
     """
     testdir.makepyfile(
         """
         import httpx
         import pytest
 
-        @pytest.mark.httpx_mock(assert_all_requests_were_expected=True)
         def test_httpx_mock_unexpected_request(httpx_mock):
             with httpx.Client() as client:
                 # Non mocked request
@@ -152,6 +130,28 @@ def test_httpx_mock_unexpected_request_with_assertion(testdir: Testdir) -> None:
             "*[<Request('GET', 'https://foo.tld')>]",
         ]
     )
+
+
+def test_httpx_mock_unexpected_request_without_assertion(testdir: Testdir) -> None:
+    """
+    Unexpected request should not fail test case if
+    assert_all_requests_were_expected option is set to False.
+    """
+    testdir.makepyfile(
+        """
+        import httpx
+        import pytest
+
+        @pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
+        def test_httpx_mock_unexpected_request(httpx_mock):
+            with httpx.Client() as client:
+                # Non mocked request
+                with pytest.raises(httpx.TimeoutException):
+                    client.get("https://foo.tld")
+    """
+    )
+    result = testdir.runpytest()
+    result.assert_outcomes(passed=1)
 
 
 def test_httpx_mock_non_mocked_hosts_sync(testdir: Testdir) -> None:
@@ -231,4 +231,4 @@ def test_invalid_marker(testdir: Testdir) -> None:
     )
     result = testdir.runpytest()
     result.assert_outcomes(errors=1)
-    result.stdout.re_match_lines([r".*unexpected keyword argument 'foo'"])
+    result.stdout.re_match_lines([r".*got an unexpected keyword argument 'foo'"])

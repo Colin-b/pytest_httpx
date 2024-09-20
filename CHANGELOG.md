@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed
+- Tests will now fail at teardown by default if some requests were issued but were not matched.
+  - This behavior can be changed thanks to the new ``pytest.mark.httpx_mock(assert_all_requests_were_expected=False)`` option.
 - The `httpx_mock` fixture is now configured using a marker (many thanks to [`Frazer McLean`](https://github.com/RazerM)).
   ```python
   # Apply marker to whole module
@@ -18,14 +20,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ```
   - The following options are available:
     - `assert_all_responses_were_requested` (boolean), defaulting to `True`.
-    - `assert_all_requests_were_expected` (boolean), defaulting to `False`.
+    - `assert_all_requests_were_expected` (boolean), defaulting to `True`.
     - `non_mocked_hosts` (iterable), defaulting to an empty list, meaning all hosts are mocked.
 - `httpx_mock.reset` do not expect any parameter anymore and will only reset the mock state (no assertions will be performed).
-
-### Added
-- It is now possible to ensure that all requests were expected. Use `pytest.mark.httpx_mock(assert_all_requests_were_expected=True)`.
-  - This is especially useful if your code is swallowing exceptions that are raised by `httpx_mock` when receiving an unexpected request.
-  - Note that the default behavior will change to `True` in the next release. Set it to `False` if you want to keep previous behavior.
 
 ### Removed
 - `pytest` `7` is not supported anymore (`pytest` `8` has been out for 9 months already).
