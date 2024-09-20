@@ -6,6 +6,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.31.0] - 2024-09-20
+### Changed
+- Tests will now fail at teardown by default if some requests were issued but were not matched.
+  - This behavior can be changed thanks to the new ``pytest.mark.httpx_mock(assert_all_requests_were_expected=False)`` option.
+- The `httpx_mock` fixture is now configured using a marker (many thanks to [`Frazer McLean`](https://github.com/RazerM)).
+  ```python
+  # Apply marker to whole module
+  pytestmark = pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
+  
+  # Or to specific tests
+  @pytest.mark.httpx_mock(non_mocked_hosts=[...])
+  def test_foo(httpx_mock):
+      ...
+  ```
+  - The following options are available:
+    - `assert_all_responses_were_requested` (boolean), defaulting to `True`.
+    - `assert_all_requests_were_expected` (boolean), defaulting to `True`.
+    - `non_mocked_hosts` (iterable), defaulting to an empty list, meaning all hosts are mocked.
+- `httpx_mock.reset` do not expect any parameter anymore and will only reset the mock state (no assertions will be performed).
+
+### Removed
+- `pytest` `7` is not supported anymore (`pytest` `8` has been out for 9 months already).
+- `assert_all_responses_were_requested` fixture is not available anymore, use `pytest.mark.httpx_mock(assert_all_responses_were_requested=False)` instead.
+- `non_mocked_hosts` fixture is not available anymore, use `pytest.mark.httpx_mock(non_mocked_hosts=[])` instead.
+
 ## [0.30.0] - 2024-02-21
 ### Changed
 - Requires [`httpx`](https://www.python-httpx.org)==0.27.\*
@@ -312,7 +337,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - First release, should be considered as unstable for now as design might change.
 
-[Unreleased]: https://github.com/Colin-b/pytest_httpx/compare/v0.30.0...HEAD
+[Unreleased]: https://github.com/Colin-b/pytest_httpx/compare/v0.31.0...HEAD
+[0.31.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.30.0...v0.31.0
 [0.30.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.29.0...v0.30.0
 [0.29.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.28.0...v0.29.0
 [0.28.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.27.0...v0.28.0

@@ -1,12 +1,42 @@
 import copy
 import inspect
-from typing import Union, Optional, Callable, Any, Awaitable
+from operator import methodcaller
+from typing import Union, Optional, Callable, Any, NoReturn
+from collections.abc import Awaitable
 
 import httpx
+from pytest import Mark
 
 from pytest_httpx import _httpx_internals
 from pytest_httpx._pretty_print import RequestDescription
 from pytest_httpx._request_matcher import _RequestMatcher
+
+
+class HTTPXMockOptions:
+    def __init__(
+        self,
+        *,
+        assert_all_responses_were_requested: bool = True,
+        assert_all_requests_were_expected: bool = True,
+        non_mocked_hosts: Optional[list[str]] = None,
+    ) -> None:
+        self.assert_all_responses_were_requested = assert_all_responses_were_requested
+        self.assert_all_requests_were_expected = assert_all_requests_were_expected
+
+        if non_mocked_hosts is None:
+            non_mocked_hosts = []
+
+        # Ensure redirections to www hosts are handled transparently.
+        missing_www = [
+            f"www.{host}" for host in non_mocked_hosts if not host.startswith("www.")
+        ]
+        self.non_mocked_hosts = [*non_mocked_hosts, *missing_www]
+
+    @classmethod
+    def from_marker(cls, marker: Mark) -> "HTTPXMockOptions":
+        """Initialise from a marker so that the marker kwargs raise an error if incorrect."""
+        __tracebackhide__ = methodcaller("errisinstance", TypeError)
+        return cls(**marker.kwargs)
 
 
 class HTTPXMock:
@@ -25,6 +55,7 @@ class HTTPXMock:
                 ],
             ]
         ] = []
+        self._requests_not_matched: list[httpx.Request] = []
 
     def add_response(
         self,
@@ -135,10 +166,7 @@ class HTTPXMock:
             if response:
                 return _unread(response)
 
-        raise httpx.TimeoutException(
-            self._explain_that_no_response_was_found(real_transport, request),
-            request=request,
-        )
+        self._request_not_matched(real_transport, request)
 
     async def _handle_async_request(
         self,
@@ -156,6 +184,14 @@ class HTTPXMock:
                     response = await response
                 return _unread(response)
 
+        self._request_not_matched(real_transport, request)
+
+    def _request_not_matched(
+        self,
+        real_transport: Union[httpx.AsyncHTTPTransport, httpx.HTTPTransport],
+        request: httpx.Request,
+    ) -> NoReturn:
+        self._requests_not_matched.append(request)
         raise httpx.TimeoutException(
             self._explain_that_no_response_was_found(real_transport, request),
             request=request,
@@ -247,23 +283,28 @@ class HTTPXMock:
         ), f"More than one request ({len(requests)}) matched, use get_requests instead."
         return requests[0] if requests else None
 
-    def reset(self, assert_all_responses_were_requested: bool) -> None:
+    def reset(self) -> None:
         self._requests.clear()
-        not_called = self._reset_callbacks()
+        self._callbacks.clear()
+        self._requests_not_matched.clear()
 
-        if assert_all_responses_were_requested:
-            matchers_description = "\n".join([str(matcher) for matcher in not_called])
+    def _assert_options(self, options: HTTPXMockOptions) -> None:
+        if options.assert_all_responses_were_requested:
+            callbacks_not_executed = [
+                matcher for matcher, _ in self._callbacks if not matcher.nb_calls
+            ]
+            matchers_description = "\n".join(
+                [str(matcher) for matcher in callbacks_not_executed]
+            )
 
             assert (
-                not not_called
+                not callbacks_not_executed
             ), f"The following responses are mocked but not requested:\n{matchers_description}"
 
-    def _reset_callbacks(self) -> list[_RequestMatcher]:
-        callbacks_not_executed = [
-            matcher for matcher, _ in self._callbacks if not matcher.nb_calls
-        ]
-        self._callbacks.clear()
-        return callbacks_not_executed
+        if options.assert_all_requests_were_expected:
+            assert (
+                not self._requests_not_matched
+            ), f"The following requests were not expected:\n{self._requests_not_matched}"
 
 
 def _unread(response: httpx.Response) -> httpx.Response:

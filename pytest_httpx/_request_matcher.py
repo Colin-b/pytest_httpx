@@ -1,6 +1,7 @@
 import json
 import re
-from typing import Optional, Union, Pattern, Any
+from typing import Optional, Union, Any
+from re import Pattern
 
 import httpx
 

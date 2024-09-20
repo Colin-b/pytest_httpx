@@ -43,16 +43,14 @@ def test_httpx_mock_unused_response(testdir: Testdir) -> None:
 
 def test_httpx_mock_unused_response_without_assertion(testdir: Testdir) -> None:
     """
-    Unused responses should not fail test case if assert_all_responses_were_requested fixture is set to False.
+    Unused responses should not fail test case if
+    assert_all_responses_were_requested option is set to False.
     """
     testdir.makepyfile(
         """
         import pytest
-        
-        @pytest.fixture
-        def assert_all_responses_were_requested() -> bool:
-            return False
 
+        @pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
         def test_httpx_mock_unused_response_without_assertion(httpx_mock):
             httpx_mock.add_response()
     """
@@ -87,22 +85,69 @@ def test_httpx_mock_unused_callback(testdir: Testdir) -> None:
 
 def test_httpx_mock_unused_callback_without_assertion(testdir: Testdir) -> None:
     """
-    Unused callbacks should not fail test case if assert_all_responses_were_requested fixture is set to False.
+    Unused callbacks should not fail test case if
+    assert_all_responses_were_requested option is set to False.
     """
     testdir.makepyfile(
         """
         import pytest
-        
-        @pytest.fixture
-        def assert_all_responses_were_requested() -> bool:
-            return False
 
+        @pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
         def test_httpx_mock_unused_callback_without_assertion(httpx_mock):
             def unused(*args, **kwargs):
                 pass
         
             httpx_mock.add_callback(unused)
 
+    """
+    )
+    result = testdir.runpytest()
+    result.assert_outcomes(passed=1)
+
+
+def test_httpx_mock_unexpected_request(testdir: Testdir) -> None:
+    """
+    Unexpected request should fail test case if
+    assert_all_requests_were_expected option is set to True (default).
+    """
+    testdir.makepyfile(
+        """
+        import httpx
+        import pytest
+
+        def test_httpx_mock_unexpected_request(httpx_mock):
+            with httpx.Client() as client:
+                # Non mocked request
+                with pytest.raises(httpx.TimeoutException):
+                    client.get("https://foo.tld")
+    """
+    )
+    result = testdir.runpytest()
+    result.assert_outcomes(errors=1, passed=1)
+    result.stdout.fnmatch_lines(
+        [
+            "*AssertionError: The following requests were not expected:",
+            "*[<Request('GET', 'https://foo.tld')>]",
+        ]
+    )
+
+
+def test_httpx_mock_unexpected_request_without_assertion(testdir: Testdir) -> None:
+    """
+    Unexpected request should not fail test case if
+    assert_all_requests_were_expected option is set to False.
+    """
+    testdir.makepyfile(
+        """
+        import httpx
+        import pytest
+
+        @pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
+        def test_httpx_mock_unexpected_request(httpx_mock):
+            with httpx.Client() as client:
+                # Non mocked request
+                with pytest.raises(httpx.TimeoutException):
+                    client.get("https://foo.tld")
     """
     )
     result = testdir.runpytest()
@@ -117,11 +162,8 @@ def test_httpx_mock_non_mocked_hosts_sync(testdir: Testdir) -> None:
         """
         import httpx
         import pytest
-        
-        @pytest.fixture
-        def non_mocked_hosts() -> list:
-            return ["localhost"]
 
+        @pytest.mark.httpx_mock(non_mocked_hosts=["localhost"])
         def test_httpx_mock_non_mocked_hosts_sync(httpx_mock):
             httpx_mock.add_response()
             
@@ -150,12 +192,9 @@ def test_httpx_mock_non_mocked_hosts_async(testdir: Testdir) -> None:
         """
         import httpx
         import pytest
-        
-        @pytest.fixture
-        def non_mocked_hosts() -> list:
-            return ["localhost"]
 
         @pytest.mark.asyncio
+        @pytest.mark.httpx_mock(non_mocked_hosts=["localhost"])
         async def test_httpx_mock_non_mocked_hosts_async(httpx_mock):
             httpx_mock.add_response()
             
@@ -174,3 +213,22 @@ def test_httpx_mock_non_mocked_hosts_async(testdir: Testdir) -> None:
     )
     result = testdir.runpytest()
     result.assert_outcomes(passed=1)
+
+
+def test_invalid_marker(testdir: Testdir) -> None:
+    """
+    Unknown marker keyword arguments should raise a TypeError.
+    """
+    testdir.makepyfile(
+        """
+        import pytest
+
+        @pytest.mark.httpx_mock(foo=123)
+        def test_httpx_mock_non_mocked_hosts_async(httpx_mock):
+            pass
+            
+    """
+    )
+    result = testdir.runpytest()
+    result.assert_outcomes(errors=1)
+    result.stdout.re_match_lines([r".*got an unexpected keyword argument 'foo'"])
