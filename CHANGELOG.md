@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.31.1] - 2024-09-22
+### Fixed
+- It is now possible to match on content provided as async iterable by the client.
+
 ## [0.31.0] - 2024-09-20
 ### Changed
 - Tests will now fail at teardown by default if some requests were issued but were not matched.
@@ -337,7 +341,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - First release, should be considered as unstable for now as design might change.
 
-[Unreleased]: https://github.com/Colin-b/pytest_httpx/compare/v0.31.0...HEAD
+[Unreleased]: https://github.com/Colin-b/pytest_httpx/compare/v0.31.1...HEAD
+[0.31.1]: https://github.com/Colin-b/pytest_httpx/compare/v0.31.0...v0.31.1
 [0.31.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.30.0...v0.31.0
 [0.30.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.29.0...v0.30.0
 [0.29.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.28.0...v0.29.0

@@ -2,6 +2,7 @@ import asyncio
 import math
 import re
 import time
+from collections.abc import AsyncIterable
 
 import httpx
 import pytest
@@ -2007,7 +2008,7 @@ async def test_streams_are_not_cascading_resulting_in_maximum_recursion(
 ) -> None:
     httpx_mock.add_response(json={"abc": "def"})
     async with httpx.AsyncClient() as client:
-        tasks = [client.get("https://example.com/") for _ in range(950)]
+        tasks = [client.get("https://test_url") for _ in range(950)]
         await asyncio.gather(*tasks)
     # No need to assert anything, this test case ensure that no error was raised by the gather
 
@@ -2033,3 +2034,61 @@ async def test_custom_transport(httpx_mock: HTTPXMock) -> None:
         response = await client.post("https://test_url", content=b"This is the body")
         assert response.read() == b""
         assert response.headers["x-prefix"] == "test"
+
+
+@pytest.mark.asyncio
+async def test_response_selection_content_matching_with_async_iterable(
+    httpx_mock: HTTPXMock,
+) -> None:
+    httpx_mock.add_response(match_content=b"full content 1", content=b"matched 1")
+    httpx_mock.add_response(match_content=b"full content 2", content=b"matched 2")
+
+    async def stream_content_1() -> AsyncIterable[bytes]:
+        yield b"full"
+        yield b" "
+        yield b"content"
+        yield b" 1"
+
+    async def stream_content_2() -> AsyncIterable[bytes]:
+        yield b"full"
+        yield b" "
+        yield b"content"
+        yield b" 2"
+
+    async with httpx.AsyncClient() as client:
+        response_2 = await client.put("https://test_url", content=stream_content_2())
+        response_1 = await client.put("https://test_url", content=stream_content_1())
+    assert response_1.content == b"matched 1"
+    assert response_2.content == b"matched 2"
+
+
+@pytest.mark.asyncio
+async def test_request_selection_content_matching_with_async_iterable(
+    httpx_mock: HTTPXMock,
+) -> None:
+    httpx_mock.add_response(match_content=b"full content 1")
+    httpx_mock.add_response(match_content=b"full content 2")
+
+    async def stream_content_1() -> AsyncIterable[bytes]:
+        yield b"full"
+        yield b" "
+        yield b"content"
+        yield b" 1"
+
+    async def stream_content_2() -> AsyncIterable[bytes]:
+        yield b"full"
+        yield b" "
+        yield b"content"
+        yield b" 2"
+
+    async with httpx.AsyncClient() as client:
+        await client.put("https://test_url_2", content=stream_content_2())
+        await client.put("https://test_url_1", content=stream_content_1())
+    assert (
+        httpx_mock.get_request(match_content=b"full content 1").url
+        == "https://test_url_1"
+    )
+    assert (
+        httpx_mock.get_request(match_content=b"full content 2").url
+        == "https://test_url_2"
+    )

@@ -1,8 +1,8 @@
 import copy
 import inspect
 from operator import methodcaller
-from typing import Union, Optional, Callable, Any, NoReturn
-from collections.abc import Awaitable
+from typing import Union, Optional, Callable, Any, NoReturn, AsyncIterable
+from collections.abc import Awaitable, Iterable
 
 import httpx
 from pytest import Mark
@@ -157,6 +157,8 @@ class HTTPXMock:
         real_transport: httpx.HTTPTransport,
         request: httpx.Request,
     ) -> httpx.Response:
+        # Store the content in request for future matching
+        request.read()
         self._requests.append((real_transport, request))
 
         callback = self._get_callback(real_transport, request)
@@ -173,6 +175,11 @@ class HTTPXMock:
         real_transport: httpx.AsyncHTTPTransport,
         request: httpx.Request,
     ) -> httpx.Response:
+        # Store the content in request for future matching
+        if isinstance(request.stream, AsyncIterable):
+            await request.aread()
+        else:
+            request.read()
         self._requests.append((real_transport, request))
 
         callback = self._get_callback(real_transport, request)
