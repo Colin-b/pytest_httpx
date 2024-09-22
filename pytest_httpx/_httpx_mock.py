@@ -176,10 +176,7 @@ class HTTPXMock:
         request: httpx.Request,
     ) -> httpx.Response:
         # Store the content in request for future matching
-        if isinstance(request.stream, AsyncIterable):
-            await request.aread()
-        else:
-            request.read()
+        await request.aread()
         self._requests.append((real_transport, request))
 
         callback = self._get_callback(real_transport, request)
