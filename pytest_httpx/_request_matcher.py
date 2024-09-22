@@ -98,11 +98,12 @@ class _RequestMatcher:
     def _content_match(self, request: httpx.Request) -> bool:
         if self.content is None and self.json is None:
             return True
+
         if self.content is not None:
-            return request.read() == self.content
+            return request.content == self.content
         try:
             # httpx._content.encode_json hard codes utf-8 encoding.
-            return json.loads(request.read().decode("utf-8")) == self.json
+            return json.loads(request.content.decode("utf-8")) == self.json
         except json.decoder.JSONDecodeError:
             return False
 

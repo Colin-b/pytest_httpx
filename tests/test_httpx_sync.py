@@ -1,4 +1,5 @@
 import re
+from collections.abc import Iterable
 from unittest.mock import ANY
 
 import httpx
@@ -1718,3 +1719,59 @@ def test_custom_transport(httpx_mock: HTTPXMock) -> None:
         response = client.post("https://test_url", content=b"This is the body")
         assert response.read() == b""
         assert response.headers["x-prefix"] == "test"
+
+
+def test_response_selection_content_matching_with_iterable(
+    httpx_mock: HTTPXMock,
+) -> None:
+    httpx_mock.add_response(match_content=b"full content 1", content=b"matched 1")
+    httpx_mock.add_response(match_content=b"full content 2", content=b"matched 2")
+
+    def stream_content_1() -> Iterable[bytes]:
+        yield b"full"
+        yield b" "
+        yield b"content"
+        yield b" 1"
+
+    def stream_content_2() -> Iterable[bytes]:
+        yield b"full"
+        yield b" "
+        yield b"content"
+        yield b" 2"
+
+    with httpx.Client() as client:
+        response_2 = client.put("https://test_url", content=stream_content_2())
+        response_1 = client.put("https://test_url", content=stream_content_1())
+    assert response_1.content == b"matched 1"
+    assert response_2.content == b"matched 2"
+
+
+def test_request_selection_content_matching_with_iterable(
+    httpx_mock: HTTPXMock,
+) -> None:
+    httpx_mock.add_response(match_content=b"full content 1")
+    httpx_mock.add_response(match_content=b"full content 2")
+
+    def stream_content_1() -> Iterable[bytes]:
+        yield b"full"
+        yield b" "
+        yield b"content"
+        yield b" 1"
+
+    def stream_content_2() -> Iterable[bytes]:
+        yield b"full"
+        yield b" "
+        yield b"content"
+        yield b" 2"
+
+    with httpx.Client() as client:
+        client.put("https://test_url_2", content=stream_content_2())
+        client.put("https://test_url_1", content=stream_content_1())
+    assert (
+        httpx_mock.get_request(match_content=b"full content 1").url
+        == "https://test_url_1"
+    )
+    assert (
+        httpx_mock.get_request(match_content=b"full content 2").url
+        == "https://test_url_2"
+    )
