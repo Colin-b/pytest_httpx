@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.31.2] - 2024-09-23
+### Fixed
+- `httpx_mock` marker can now be defined at different levels for a single test.
+
 ## [0.31.1] - 2024-09-22
 ### Fixed
 - It is now possible to match on content provided as async iterable by the client.
@@ -341,7 +345,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - First release, should be considered as unstable for now as design might change.
 
-[Unreleased]: https://github.com/Colin-b/pytest_httpx/compare/v0.31.1...HEAD
+[Unreleased]: https://github.com/Colin-b/pytest_httpx/compare/v0.31.2...HEAD
+[0.31.2]: https://github.com/Colin-b/pytest_httpx/compare/v0.31.1...v0.31.2
 [0.31.1]: https://github.com/Colin-b/pytest_httpx/compare/v0.31.0...v0.31.1
 [0.31.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.30.0...v0.31.0
 [0.30.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.29.0...v0.30.0

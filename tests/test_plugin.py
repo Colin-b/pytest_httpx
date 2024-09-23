@@ -215,6 +215,61 @@ def test_httpx_mock_non_mocked_hosts_async(testdir: Testdir) -> None:
     result.assert_outcomes(passed=1)
 
 
+def test_httpx_mock_options_on_multi_levels_are_aggregated(testdir: Testdir) -> None:
+    """
+    Test case ensures that every level provides one parameter that should be used in the end
+
+    global (actually registered AFTER module): assert_all_responses_were_requested (tested by putting unused response)
+    module: assert_all_requests_were_expected (tested by not mocking one URL)
+    test: non_mocked_hosts (tested by calling 3 URls, 2 mocked, the other one not)
+    """
+    testdir.makeconftest(
+        """
+        import pytest
+
+
+        def pytest_collection_modifyitems(session, config, items):
+            for item in items:
+                item.add_marker(pytest.mark.httpx_mock(assert_all_responses_were_requested=False))
+    """
+    )
+    testdir.makepyfile(
+        """
+        import httpx
+        import pytest
+
+        pytestmark = pytest.mark.httpx_mock(assert_all_requests_were_expected=False, non_mocked_hosts=["https://foo.tld"])
+
+        @pytest.mark.asyncio
+        @pytest.mark.httpx_mock(non_mocked_hosts=["localhost"])
+        async def test_httpx_mock_non_mocked_hosts_async(httpx_mock):
+            httpx_mock.add_response(url="https://foo.tld", headers={"x-pytest-httpx": "this was mocked"})
+            
+            # This response will never be used, testing that assert_all_responses_were_requested is handled 
+            httpx_mock.add_response(url="https://never_called.url")
+            
+            async with httpx.AsyncClient() as client:
+                # Assert that previously set non_mocked_hosts was overridden
+                response = await client.get("https://foo.tld")
+                assert response.headers["x-pytest-httpx"] == "this was mocked"
+            
+                # Assert that latest non_mocked_hosts is handled
+                with pytest.raises(httpx.ConnectError):
+                    await client.get("https://localhost:5005")
+            
+                # Assert that assert_all_requests_were_expected is the one at module level
+                with pytest.raises(httpx.TimeoutException):
+                    await client.get("https://unexpected.url")
+            
+            # Assert that 2 requests out of 3 were mocked 
+            assert len(httpx_mock.get_requests()) == 2
+            
+    """
+    )
+    result = testdir.runpytest()
+    result.assert_outcomes(passed=1)
+
+
 def test_invalid_marker(testdir: Testdir) -> None:
     """
     Unknown marker keyword arguments should raise a TypeError.
