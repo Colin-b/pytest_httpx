@@ -1,4 +1,5 @@
 from collections.abc import Generator
+from operator import methodcaller
 
 import httpx
 import pytest
@@ -20,8 +21,11 @@ def httpx_mock(
     monkeypatch: MonkeyPatch,
     request: FixtureRequest,
 ) -> Generator[HTTPXMock, None, None]:
-    marker = request.node.get_closest_marker("httpx_mock")
-    options = HTTPXMockOptions.from_marker(marker) if marker else HTTPXMockOptions()
+    options = {}
+    for marker in request.node.iter_markers("httpx_mock"):
+        options = marker.kwargs | options
+    __tracebackhide__ = methodcaller("errisinstance", TypeError)
+    options = HTTPXMockOptions(**options)
 
     mock = HTTPXMock()
 
