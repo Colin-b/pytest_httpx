@@ -13,7 +13,7 @@
 >
 > However, current state can be considered as stable.
 
-Once installed, `httpx_mock` [`pytest`](https://docs.pytest.org/en/latest/) fixture will make sure every [`httpx`](https://www.python-httpx.org) request will be replied to with user provided responses.
+Once installed, `httpx_mock` [`pytest`](https://docs.pytest.org/en/latest/) fixture will make sure every [`httpx`](https://www.python-httpx.org) request will be replied to with user provided responses ([unless some hosts are explicitly skipped](#do-not-mock-some-requests)).
 
 - [Add responses](#add-responses)
   - [JSON body](#add-json-response)
@@ -25,7 +25,10 @@ Once installed, `httpx_mock` [`pytest`](https://docs.pytest.org/en/latest/) fixt
 - [Add dynamic responses](#dynamic-responses)
 - [Raising exceptions](#raising-exceptions)
 - [Check requests](#check-sent-requests)
-- [Do not mock some requests](#do-not-mock-some-requests)
+- [Configuration](#configuring-httpx_mock)
+  - [Register more responses than requested](#allow-to-register-more-responses-than-what-will-be-requested)
+  - [Register less responses than requested](#allow-to-not-register-responses-for-every-request)
+  - [Do not mock some requests](#do-not-mock-some-requests)
 - [Migrating](#migrating-to-pytest-httpx)
   - [responses](#from-responses)
   - [aioresponses](#from-aioresponses)
@@ -54,26 +57,7 @@ async def test_something_async(httpx_mock):
         response = await client.get("https://test_url")
 ```
 
-If all registered responses are not sent back during test execution, the test case will fail at teardown.
-
-This behavior can be disabled thanks to the `httpx_mock` marker:
-
-```python
-import pytest
-
-# For the whole test suite, to add to the root conftest.py file
-def pytest_collection_modifyitems(session, config, items):
-    for item in items:
-        item.add_marker(pytest.mark.httpx_mock(assert_all_responses_were_requested=False))
-
-# For whole module
-pytestmark = pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
-
-# For specific test
-@pytest.mark.httpx_mock(assert_all_responses_were_requested=True)
-def test_something(httpx_mock):
-    ...
-```
+If all registered responses are not sent back during test execution, the test case will fail at teardown [(unless you turned `assert_all_responses_were_requested` option off)](#allow-to-register-more-responses-than-what-will-be-requested).
 
 Default response is a HTTP/1.1 200 (OK) without any body.
 
@@ -463,26 +447,7 @@ You can perform custom manipulation upon request reception by registering callba
 
 Callback should expect one parameter, the received [`httpx.Request`](https://www.python-httpx.org/api/#request).
 
-If all callbacks are not executed during test execution, the test case will fail at teardown.
-
-This behavior can be disabled thanks to the `httpx_mock` marker:
-
-```python
-import pytest
-
-# For the whole test suite, to add to the root conftest.py file
-def pytest_collection_modifyitems(session, config, items):
-    for item in items:
-        item.add_marker(pytest.mark.httpx_mock(assert_all_responses_were_requested=False))
-
-# For whole module
-pytestmark = pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
-
-# For specific test
-@pytest.mark.httpx_mock(assert_all_responses_were_requested=True)
-def test_something(httpx_mock):
-    ...
-```
+If all callbacks are not executed during test execution, the test case will fail at teardown [(unless you turned `assert_all_responses_were_requested` option off)](#allow-to-register-more-responses-than-what-will-be-requested).
 
 Note that callbacks are considered as responses, and thus are [selected the same way](#how-response-is-selected).
 
@@ -581,26 +546,7 @@ def test_timeout(httpx_mock: HTTPXMock):
 ## Check sent requests
 
 The best way to ensure the content of your requests is still to use the `match_headers` and / or `match_content` parameters when adding a response.
-In the same spirit, ensuring that no request was issued does not necessarily require any code.
-
-Note that default behavior is to assert that all requests were expected. You can turn this off (at your own risk of not spotting regression in your code base) using the `httpx_mock` marker:
-
-```python
-import pytest
-
-# For the whole test suite, to add to the root conftest.py file
-def pytest_collection_modifyitems(session, config, items):
-    for item in items:
-        item.add_marker(pytest.mark.httpx_mock(assert_all_requests_were_expected=False))
-
-# For whole module
-pytestmark = pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
-
-# For specific test
-@pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
-def test_something(httpx_mock):
-    ...
-```
+In the same spirit, ensuring that no request was issued does not necessarily require any code [(unless you turned `assert_all_requests_were_expected` option off)](#allow-to-not-register-responses-for-every-request).
 
 In any case, you always have the ability to retrieve the requests that were issued.
 
@@ -682,31 +628,86 @@ Matching is performed on equality. You can however use `unittest.mock.ANY` to do
 
 Note that `match_content` cannot be provided if `match_json` is also provided.
 
-## Do not mock some requests
+## Configuring httpx_mock
+
+The `httpx_mock` marker is available and can be used to change the default behavior of the `httpx_mock` fixture.
+
+Refer to [available options](#available-options) for an exhaustive list of options that can be set [per test](#per-test), [per module](#per-module) or even [on the whole test suite](#for-the-whole-test-suite).
+
+### Per test
+
+```python
+import pytest
+
+@pytest.mark.httpx_mock(assert_all_responses_were_requested=True)
+def test_something(httpx_mock):
+    ...
+```
+
+### Per module
+
+```python
+import pytest
+
+pytestmark = pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
+```
+
+### For the whole test suite
+
+This should be set in the root `conftest.py` file.
+```python
+import pytest
+
+def pytest_collection_modifyitems(session, config, items):
+    for item in items:
+        item.add_marker(pytest.mark.httpx_mock(assert_all_responses_were_requested=False))
+```
+
+### Available options
+
+#### Allow to register more responses than what will be requested
+
+By default, `pytest-httpx` will ensure that every response was requested during test execution.
+
+You can use the `httpx_mock` marker `assert_all_responses_were_requested` option to allow fewer requests than what you registered responses for.
+
+This option can be useful if you add responses using shared fixtures.
+
+```python
+import pytest
+
+@pytest.mark.httpx_mock(assert_all_responses_were_requested=True)
+def test_fewer_requests_than_expected(httpx_mock):
+    # Even if this response never received a corresponding request, the test will not fail at teardown
+    httpx_mock.add_response()
+```
+
+#### Allow to not register responses for every request
+
+By default, `pytest-httpx` will ensure that every request that was issued was expected.
+
+You can use the `httpx_mock` marker `assert_all_requests_were_expected` option to allow more requests than what you registered responses for.
+Use this option at your own risk of not spotting regression in your code base!
+
+```python
+import pytest
+import httpx
+
+@pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
+def test_more_requests_than_expected(httpx_mock):
+    with httpx.Client() as client:
+        # Even if this request was not expected, the test will not fail at teardown
+        with pytest.raises(httpx.TimeoutException):
+            client.get("https://test_url")
+```
+
+#### Do not mock some requests
 
 By default, `pytest-httpx` will mock every request.
 
 But, for instance, in case you want to write integration tests with other servers, you might want to let some requests go through.
 
-To do so, you can use the `httpx_mock` marker:
-
-```python
-import pytest
-
-# For the whole test suite, to add to the root conftest.py file
-def pytest_collection_modifyitems(session, config, items):
-    for item in items:
-        item.add_marker(pytest.mark.httpx_mock(non_mocked_hosts=["my_local_test_host"]))
-
-# For whole module
-pytestmark = pytest.mark.httpx_mock(non_mocked_hosts=["my_local_test_host", "my_other_test_host"])
-
-# For specific test
-@pytest.mark.httpx_mock(non_mocked_hosts=["my_local_test_host"])
-def test_something(httpx_mock):
-    ...
-```
-
+To do so, you can use the `httpx_mock` marker `non_mocked_hosts` option and provide a list of non mocked hosts.
 Every other requested hosts will be mocked as in the following example
 
 ```python
