@@ -61,6 +61,11 @@ This behavior can be disabled thanks to the `httpx_mock` marker:
 ```python
 import pytest
 
+# For the whole test suite, to add to the root conftest.py file
+def pytest_collection_modifyitems(session, config, items):
+    for item in items:
+        item.add_marker(pytest.mark.httpx_mock(assert_all_responses_were_requested=False))
+
 # For whole module
 pytestmark = pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
 
@@ -465,6 +470,11 @@ This behavior can be disabled thanks to the `httpx_mock` marker:
 ```python
 import pytest
 
+# For the whole test suite, to add to the root conftest.py file
+def pytest_collection_modifyitems(session, config, items):
+    for item in items:
+        item.add_marker(pytest.mark.httpx_mock(assert_all_responses_were_requested=False))
+
 # For whole module
 pytestmark = pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
 
@@ -578,6 +588,11 @@ Note that default behavior is to assert that all requests were expected. You can
 ```python
 import pytest
 
+# For the whole test suite, to add to the root conftest.py file
+def pytest_collection_modifyitems(session, config, items):
+    for item in items:
+        item.add_marker(pytest.mark.httpx_mock(assert_all_requests_were_expected=False))
+
 # For whole module
 pytestmark = pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
 
@@ -677,6 +692,11 @@ To do so, you can use the `httpx_mock` marker:
 
 ```python
 import pytest
+
+# For the whole test suite, to add to the root conftest.py file
+def pytest_collection_modifyitems(session, config, items):
+    for item in items:
+        item.add_marker(pytest.mark.httpx_mock(non_mocked_hosts=["my_local_test_host"]))
 
 # For whole module
 pytestmark = pytest.mark.httpx_mock(non_mocked_hosts=["my_local_test_host", "my_other_test_host"])
