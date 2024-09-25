@@ -5,6 +5,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- Assertion failure message in case of unmatched responses is now linking documentation on how to deactivate the check.
+- Assertion failure message in case of unmatched requests is now linking documentation on how to deactivate the check.
+
+### Fixed
+- Assertion failure message in case of unmatched requests at teardown is now describing requests in a more user-friendly way.
+- Assertion failure message in case of unmatched requests at teardown is now prefixing requests with `- ` to highlight the fact that this is a list, preventing misapprehension in case only one element exists.
+- Assertion failure message in case of unmatched responses at teardown is now prefixing responses with `- ` to highlight the fact that this is a list, preventing misapprehension in case only one element exists.
+- TimeoutException message issued in case of unmatched request is now prefixing available responses with `- ` to highlight the fact that this is a list, preventing misapprehension in case only one element exists.
 
 ## [0.31.2] - 2024-09-23
 ### Fixed

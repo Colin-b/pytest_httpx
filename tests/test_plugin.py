@@ -1,3 +1,5 @@
+import re
+
 from pytest import Testdir
 
 
@@ -36,8 +38,11 @@ def test_httpx_mock_unused_response(testdir: Testdir) -> None:
     result.stdout.fnmatch_lines(
         [
             "*AssertionError: The following responses are mocked but not requested:",
-            "*Match all requests",
-        ]
+            "*  - Match all requests",
+            "*  ",
+            "*  If this is on purpose, refer to https://github.com/Colin-b/pytest_httpx/blob/master/README.md#allow-to-register-more-responses-than-what-will-be-requested",
+        ],
+        consecutive=True,
     )
 
 
@@ -78,8 +83,11 @@ def test_httpx_mock_unused_callback(testdir: Testdir) -> None:
     result.stdout.fnmatch_lines(
         [
             "*AssertionError: The following responses are mocked but not requested:",
-            "*Match all requests",
-        ]
+            "*  - Match all requests",
+            "*  ",
+            "*  If this is on purpose, refer to https://github.com/Colin-b/pytest_httpx/blob/master/README.md#allow-to-register-more-responses-than-what-will-be-requested",
+        ],
+        consecutive=True,
     )
 
 
@@ -127,8 +135,11 @@ def test_httpx_mock_unexpected_request(testdir: Testdir) -> None:
     result.stdout.fnmatch_lines(
         [
             "*AssertionError: The following requests were not expected:",
-            "*[<Request('GET', 'https://foo.tld')>]",
-        ]
+            "*  - GET request on https://foo.tld",
+            "*  ",
+            "*  If this is on purpose, refer to https://github.com/Colin-b/pytest_httpx/blob/master/README.md#allow-to-not-register-responses-for-every-request",
+        ],
+        consecutive=True,
     )
 
 
