@@ -202,7 +202,7 @@ class HTTPXMock:
 
         message = f"No response can be found for {RequestDescription(real_transport, request, matchers)}"
 
-        matchers_description = "\n".join([str(matcher) for matcher in matchers])
+        matchers_description = "\n".join([f"- {matcher}" for matcher in matchers])
         if matchers_description:
             message += f" amongst:\n{matchers_description}"
 
@@ -290,17 +290,29 @@ class HTTPXMock:
                 matcher for matcher, _ in self._callbacks if not matcher.nb_calls
             ]
             matchers_description = "\n".join(
-                [str(matcher) for matcher in callbacks_not_executed]
+                [f"- {matcher}" for matcher in callbacks_not_executed]
             )
 
-            assert (
-                not callbacks_not_executed
-            ), f"The following responses are mocked but not requested:\n{matchers_description}"
+            assert not callbacks_not_executed, (
+                "The following responses are mocked but not requested:\n"
+                f"{matchers_description}\n"
+                "\n"
+                "If this is on purpose, refer to https://github.com/Colin-b/pytest_httpx/blob/master/README.md#allow-to-register-more-responses-than-what-will-be-requested"
+            )
 
         if options.assert_all_requests_were_expected:
-            assert (
-                not self._requests_not_matched
-            ), f"The following requests were not expected:\n{self._requests_not_matched}"
+            requests_description = "\n".join(
+                [
+                    f"- {request.method} request on {request.url}"
+                    for request in self._requests_not_matched
+                ]
+            )
+            assert not self._requests_not_matched, (
+                f"The following requests were not expected:\n"
+                f"{requests_description}\n"
+                "\n"
+                "If this is on purpose, refer to https://github.com/Colin-b/pytest_httpx/blob/master/README.md#allow-to-not-register-responses-for-every-request"
+            )
 
 
 def _unread(response: httpx.Response) -> httpx.Response:

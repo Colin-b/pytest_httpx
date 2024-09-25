@@ -1,10 +1,5 @@
 import base64
-from typing import (
-    Union,
-    Dict,
-    Tuple,
-    Optional,
-)
+from typing import Union, Optional
 from collections.abc import Sequence, Iterable, AsyncIterator, Iterator
 
 import httpcore

@@ -639,7 +639,7 @@ Refer to [available options](#available-options) for an exhaustive list of optio
 ```python
 import pytest
 
-@pytest.mark.httpx_mock(assert_all_responses_were_requested=True)
+@pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
 def test_something(httpx_mock):
     ...
 ```
@@ -676,7 +676,7 @@ This option can be useful if you add responses using shared fixtures.
 ```python
 import pytest
 
-@pytest.mark.httpx_mock(assert_all_responses_were_requested=True)
+@pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
 def test_fewer_requests_than_expected(httpx_mock):
     # Even if this response never received a corresponding request, the test will not fail at teardown
     httpx_mock.add_response()
