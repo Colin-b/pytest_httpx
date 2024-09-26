@@ -16,10 +16,12 @@ class _HTTPXMockOptions:
         *,
         assert_all_responses_were_requested: bool = True,
         assert_all_requests_were_expected: bool = True,
+        can_send_already_matched_responses: bool = False,
         non_mocked_hosts: Optional[list[str]] = None,
     ) -> None:
         self.assert_all_responses_were_requested = assert_all_responses_were_requested
         self.assert_all_requests_were_expected = assert_all_requests_were_expected
+        self.can_send_already_matched_responses = can_send_already_matched_responses
 
         if non_mocked_hosts is None:
             non_mocked_hosts = []
@@ -241,9 +243,13 @@ class HTTPXMock:
                 matcher.nb_calls += 1
                 return callback
 
-        # Or the last registered
-        matcher.nb_calls += 1
-        return callback
+        # Or the last registered (if it can be reused)
+        if self._options.can_send_already_matched_responses:
+            matcher.nb_calls += 1
+            return callback
+
+        # All callbacks have already been matched and last registered cannot be reused
+        return None
 
     def get_requests(self, **matchers: Any) -> list[httpx.Request]:
         """

@@ -71,5 +71,5 @@ def httpx_mock(
 def pytest_configure(config: Config) -> None:
     config.addinivalue_line(
         "markers",
-        "httpx_mock(*, assert_all_responses_were_requested=True, assert_all_requests_were_expected=True, non_mocked_hosts=[]): Configure httpx_mock fixture.",
+        "httpx_mock(*, assert_all_responses_were_requested=True, assert_all_requests_were_expected=True, can_send_already_matched_responses=False, non_mocked_hosts=[]): Configure httpx_mock fixture.",
     )
