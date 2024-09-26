@@ -163,6 +163,61 @@ def test_httpx_mock_unexpected_request_without_assertion(testdir: Testdir) -> No
     result.assert_outcomes(passed=1)
 
 
+def test_httpx_mock_already_matched_response(testdir: Testdir) -> None:
+    """
+    Already matched response should fail test case if
+    can_send_already_matched_responses option is set to False (default).
+    """
+    testdir.makepyfile(
+        """
+        import httpx
+        import pytest
+
+        def test_httpx_mock_already_matched_response(httpx_mock):
+            httpx_mock.add_response()
+            with httpx.Client() as client:
+                client.get("https://foo.tld")
+                # Non mocked (already matched) request
+                with pytest.raises(httpx.TimeoutException):
+                    client.get("https://foo.tld")
+    """
+    )
+    result = testdir.runpytest()
+    result.assert_outcomes(errors=1, passed=1)
+    result.stdout.fnmatch_lines(
+        [
+            "*AssertionError: The following requests were not expected:",
+            "*  - GET request on https://foo.tld",
+            "*  ",
+            "*  If this is on purpose, refer to https://github.com/Colin-b/pytest_httpx/blob/master/README.md#allow-to-not-register-responses-for-every-request",
+        ],
+        consecutive=True,
+    )
+
+
+def test_httpx_mock_reusing_matched_response(testdir: Testdir) -> None:
+    """
+    Already matched response should not fail test case if
+    can_send_already_matched_responses option is set to True.
+    """
+    testdir.makepyfile(
+        """
+        import httpx
+        import pytest
+
+        @pytest.mark.httpx_mock(can_send_already_matched_responses=True)
+        def test_httpx_mock_reusing_matched_response(httpx_mock):
+            httpx_mock.add_response()
+            with httpx.Client() as client:
+                client.get("https://foo.tld")
+                # Reusing response
+                client.get("https://foo.tld")
+    """
+    )
+    result = testdir.runpytest()
+    result.assert_outcomes(passed=1)
+
+
 def test_httpx_mock_non_mocked_hosts_sync(testdir: Testdir) -> None:
     """
     Non mocked hosts should go through while other requests should be mocked.

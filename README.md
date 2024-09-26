@@ -5,10 +5,11 @@
 <a href="https://github.com/Colin-b/pytest_httpx/actions"><img alt="Build status" src="https://github.com/Colin-b/pytest_httpx/workflows/Release/badge.svg"></a>
 <a href="https://github.com/Colin-b/pytest_httpx/actions"><img alt="Coverage" src="https://img.shields.io/badge/coverage-100%25-brightgreen"></a>
 <a href="https://github.com/psf/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
-<a href="https://github.com/Colin-b/pytest_httpx/actions"><img alt="Number of tests" src="https://img.shields.io/badge/tests-216 passed-blue"></a>
+<a href="https://github.com/Colin-b/pytest_httpx/actions"><img alt="Number of tests" src="https://img.shields.io/badge/tests-222 passed-blue"></a>
 <a href="https://pypi.org/project/pytest-httpx/"><img alt="Number of downloads" src="https://img.shields.io/pypi/dm/pytest_httpx"></a>
 </p>
 
+> [!NOTE]  
 > Version 1.0.0 will be released once httpx is considered as stable (release of 1.0.0).
 >
 > However, current state can be considered as stable.
@@ -28,6 +29,7 @@ Once installed, `httpx_mock` [`pytest`](https://docs.pytest.org/en/latest/) fixt
 - [Configuration](#configuring-httpx_mock)
   - [Register more responses than requested](#allow-to-register-more-responses-than-what-will-be-requested)
   - [Register less responses than requested](#allow-to-not-register-responses-for-every-request)
+  - [Allow to register a response for more than one request](#allow-to-register-a-response-for-more-than-one-request)
   - [Do not mock some requests](#do-not-mock-some-requests)
 - [Migrating](#migrating-to-pytest-httpx)
   - [responses](#from-responses)
@@ -59,13 +61,13 @@ async def test_something_async(httpx_mock):
 
 If all registered responses are not sent back during test execution, the test case will fail at teardown [(unless you turned `assert_all_responses_were_requested` option off)](#allow-to-register-more-responses-than-what-will-be-requested).
 
-Default response is a HTTP/1.1 200 (OK) without any body.
+Default response is a `HTTP/1.1` `200 (OK)` without any body.
 
 ### How response is selected
 
 In case more than one response match request, the first one not yet sent (according to the registration order) will be sent.
 
-In case all matching responses have been sent, the last one (according to the registration order) will be sent.
+In case all matching responses have been sent once, the request will [not be considered as matched](#in-case-no-response-can-be-found) [(unless you turned `can_send_already_matched_responses` option on)](#allow-to-register-a-response-for-more-than-one-request).
 
 You can add criteria so that response will be sent only in case of a more specific matching.
 
@@ -366,7 +368,7 @@ def test_status_code(httpx_mock: HTTPXMock):
 
 Use `headers` parameter to specify the extra headers of the response.
 
-Any valid httpx headers type is supported, you can submit headers as a dict (str or bytes), a list of 2-tuples (str or bytes) or a `httpx.Header` instance.
+Any valid httpx headers type is supported, you can submit headers as a dict (str or bytes), a list of 2-tuples (str or bytes) or a [`httpx.Header`](https://www.python-httpx.org/api/#headers) instance.
 
 ```python
 import httpx
@@ -450,10 +452,11 @@ Callback should expect one parameter, the received [`httpx.Request`](https://www
 If all callbacks are not executed during test execution, the test case will fail at teardown [(unless you turned `assert_all_responses_were_requested` option off)](#allow-to-register-more-responses-than-what-will-be-requested).
 
 Note that callbacks are considered as responses, and thus are [selected the same way](#how-response-is-selected).
+Meaning that you can transpose `httpx_mock.add_response` calls in the related examples into `httpx_mock.add_callback`.
 
 ### Dynamic responses
 
-Callback should return a `httpx.Response`.
+Callback should return a [`httpx.Response`](https://www.python-httpx.org/api/#response) instance.
 
 ```python
 import httpx
@@ -527,7 +530,11 @@ def test_exception_raising(httpx_mock: HTTPXMock):
 
 ```
 
-Note that default behavior is to send an `httpx.TimeoutException` in case no response can be found. You can then test this kind of exception this way:
+#### In case no response can be found
+
+The default behavior is to instantly raise a [`httpx.TimeoutException`](https://www.python-httpx.org/advanced/timeouts/) in case no matching response can be found.
+
+The exception message will display the request and every registered responses to help you identify any possible mismatch.
 
 ```python
 import httpx
@@ -584,49 +591,8 @@ def test_no_request(httpx_mock: HTTPXMock):
 
 You can add criteria so that requests will be returned only in case of a more specific matching.
 
-#### Matching on URL
-
-`url` parameter can either be a string, a python [re.Pattern](https://docs.python.org/3/library/re.html) instance or a [httpx.URL](https://www.python-httpx.org/api/#url) instance.
-
-Matching is performed on the full URL, query parameters included.
-
-Order of parameters in the query string does not matter, however order of values do matter if the same parameter is provided more than once.
-
-#### Matching on HTTP method
-
-Use `method` parameter to specify the HTTP method (POST, PUT, DELETE, PATCH, HEAD) of the requests to retrieve.
-
-`method` parameter must be a string. It will be upper-cased, so it can be provided lower cased.
-
-Matching is performed on equality.
-
-#### Matching on proxy URL
-
-`proxy_url` parameter can either be a string, a python [re.Pattern](https://docs.python.org/3/library/re.html) instance or a [httpx.URL](https://www.python-httpx.org/api/#url) instance.
-
-Matching is performed on the full proxy URL, query parameters included.
-
-Order of parameters in the query string does not matter, however order of values do matter if the same parameter is provided more than once.
-
-#### Matching on HTTP headers
-
-Use `match_headers` parameter to specify the HTTP headers executing the callback.
-
-Matching is performed on equality for each provided header.
-
-#### Matching on HTTP body
-
-Use `match_content` parameter to specify the full HTTP body executing the callback.
-
-Matching is performed on equality.
-
-##### Matching on HTTP JSON body
-
-Use `match_json` parameter to specify the JSON decoded HTTP body executing the callback.
-
-Matching is performed on equality. You can however use `unittest.mock.ANY` to do partial matching.
-
-Note that `match_content` cannot be provided if `match_json` is also provided.
+Note that requests are [selected the same way as responses](#how-response-is-selected).
+Meaning that you can transpose `httpx_mock.add_response` calls in the related examples into `httpx_mock.get_requests` or `httpx_mock.get_request`.
 
 ## Configuring httpx_mock
 
@@ -673,6 +639,9 @@ You can use the `httpx_mock` marker `assert_all_responses_were_requested` option
 
 This option can be useful if you add responses using shared fixtures.
 
+> [!CAUTION]
+> Use this option at your own risk of not spotting regression (requests not sent) in your code base!
+
 ```python
 import pytest
 
@@ -687,7 +656,9 @@ def test_fewer_requests_than_expected(httpx_mock):
 By default, `pytest-httpx` will ensure that every request that was issued was expected.
 
 You can use the `httpx_mock` marker `assert_all_requests_were_expected` option to allow more requests than what you registered responses for.
-Use this option at your own risk of not spotting regression in your code base!
+
+> [!CAUTION]
+> Use this option at your own risk of not spotting regression (unexpected requests) in your code base!
 
 ```python
 import pytest
@@ -699,6 +670,30 @@ def test_more_requests_than_expected(httpx_mock):
         # Even if this request was not expected, the test will not fail at teardown
         with pytest.raises(httpx.TimeoutException):
             client.get("https://test_url")
+```
+
+#### Allow to register a response for more than one request
+
+By default, `pytest-httpx` will ensure that every request that was issued was expected.
+
+You can use the `httpx_mock` marker `can_send_already_matched_responses` option to allow multiple requests to match the same registered response.
+
+With this option, in case all matching responses have been sent at least once, the last one (according to the registration order) will be sent.
+
+> [!CAUTION]
+> Use this option at your own risk of not spotting regression (requests issued more than the expected number of times) in your code base!
+
+```python
+import pytest
+import httpx
+
+@pytest.mark.httpx_mock(can_send_already_matched_responses=True)
+def test_more_requests_than_responses(httpx_mock):
+    httpx_mock.add_response()
+    with httpx.Client() as client:
+        client.get("https://test_url")
+        # Even if only one response was registered, the test will not fail at teardown as this request will also be matched
+        client.get("https://test_url")
 ```
 
 #### Do not mock some requests

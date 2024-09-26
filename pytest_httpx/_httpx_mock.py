@@ -10,16 +10,18 @@ from pytest_httpx._pretty_print import RequestDescription
 from pytest_httpx._request_matcher import _RequestMatcher
 
 
-class HTTPXMockOptions:
+class _HTTPXMockOptions:
     def __init__(
         self,
         *,
         assert_all_responses_were_requested: bool = True,
         assert_all_requests_were_expected: bool = True,
+        can_send_already_matched_responses: bool = False,
         non_mocked_hosts: Optional[list[str]] = None,
     ) -> None:
         self.assert_all_responses_were_requested = assert_all_responses_were_requested
         self.assert_all_requests_were_expected = assert_all_requests_were_expected
+        self.can_send_already_matched_responses = can_send_already_matched_responses
 
         if non_mocked_hosts is None:
             non_mocked_hosts = []
@@ -32,7 +34,13 @@ class HTTPXMockOptions:
 
 
 class HTTPXMock:
-    def __init__(self) -> None:
+    """
+    This class is only exposed for `httpx_mock` fixture type hinting purpose.
+    """
+
+    def __init__(self, options: _HTTPXMockOptions) -> None:
+        """Private and subject to breaking changes without notice."""
+        self._options = options
         self._requests: list[
             tuple[Union[httpx.HTTPTransport, httpx.AsyncHTTPTransport], httpx.Request]
         ] = []
@@ -235,9 +243,13 @@ class HTTPXMock:
                 matcher.nb_calls += 1
                 return callback
 
-        # Or the last registered
-        matcher.nb_calls += 1
-        return callback
+        # Or the last registered (if it can be reused)
+        if self._options.can_send_already_matched_responses:
+            matcher.nb_calls += 1
+            return callback
+
+        # All callbacks have already been matched and last registered cannot be reused
+        return None
 
     def get_requests(self, **matchers: Any) -> list[httpx.Request]:
         """
@@ -284,8 +296,8 @@ class HTTPXMock:
         self._callbacks.clear()
         self._requests_not_matched.clear()
 
-    def _assert_options(self, options: HTTPXMockOptions) -> None:
-        if options.assert_all_responses_were_requested:
+    def _assert_options(self) -> None:
+        if self._options.assert_all_responses_were_requested:
             callbacks_not_executed = [
                 matcher for matcher, _ in self._callbacks if not matcher.nb_calls
             ]
@@ -300,7 +312,7 @@ class HTTPXMock:
                 "If this is on purpose, refer to https://github.com/Colin-b/pytest_httpx/blob/master/README.md#allow-to-register-more-responses-than-what-will-be-requested"
             )
 
-        if options.assert_all_requests_were_expected:
+        if self._options.assert_all_requests_were_expected:
             requests_description = "\n".join(
                 [
                     f"- {request.method} request on {request.url}"
