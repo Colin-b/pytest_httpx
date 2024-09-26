@@ -33,10 +33,11 @@ class _HTTPXMockOptions:
 
 class HTTPXMock:
     """
-    This class is only exposed for `httpx_mock` type hinting purpose.
+    This class is only exposed for `httpx_mock` fixture type hinting purpose.
     """
 
     def __init__(self, options: _HTTPXMockOptions) -> None:
+        """Private and subject to breaking changes without notice."""
         self._options = options
         self._requests: list[
             tuple[Union[httpx.HTTPTransport, httpx.AsyncHTTPTransport], httpx.Request]
