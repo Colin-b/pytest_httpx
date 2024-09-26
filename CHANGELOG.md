@@ -15,6 +15,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Assertion failure message in case of unmatched responses at teardown is now prefixing responses with `- ` to highlight the fact that this is a list, preventing misapprehension in case only one element exists.
 - TimeoutException message issued in case of unmatched request is now prefixing available responses with `- ` to highlight the fact that this is a list, preventing misapprehension in case only one element exists.
 
+### Changed
+- `HTTPXMock` class was only exposed for type hinting purpose. This is now explained in the class docstring.
+  - As a result this is the last time a change to `__init__` signature will be documented and considered a breaking change.
+  - Future changes will not be documented and will be considered as internal refactoring not worth a version bump.
+  - `__init__` now expects one parameter, the newly introduced (since [0.31.0]) options.
+- `HTTPXMockOptions` class was never intended to be exposed and is now marked as private.
+
 ## [0.31.2] - 2024-09-23
 ### Fixed
 - `httpx_mock` marker can now be defined at different levels for a single test.

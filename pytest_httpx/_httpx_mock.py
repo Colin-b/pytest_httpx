@@ -10,7 +10,7 @@ from pytest_httpx._pretty_print import RequestDescription
 from pytest_httpx._request_matcher import _RequestMatcher
 
 
-class HTTPXMockOptions:
+class _HTTPXMockOptions:
     def __init__(
         self,
         *,
@@ -32,7 +32,12 @@ class HTTPXMockOptions:
 
 
 class HTTPXMock:
-    def __init__(self) -> None:
+    """
+    This class is only exposed for `httpx_mock` type hinting purpose.
+    """
+
+    def __init__(self, options: _HTTPXMockOptions) -> None:
+        self._options = options
         self._requests: list[
             tuple[Union[httpx.HTTPTransport, httpx.AsyncHTTPTransport], httpx.Request]
         ] = []
@@ -284,8 +289,8 @@ class HTTPXMock:
         self._callbacks.clear()
         self._requests_not_matched.clear()
 
-    def _assert_options(self, options: HTTPXMockOptions) -> None:
-        if options.assert_all_responses_were_requested:
+    def _assert_options(self) -> None:
+        if self._options.assert_all_responses_were_requested:
             callbacks_not_executed = [
                 matcher for matcher, _ in self._callbacks if not matcher.nb_calls
             ]
@@ -300,7 +305,7 @@ class HTTPXMock:
                 "If this is on purpose, refer to https://github.com/Colin-b/pytest_httpx/blob/master/README.md#allow-to-register-more-responses-than-what-will-be-requested"
             )
 
-        if options.assert_all_requests_were_expected:
+        if self._options.assert_all_requests_were_expected:
             requests_description = "\n".join(
                 [
                     f"- {request.method} request on {request.url}"

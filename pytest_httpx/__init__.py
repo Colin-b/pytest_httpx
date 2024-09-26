@@ -5,7 +5,7 @@ import httpx
 import pytest
 from pytest import Config, FixtureRequest, MonkeyPatch
 
-from pytest_httpx._httpx_mock import HTTPXMock, HTTPXMockOptions
+from pytest_httpx._httpx_mock import HTTPXMock, _HTTPXMockOptions
 from pytest_httpx._httpx_internals import IteratorStream
 from pytest_httpx.version import __version__
 
@@ -25,9 +25,9 @@ def httpx_mock(
     for marker in request.node.iter_markers("httpx_mock"):
         options = marker.kwargs | options
     __tracebackhide__ = methodcaller("errisinstance", TypeError)
-    options = HTTPXMockOptions(**options)
+    options = _HTTPXMockOptions(**options)
 
-    mock = HTTPXMock()
+    mock = HTTPXMock(options)
 
     # Mock synchronous requests
     real_handle_request = httpx.HTTPTransport.handle_request
@@ -63,7 +63,7 @@ def httpx_mock(
 
     yield mock
     try:
-        mock._assert_options(options)
+        mock._assert_options()
     finally:
         mock.reset()
 
