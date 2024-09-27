@@ -6,33 +6,19 @@ from collections.abc import Awaitable
 import httpx
 
 from pytest_httpx import _httpx_internals
+from pytest_httpx._options import _HTTPXMockOptions
 from pytest_httpx._pretty_print import RequestDescription
 from pytest_httpx._request_matcher import _RequestMatcher
 
 
-class HTTPXMockOptions:
-    def __init__(
-        self,
-        *,
-        assert_all_responses_were_requested: bool = True,
-        assert_all_requests_were_expected: bool = True,
-        non_mocked_hosts: Optional[list[str]] = None,
-    ) -> None:
-        self.assert_all_responses_were_requested = assert_all_responses_were_requested
-        self.assert_all_requests_were_expected = assert_all_requests_were_expected
-
-        if non_mocked_hosts is None:
-            non_mocked_hosts = []
-
-        # Ensure redirections to www hosts are handled transparently.
-        missing_www = [
-            f"www.{host}" for host in non_mocked_hosts if not host.startswith("www.")
-        ]
-        self.non_mocked_hosts = [*non_mocked_hosts, *missing_www]
-
-
 class HTTPXMock:
-    def __init__(self) -> None:
+    """
+    This class is only exposed for `httpx_mock` fixture type hinting purpose.
+    """
+
+    def __init__(self, options: _HTTPXMockOptions) -> None:
+        """Private and subject to breaking changes without notice."""
+        self._options = options
         self._requests: list[
             tuple[Union[httpx.HTTPTransport, httpx.AsyncHTTPTransport], httpx.Request]
         ] = []
@@ -120,7 +106,7 @@ class HTTPXMock:
         :param match_content: Full HTTP body identifying the request(s) to match. Must be bytes.
         :param match_json: JSON decoded HTTP body identifying the request(s) to match. Must be JSON encodable.
         """
-        self._callbacks.append((_RequestMatcher(**matchers), callback))
+        self._callbacks.append((_RequestMatcher(self._options, **matchers), callback))
 
     def add_exception(self, exception: Exception, **matchers: Any) -> None:
         """
@@ -202,9 +188,23 @@ class HTTPXMock:
 
         message = f"No response can be found for {RequestDescription(real_transport, request, matchers)}"
 
-        matchers_description = "\n".join([str(matcher) for matcher in matchers])
+        already_matched = []
+        unmatched = []
+        for matcher in matchers:
+            if matcher.nb_calls:
+                already_matched.append(matcher)
+            else:
+                unmatched.append(matcher)
+
+        matchers_description = "\n".join(
+            [f"- {matcher}" for matcher in unmatched + already_matched]
+        )
         if matchers_description:
             message += f" amongst:\n{matchers_description}"
+            # If we could not find a response, but we have already matched responses
+            # it might be that user is expecting one of those responses to be reused
+            if already_matched and not self._options.can_send_already_matched_responses:
+                message += "\n\nIf you wanted to reuse an already matched response instead of registering it again, refer to https://github.com/Colin-b/pytest_httpx/blob/master/README.md#allow-to-register-a-response-for-more-than-one-request"
 
         return message
 
@@ -235,9 +235,13 @@ class HTTPXMock:
                 matcher.nb_calls += 1
                 return callback
 
-        # Or the last registered
-        matcher.nb_calls += 1
-        return callback
+        # Or the last registered (if it can be reused)
+        if self._options.can_send_already_matched_responses:
+            matcher.nb_calls += 1
+            return callback
+
+        # All callbacks have already been matched and last registered cannot be reused
+        return None
 
     def get_requests(self, **matchers: Any) -> list[httpx.Request]:
         """
@@ -252,7 +256,7 @@ class HTTPXMock:
         :param match_content: Full HTTP body identifying the requests to retrieve. Must be bytes.
         :param match_json: JSON decoded HTTP body identifying the requests to retrieve. Must be JSON encodable.
         """
-        matcher = _RequestMatcher(**matchers)
+        matcher = _RequestMatcher(self._options, **matchers)
         return [
             request
             for real_transport, request in self._requests
@@ -284,23 +288,35 @@ class HTTPXMock:
         self._callbacks.clear()
         self._requests_not_matched.clear()
 
-    def _assert_options(self, options: HTTPXMockOptions) -> None:
-        if options.assert_all_responses_were_requested:
+    def _assert_options(self) -> None:
+        if self._options.assert_all_responses_were_requested:
             callbacks_not_executed = [
                 matcher for matcher, _ in self._callbacks if not matcher.nb_calls
             ]
             matchers_description = "\n".join(
-                [str(matcher) for matcher in callbacks_not_executed]
+                [f"- {matcher}" for matcher in callbacks_not_executed]
             )
 
-            assert (
-                not callbacks_not_executed
-            ), f"The following responses are mocked but not requested:\n{matchers_description}"
+            assert not callbacks_not_executed, (
+                "The following responses are mocked but not requested:\n"
+                f"{matchers_description}\n"
+                "\n"
+                "If this is on purpose, refer to https://github.com/Colin-b/pytest_httpx/blob/master/README.md#allow-to-register-more-responses-than-what-will-be-requested"
+            )
 
-        if options.assert_all_requests_were_expected:
-            assert (
-                not self._requests_not_matched
-            ), f"The following requests were not expected:\n{self._requests_not_matched}"
+        if self._options.assert_all_requests_were_expected:
+            requests_description = "\n".join(
+                [
+                    f"- {request.method} request on {request.url}"
+                    for request in self._requests_not_matched
+                ]
+            )
+            assert not self._requests_not_matched, (
+                f"The following requests were not expected:\n"
+                f"{requests_description}\n"
+                "\n"
+                "If this is on purpose, refer to https://github.com/Colin-b/pytest_httpx/blob/master/README.md#allow-to-not-register-responses-for-every-request"
+            )
 
 
 def _unread(response: httpx.Response) -> httpx.Response:

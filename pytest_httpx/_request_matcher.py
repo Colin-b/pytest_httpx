@@ -6,6 +6,7 @@ from re import Pattern
 import httpx
 
 from pytest_httpx._httpx_internals import _proxy_url
+from pytest_httpx._options import _HTTPXMockOptions
 
 
 def _url_match(
@@ -28,6 +29,7 @@ def _url_match(
 class _RequestMatcher:
     def __init__(
         self,
+        options: _HTTPXMockOptions,
         url: Optional[Union[str, Pattern[str], httpx.URL]] = None,
         method: Optional[str] = None,
         proxy_url: Optional[Union[str, Pattern[str], httpx.URL]] = None,
@@ -35,6 +37,7 @@ class _RequestMatcher:
         match_content: Optional[bytes] = None,
         match_json: Optional[Any] = None,
     ):
+        self._options = options
         self.nb_calls = 0
         self.url = httpx.URL(url) if url and isinstance(url, str) else url
         self.method = method.upper() if method else method
@@ -119,7 +122,11 @@ class _RequestMatcher:
         return False
 
     def __str__(self) -> str:
-        matcher_description = f"Match {self.method or 'all'} requests"
+        if self._options.can_send_already_matched_responses:
+            matcher_description = f"Match {self.method or 'every'} request"
+        else:
+            matcher_description = "Already matched" if self.nb_calls else "Match"
+            matcher_description += f" {self.method or 'any'} request"
         if self.url:
             matcher_description += f" on {self.url}"
         if extra_description := self._extra_description():

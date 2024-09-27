@@ -6,6 +6,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.32.0] - 2024-09-27
+### Added
+- The following option is now available:
+  - `can_send_already_matched_responses` (boolean), defaulting to `False`.
+- Assertion failure message in case of unmatched responses is now linking documentation on how to deactivate the check.
+- Assertion failure message in case of unmatched requests is now linking documentation on how to deactivate the check.
+- `httpx.TimeoutException` message issued in case of unmatched request is now linking documentation on how to reuse responses (in case some responses are already matched).
+
+### Fixed
+- Documentation now clearly state the risks associated with changing the default options.
+- Assertion failure message in case of unmatched requests at teardown is now describing requests in a more user-friendly way.
+- Assertion failure message in case of unmatched requests at teardown is now prefixing requests with `- ` to highlight the fact that this is a list, preventing misapprehension in case only one element exists.
+- Assertion failure message in case of unmatched responses at teardown is now prefixing responses with `- ` to highlight the fact that this is a list, preventing misapprehension in case only one element exists.
+- `httpx.TimeoutException` message issued in case of unmatched request is now prefixing available responses with `- ` to highlight the fact that this is a list, preventing misapprehension in case only one element exists.
+- `httpx.TimeoutException` message issued in case of unmatched request is now listing unmatched responses (in registration order) before already matched one (still in registration order).
+  - The incentive behind this change is to help identify a potential mismatch faster as the first unmatched response is the most likely to be the one expected to match.
+- Response description in failure messages (`httpx.TimeoutException` message issued in case of unmatched request or assertion failure message in case of unmatched responses at teardown) is now displaying if the response was already matched or not and less misleading in it's phrasing about what it can match (a single request by default).
+
+### Changed
+- Last registered matching response will not be reused by default anymore in case all matching responses have already been sent.
+  - This behavior can be changed thanks to the new `pytest.mark.httpx_mock(can_send_already_matched_responses=True)` option.
+  - The incentive behind this change is to spot regression if a request was issued more than the expected number of times.
+- `HTTPXMock` class was only exposed for type hinting purpose. This is now explained in the class docstring.
+  - As a result this is the last time a change to `__init__` signature will be documented and considered a breaking change.
+  - Future changes will not be documented and will be considered as internal refactoring not worth a version bump.
+  - `__init__` now expects one parameter, the newly introduced (since [0.31.0]) options.
+- `HTTPXMockOptions` class was never intended to be exposed and is now marked as private.
+
 ## [0.31.2] - 2024-09-23
 ### Fixed
 - `httpx_mock` marker can now be defined at different levels for a single test.
@@ -17,7 +45,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.31.0] - 2024-09-20
 ### Changed
 - Tests will now fail at teardown by default if some requests were issued but were not matched.
-  - This behavior can be changed thanks to the new ``pytest.mark.httpx_mock(assert_all_requests_were_expected=False)`` option.
+  - This behavior can be changed thanks to the new `pytest.mark.httpx_mock(assert_all_requests_were_expected=False)` option.
+  - The incentive behind this change is to spot unexpected requests in case code is swallowing `httpx.TimeoutException`.
 - The `httpx_mock` fixture is now configured using a marker (many thanks to [`Frazer McLean`](https://github.com/RazerM)).
   ```python
   # Apply marker to whole module
@@ -345,7 +374,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - First release, should be considered as unstable for now as design might change.
 
-[Unreleased]: https://github.com/Colin-b/pytest_httpx/compare/v0.31.2...HEAD
+[Unreleased]: https://github.com/Colin-b/pytest_httpx/compare/v0.32.0...HEAD
+[0.32.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.31.2...v0.32.0
 [0.31.2]: https://github.com/Colin-b/pytest_httpx/compare/v0.31.1...v0.31.2
 [0.31.1]: https://github.com/Colin-b/pytest_httpx/compare/v0.31.0...v0.31.1
 [0.31.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.30.0...v0.31.0
