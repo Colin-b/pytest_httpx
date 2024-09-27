@@ -210,7 +210,15 @@ class HTTPXMock:
 
         message = f"No response can be found for {RequestDescription(real_transport, request, matchers)}"
 
-        matchers_description = "\n".join([f"- {matcher}" for matcher in matchers])
+        unmatched = []
+        for matcher in matchers:
+            if not matcher.nb_calls:
+                matchers.remove(matcher)
+                unmatched.append(matcher)
+
+        matchers_description = "\n".join(
+            [f"- {matcher}" for matcher in unmatched + matchers]
+        )
         if matchers_description:
             message += f" amongst:\n{matchers_description}"
 

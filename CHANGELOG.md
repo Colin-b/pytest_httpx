@@ -16,7 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Assertion failure message in case of unmatched requests at teardown is now describing requests in a more user-friendly way.
 - Assertion failure message in case of unmatched requests at teardown is now prefixing requests with `- ` to highlight the fact that this is a list, preventing misapprehension in case only one element exists.
 - Assertion failure message in case of unmatched responses at teardown is now prefixing responses with `- ` to highlight the fact that this is a list, preventing misapprehension in case only one element exists.
-- TimeoutException message issued in case of unmatched request is now prefixing available responses with `- ` to highlight the fact that this is a list, preventing misapprehension in case only one element exists.
+- `httpx.TimeoutException` message issued in case of unmatched request is now prefixing available responses with `- ` to highlight the fact that this is a list, preventing misapprehension in case only one element exists.
+- `httpx.TimeoutException` message issued in case of unmatched request is now listing unmatched responses (in registration order) before already matched one (still in registration order).
+  - The incentive behind this change is to help identify a potential mismatch faster as the first unmatched response is the most likely to be the one expected to match.
 
 ### Changed
 - Last registered matching response will not be reused by default anymore in case all matching responses have already been sent.
