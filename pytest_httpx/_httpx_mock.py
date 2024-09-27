@@ -188,17 +188,23 @@ class HTTPXMock:
 
         message = f"No response can be found for {RequestDescription(real_transport, request, matchers)}"
 
+        already_matched = []
         unmatched = []
         for matcher in matchers:
-            if not matcher.nb_calls:
-                matchers.remove(matcher)
+            if matcher.nb_calls:
+                already_matched.append(matcher)
+            else:
                 unmatched.append(matcher)
 
         matchers_description = "\n".join(
-            [f"- {matcher}" for matcher in unmatched + matchers]
+            [f"- {matcher}" for matcher in unmatched + already_matched]
         )
         if matchers_description:
             message += f" amongst:\n{matchers_description}"
+            # If we could not find a response, but we have already matched responses
+            # it might be that user is expecting one of those responses to be reused
+            if already_matched and not self._options.can_send_already_matched_responses:
+                message += "\n\nIf you wanted to reuse an already matched response instead of registering it again, refer to https://github.com/Colin-b/pytest_httpx/blob/master/README.md#allow-to-register-a-response-for-more-than-one-request"
 
         return message
 

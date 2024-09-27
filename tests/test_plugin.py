@@ -377,6 +377,8 @@ def test_httpx_mock_unmatched_request_with_only_matched_responses(
             "*httpx.TimeoutException: No response can be found for GET request on https://foo22.tld amongst:",
             "*- Already matched any request on https://foo.tld",
             "*- Already matched any request on https://foo.tld",
+            "*",
+            "*If you wanted to reuse an already matched response instead of registering it again, refer to https://github.com/Colin-b/pytest_httpx/blob/master/README.md#allow-to-register-a-response-for-more-than-one-request",
         ],
         consecutive=True,
     )
@@ -477,6 +479,8 @@ def test_httpx_mock_unmatched_request_with_matched_and_unmatched_responses(
             "*- Match any request on https://foo3.tld",
             "*- Already matched any request on https://foo.tld",
             "*- Already matched any request on https://foo.tld",
+            "*",
+            "*If you wanted to reuse an already matched response instead of registering it again, refer to https://github.com/Colin-b/pytest_httpx/blob/master/README.md#allow-to-register-a-response-for-more-than-one-request",
         ],
         consecutive=True,
     )
