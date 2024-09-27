@@ -6,31 +6,9 @@ from collections.abc import Awaitable
 import httpx
 
 from pytest_httpx import _httpx_internals
+from pytest_httpx._options import _HTTPXMockOptions
 from pytest_httpx._pretty_print import RequestDescription
 from pytest_httpx._request_matcher import _RequestMatcher
-
-
-class _HTTPXMockOptions:
-    def __init__(
-        self,
-        *,
-        assert_all_responses_were_requested: bool = True,
-        assert_all_requests_were_expected: bool = True,
-        can_send_already_matched_responses: bool = False,
-        non_mocked_hosts: Optional[list[str]] = None,
-    ) -> None:
-        self.assert_all_responses_were_requested = assert_all_responses_were_requested
-        self.assert_all_requests_were_expected = assert_all_requests_were_expected
-        self.can_send_already_matched_responses = can_send_already_matched_responses
-
-        if non_mocked_hosts is None:
-            non_mocked_hosts = []
-
-        # Ensure redirections to www hosts are handled transparently.
-        missing_www = [
-            f"www.{host}" for host in non_mocked_hosts if not host.startswith("www.")
-        ]
-        self.non_mocked_hosts = [*non_mocked_hosts, *missing_www]
 
 
 class HTTPXMock:
@@ -128,7 +106,7 @@ class HTTPXMock:
         :param match_content: Full HTTP body identifying the request(s) to match. Must be bytes.
         :param match_json: JSON decoded HTTP body identifying the request(s) to match. Must be JSON encodable.
         """
-        self._callbacks.append((_RequestMatcher(**matchers), callback))
+        self._callbacks.append((_RequestMatcher(self._options, **matchers), callback))
 
     def add_exception(self, exception: Exception, **matchers: Any) -> None:
         """
@@ -272,7 +250,7 @@ class HTTPXMock:
         :param match_content: Full HTTP body identifying the requests to retrieve. Must be bytes.
         :param match_json: JSON decoded HTTP body identifying the requests to retrieve. Must be JSON encodable.
         """
-        matcher = _RequestMatcher(**matchers)
+        matcher = _RequestMatcher(self._options, **matchers)
         return [
             request
             for real_transport, request in self._requests

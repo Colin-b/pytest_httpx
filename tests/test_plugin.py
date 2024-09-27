@@ -300,6 +300,52 @@ def test_httpx_mock_unmatched_request_with_only_unmatched_responses(
     )
 
 
+def test_httpx_mock_unmatched_request_with_only_unmatched_reusable_responses(
+    testdir: Testdir,
+) -> None:
+    testdir.makepyfile(
+        """
+        import httpx
+        import pytest
+
+        @pytest.mark.httpx_mock(can_send_already_matched_responses=True)
+        def test_httpx_mock_unmatched_request_with_only_unmatched_responses(httpx_mock):
+            # This response will not be sent (because of a typo in the URL)
+            httpx_mock.add_response(url="https://foo2.tld", method="GET")
+            # This response will not be sent (because test execution failed earlier)
+            httpx_mock.add_response(url="https://foo3.tld")
+            
+            with httpx.Client() as client:
+                # This request will not be matched
+                client.get("https://foo22.tld")
+                # This code will not be reached
+                client.get("https://foo3.tld")
+    """
+    )
+    result = testdir.runpytest()
+    result.assert_outcomes(errors=1, failed=1)
+    # Assert the error that occurred
+    result.stdout.fnmatch_lines(
+        [
+            "*httpx.TimeoutException: No response can be found for GET request on https://foo22.tld amongst:",
+            "*- Match GET request on https://foo2.tld",
+            "*- Match every request on https://foo3.tld",
+        ],
+        consecutive=True,
+    )
+    # Assert the teardown assertion failure
+    result.stdout.fnmatch_lines(
+        [
+            "*AssertionError: The following responses are mocked but not requested:",
+            "*  - Match GET request on https://foo2.tld",
+            "*  - Match every request on https://foo3.tld",
+            "*  ",
+            "*  If this is on purpose, refer to https://github.com/Colin-b/pytest_httpx/blob/master/README.md#allow-to-register-more-responses-than-what-will-be-requested",
+        ],
+        consecutive=True,
+    )
+
+
 def test_httpx_mock_unmatched_request_with_only_matched_responses(
     testdir: Testdir,
 ) -> None:
@@ -331,6 +377,54 @@ def test_httpx_mock_unmatched_request_with_only_matched_responses(
             "*httpx.TimeoutException: No response can be found for GET request on https://foo22.tld amongst:",
             "*- Already matched any request on https://foo.tld",
             "*- Already matched any request on https://foo.tld",
+        ],
+        consecutive=True,
+    )
+    # Assert the teardown assertion failure
+    result.stdout.fnmatch_lines(
+        [
+            "*AssertionError: The following requests were not expected:",
+            "*  - GET request on https://foo22.tld",
+            "*  ",
+            "*  If this is on purpose, refer to https://github.com/Colin-b/pytest_httpx/blob/master/README.md#allow-to-not-register-responses-for-every-request",
+        ],
+        consecutive=True,
+    )
+
+
+def test_httpx_mock_unmatched_request_with_only_matched_reusable_responses(
+    testdir: Testdir,
+) -> None:
+    testdir.makepyfile(
+        """
+        import httpx
+        import pytest
+
+        @pytest.mark.httpx_mock(can_send_already_matched_responses=True)
+        def test_httpx_mock_unmatched_request_with_only_matched_responses(httpx_mock):
+            # Sent response
+            httpx_mock.add_response(url="https://foo.tld")
+            # Sent response
+            httpx_mock.add_response(url="https://foo3.tld")
+            
+            with httpx.Client() as client:
+                client.get("https://foo.tld")
+                client.get("https://foo.tld")
+                client.get("https://foo3.tld")
+                # This request will not be matched
+                client.get("https://foo22.tld")
+                # This code will not be reached
+                client.get("https://foo3.tld")
+    """
+    )
+    result = testdir.runpytest()
+    result.assert_outcomes(errors=1, failed=1)
+    # Assert the error that occurred
+    result.stdout.fnmatch_lines(
+        [
+            "*httpx.TimeoutException: No response can be found for GET request on https://foo22.tld amongst:",
+            "*- Match every request on https://foo.tld",
+            "*- Match every request on https://foo3.tld",
         ],
         consecutive=True,
     )
@@ -392,6 +486,61 @@ def test_httpx_mock_unmatched_request_with_matched_and_unmatched_responses(
             "*AssertionError: The following responses are mocked but not requested:",
             "*  - Match any request on https://foo2.tld",
             "*  - Match any request on https://foo3.tld",
+            "*  ",
+            "*  If this is on purpose, refer to https://github.com/Colin-b/pytest_httpx/blob/master/README.md#allow-to-register-more-responses-than-what-will-be-requested",
+        ],
+        consecutive=True,
+    )
+
+
+def test_httpx_mock_unmatched_request_with_matched_and_unmatched_reusable_responses(
+    testdir: Testdir,
+) -> None:
+    testdir.makepyfile(
+        """
+        import httpx
+        import pytest
+
+        @pytest.mark.httpx_mock(can_send_already_matched_responses=True)
+        def test_httpx_mock_unmatched_request_with_matched_and_unmatched_responses(httpx_mock):
+            # Sent response
+            httpx_mock.add_response(url="https://foo.tld")
+            # This response will not be sent (because of a typo in the URL)
+            httpx_mock.add_response(url="https://foo33.tld")
+            # Sent response
+            httpx_mock.add_response(url="https://foo2.tld")
+            # This response will not be sent (because test execution failed earlier)
+            httpx_mock.add_response(url="https://foo4.tld")
+            
+            with httpx.Client() as client:
+                client.get("https://foo.tld")
+                client.get("https://foo2.tld")
+                client.get("https://foo.tld")
+                # This request will not be matched
+                client.get("https://foo3.tld")
+                # This code will not be reached
+                client.get("https://foo2.tld")
+    """
+    )
+    result = testdir.runpytest()
+    result.assert_outcomes(errors=1, failed=1)
+    # Assert the error that occurred
+    result.stdout.fnmatch_lines(
+        [
+            "*httpx.TimeoutException: No response can be found for GET request on https://foo3.tld amongst:",
+            "*- Match every request on https://foo33.tld",
+            "*- Match every request on https://foo4.tld",
+            "*- Match every request on https://foo.tld",
+            "*- Match every request on https://foo2.tld",
+        ],
+        consecutive=True,
+    )
+    # Assert the teardown assertion failure
+    result.stdout.fnmatch_lines(
+        [
+            "*AssertionError: The following responses are mocked but not requested:",
+            "*  - Match every request on https://foo33.tld",
+            "*  - Match every request on https://foo4.tld",
             "*  ",
             "*  If this is on purpose, refer to https://github.com/Colin-b/pytest_httpx/blob/master/README.md#allow-to-register-more-responses-than-what-will-be-requested",
         ],
