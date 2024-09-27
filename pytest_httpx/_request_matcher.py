@@ -119,7 +119,8 @@ class _RequestMatcher:
         return False
 
     def __str__(self) -> str:
-        matcher_description = f"Match {self.method or 'all'} requests"
+        matcher_description = "Already matched" if self.nb_calls else "Match"
+        matcher_description += f" {self.method or 'any'} request"
         if self.url:
             matcher_description += f" on {self.url}"
         if extra_description := self._extra_description():

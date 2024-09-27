@@ -86,7 +86,7 @@ async def test_url_not_matching(httpx_mock: HTTPXMock) -> None:
         assert (
             str(exception_info.value)
             == """No response can be found for GET request on https://test_url2 amongst:
-- Match all requests on https://test_url"""
+- Match any request on https://test_url"""
         )
 
 
@@ -104,7 +104,7 @@ async def test_url_query_string_not_matching(httpx_mock: HTTPXMock) -> None:
         assert (
             str(exception_info.value)
             == """No response can be found for GET request on https://test_url?a=2&a=1 amongst:
-- Match all requests on https://test_url?a=1&a=2"""
+- Match any request on https://test_url?a=1&a=2"""
         )
 
 
@@ -134,7 +134,7 @@ async def test_method_not_matching(httpx_mock: HTTPXMock) -> None:
         assert (
             str(exception_info.value)
             == """No response can be found for POST request on https://test_url amongst:
-- Match GET requests"""
+- Match GET request"""
         )
 
 
@@ -1179,7 +1179,7 @@ async def test_multi_value_headers_not_matching_single_value_issued(
         assert (
             str(exception_info.value)
             == """No response can be found for GET request on https://test_url with {'my-custom-header': 'value1, value2'} headers amongst:
-- Match all requests with {'my-custom-header': 'value1'} headers"""
+- Match any request with {'my-custom-header': 'value1'} headers"""
         )
 
 
@@ -1204,7 +1204,7 @@ async def test_multi_value_headers_not_matching_multi_value_issued(
         assert (
             str(exception_info.value)
             == """No response can be found for GET request on https://test_url with {'my-custom-header': 'value1, value3'} headers amongst:
-- Match all requests with {'my-custom-header': 'value1, value2'} headers"""
+- Match any request with {'my-custom-header': 'value1, value2'} headers"""
         )
 
 
@@ -1223,7 +1223,7 @@ async def test_headers_matching_respect_case(httpx_mock: HTTPXMock) -> None:
         assert (
             str(exception_info.value)
             == f"""No response can be found for GET request on https://test_url with {{'User-Agent': 'python-httpx/{httpx.__version__}'}} headers amongst:
-- Match all requests with {{'user-agent': 'python-httpx/{httpx.__version__}'}} headers"""
+- Match any request with {{'user-agent': 'python-httpx/{httpx.__version__}'}} headers"""
         )
 
 
@@ -1246,7 +1246,7 @@ async def test_headers_not_matching(httpx_mock: HTTPXMock) -> None:
         assert (
             str(exception_info.value)
             == f"""No response can be found for GET request on https://test_url with {{'Host': 'test_url', 'User-Agent': 'python-httpx/{httpx.__version__}'}} headers amongst:
-- Match all requests with {{'User-Agent': 'python-httpx/{httpx.__version__}', 'Host': 'test_url2', 'Host2': 'test_url'}} headers"""
+- Match any request with {{'User-Agent': 'python-httpx/{httpx.__version__}', 'Host': 'test_url2', 'Host2': 'test_url'}} headers"""
         )
 
 
@@ -1268,7 +1268,7 @@ async def test_url_not_matching_upper_case_headers_matching(
         assert (
             str(exception_info.value)
             == """No response can be found for GET request on https://test_url with {'MyHeader': 'Something'} headers amongst:
-- Match GET requests on https://test_url?q=b with {'MyHeader': 'Something'} headers"""
+- Match GET request on https://test_url?q=b with {'MyHeader': 'Something'} headers"""
         )
 
 
@@ -1303,7 +1303,7 @@ async def test_proxy_not_matching(httpx_mock: HTTPXMock) -> None:
         assert (
             str(exception_info.value)
             == """No response can be found for GET request on http://test_url with http://my_test_proxy/ proxy URL amongst:
-- Match all requests with http://my_test_proxy proxy URL"""
+- Match any request with http://my_test_proxy proxy URL"""
         )
 
 
@@ -1320,7 +1320,7 @@ async def test_proxy_not_existing(httpx_mock: HTTPXMock) -> None:
         assert (
             str(exception_info.value)
             == """No response can be found for GET request on http://test_url with no proxy URL amongst:
-- Match all requests with http://my_test_proxy proxy URL"""
+- Match any request with http://my_test_proxy proxy URL"""
         )
 
 
@@ -1405,7 +1405,7 @@ async def test_content_not_matching(httpx_mock: HTTPXMock) -> None:
         assert (
             str(exception_info.value)
             == """No response can be found for POST request on https://test_url with b'This is the body2' body amongst:
-- Match all requests with b'This is the body' body"""
+- Match any request with b'This is the body' body"""
         )
 
 
@@ -1440,7 +1440,7 @@ async def test_json_not_matching(httpx_mock: HTTPXMock) -> None:
         assert (
             str(exception_info.value)
             == """No response can be found for POST request on https://test_url with b'{"c": 3, "b": 2, "a": 1}' body amongst:
-- Match all requests with {'a': 1, 'b': 2} json body"""
+- Match any request with {'a': 1, 'b': 2} json body"""
         )
 
 
@@ -1460,7 +1460,7 @@ async def test_headers_and_json_not_matching(httpx_mock: HTTPXMock) -> None:
         assert (
             str(exception_info.value)
             == """No response can be found for POST request on https://test_url with {} headers and b'{"c": 3, "b": 2, "a": 1}' body amongst:
-- Match all requests with {'foo': 'bar'} headers and {'a': 1, 'b': 2} json body"""
+- Match any request with {'foo': 'bar'} headers and {'a': 1, 'b': 2} json body"""
         )
 
 
@@ -1477,7 +1477,7 @@ async def test_match_json_invalid_json(httpx_mock: HTTPXMock) -> None:
         assert (
             str(exception_info.value)
             == """No response can be found for POST request on https://test_url with b'<test>foobar</test>' body amongst:
-- Match all requests with {'a': 1, 'b': 2} json body"""
+- Match any request with {'a': 1, 'b': 2} json body"""
         )
 
 
@@ -1512,7 +1512,7 @@ async def test_headers_not_matching_and_content_matching(httpx_mock: HTTPXMock) 
         assert (
             str(exception_info.value)
             == f"""No response can be found for POST request on https://test_url with {{'Host': 'test_url', 'User-Agent': 'python-httpx/{httpx.__version__}'}} headers and b'This is the body' body amongst:
-- Match all requests with {{'User-Agent': 'python-httpx/{httpx.__version__}', 'Host': 'test_url2'}} headers and b'This is the body' body"""
+- Match any request with {{'User-Agent': 'python-httpx/{httpx.__version__}', 'Host': 'test_url2'}} headers and b'This is the body' body"""
         )
 
 
@@ -1535,7 +1535,7 @@ async def test_headers_matching_and_content_not_matching(httpx_mock: HTTPXMock) 
         assert (
             str(exception_info.value)
             == f"""No response can be found for POST request on https://test_url with {{'Host': 'test_url', 'User-Agent': 'python-httpx/{httpx.__version__}'}} headers and b'This is the body' body amongst:
-- Match all requests with {{'User-Agent': 'python-httpx/{httpx.__version__}', 'Host': 'test_url'}} headers and b'This is the body2' body"""
+- Match any request with {{'User-Agent': 'python-httpx/{httpx.__version__}', 'Host': 'test_url'}} headers and b'This is the body2' body"""
         )
 
 
@@ -1558,7 +1558,7 @@ async def test_headers_and_content_not_matching(httpx_mock: HTTPXMock) -> None:
         assert (
             str(exception_info.value)
             == f"""No response can be found for POST request on https://test_url with {{'Host': 'test_url', 'User-Agent': 'python-httpx/{httpx.__version__}'}} headers and b'This is the body' body amongst:
-- Match all requests with {{'User-Agent': 'python-httpx/{httpx.__version__}', 'Host': 'test_url2'}} headers and b'This is the body2' body"""
+- Match any request with {{'User-Agent': 'python-httpx/{httpx.__version__}', 'Host': 'test_url2'}} headers and b'This is the body2' body"""
         )
 
 
@@ -1597,7 +1597,7 @@ async def test_headers_not_matching_and_url_and_content_matching(
         assert (
             str(exception_info.value)
             == f"""No response can be found for POST request on https://test_url with {{'Host': 'test_url', 'User-Agent': 'python-httpx/{httpx.__version__}'}} headers and b'This is the body' body amongst:
-- Match all requests on https://test_url with {{'User-Agent': 'python-httpx/{httpx.__version__}', 'Host': 'test_url2'}} headers and b'This is the body' body"""
+- Match any request on https://test_url with {{'User-Agent': 'python-httpx/{httpx.__version__}', 'Host': 'test_url2'}} headers and b'This is the body' body"""
         )
 
 
@@ -1623,7 +1623,7 @@ async def test_url_and_headers_not_matching_and_content_matching(
         assert (
             str(exception_info.value)
             == f"""No response can be found for POST request on https://test_url with {{'Host': 'test_url', 'User-Agent': 'python-httpx/{httpx.__version__}'}} headers and b'This is the body' body amongst:
-- Match all requests on https://test_url2 with {{'User-Agent': 'python-httpx/{httpx.__version__}', 'Host': 'test_url2'}} headers and b'This is the body' body"""
+- Match any request on https://test_url2 with {{'User-Agent': 'python-httpx/{httpx.__version__}', 'Host': 'test_url2'}} headers and b'This is the body' body"""
         )
 
 
@@ -1649,7 +1649,7 @@ async def test_url_and_headers_matching_and_content_not_matching(
         assert (
             str(exception_info.value)
             == f"""No response can be found for POST request on https://test_url with {{'Host': 'test_url', 'User-Agent': 'python-httpx/{httpx.__version__}'}} headers and b'This is the body' body amongst:
-- Match all requests on https://test_url with {{'User-Agent': 'python-httpx/{httpx.__version__}', 'Host': 'test_url'}} headers and b'This is the body2' body"""
+- Match any request on https://test_url with {{'User-Agent': 'python-httpx/{httpx.__version__}', 'Host': 'test_url'}} headers and b'This is the body2' body"""
         )
 
 
@@ -1675,7 +1675,7 @@ async def test_headers_matching_and_url_and_content_not_matching(
         assert (
             str(exception_info.value)
             == f"""No response can be found for POST request on https://test_url with {{'Host': 'test_url', 'User-Agent': 'python-httpx/{httpx.__version__}'}} headers and b'This is the body' body amongst:
-- Match all requests on https://test_url2 with {{'User-Agent': 'python-httpx/{httpx.__version__}', 'Host': 'test_url'}} headers and b'This is the body2' body"""
+- Match any request on https://test_url2 with {{'User-Agent': 'python-httpx/{httpx.__version__}', 'Host': 'test_url'}} headers and b'This is the body2' body"""
         )
 
 
@@ -1701,7 +1701,7 @@ async def test_url_matching_and_headers_and_content_not_matching(
         assert (
             str(exception_info.value)
             == f"""No response can be found for POST request on https://test_url with {{'Host': 'test_url', 'User-Agent': 'python-httpx/{httpx.__version__}'}} headers and b'This is the body' body amongst:
-- Match all requests on https://test_url with {{'User-Agent': 'python-httpx/{httpx.__version__}', 'Host': 'test_url2'}} headers and b'This is the body2' body"""
+- Match any request on https://test_url with {{'User-Agent': 'python-httpx/{httpx.__version__}', 'Host': 'test_url2'}} headers and b'This is the body2' body"""
         )
 
 
@@ -1725,7 +1725,7 @@ async def test_url_and_headers_and_content_not_matching(httpx_mock: HTTPXMock) -
         assert (
             str(exception_info.value)
             == f"""No response can be found for POST request on https://test_url with {{'Host': 'test_url', 'User-Agent': 'python-httpx/{httpx.__version__}'}} headers and b'This is the body' body amongst:
-- Match all requests on https://test_url2 with {{'User-Agent': 'python-httpx/{httpx.__version__}', 'Host': 'test_url2'}} headers and b'This is the body2' body"""
+- Match any request on https://test_url2 with {{'User-Agent': 'python-httpx/{httpx.__version__}', 'Host': 'test_url2'}} headers and b'This is the body2' body"""
         )
 
 
@@ -1768,7 +1768,7 @@ async def test_headers_not_matching_and_method_and_url_and_content_matching(
         assert (
             str(exception_info.value)
             == f"""No response can be found for POST request on https://test_url with {{'Host': 'test_url', 'User-Agent': 'python-httpx/{httpx.__version__}'}} headers and b'This is the body' body amongst:
-- Match POST requests on https://test_url with {{'User-Agent': 'python-httpx/{httpx.__version__}', 'Host': 'test_url2'}} headers and b'This is the body' body"""
+- Match POST request on https://test_url with {{'User-Agent': 'python-httpx/{httpx.__version__}', 'Host': 'test_url2'}} headers and b'This is the body' body"""
         )
 
 
@@ -1795,7 +1795,7 @@ async def test_url_and_headers_not_matching_and_method_and_content_matching(
         assert (
             str(exception_info.value)
             == f"""No response can be found for POST request on https://test_url with {{'Host': 'test_url', 'User-Agent': 'python-httpx/{httpx.__version__}'}} headers and b'This is the body' body amongst:
-- Match POST requests on https://test_url2 with {{'User-Agent': 'python-httpx/{httpx.__version__}', 'Host': 'test_url2'}} headers and b'This is the body' body"""
+- Match POST request on https://test_url2 with {{'User-Agent': 'python-httpx/{httpx.__version__}', 'Host': 'test_url2'}} headers and b'This is the body' body"""
         )
 
 
@@ -1822,7 +1822,7 @@ async def test_method_and_url_and_headers_matching_and_content_not_matching(
         assert (
             str(exception_info.value)
             == f"""No response can be found for POST request on https://test_url with {{'Host': 'test_url', 'User-Agent': 'python-httpx/{httpx.__version__}'}} headers and b'This is the body' body amongst:
-- Match POST requests on https://test_url with {{'User-Agent': 'python-httpx/{httpx.__version__}', 'Host': 'test_url'}} headers and b'This is the body2' body"""
+- Match POST request on https://test_url with {{'User-Agent': 'python-httpx/{httpx.__version__}', 'Host': 'test_url'}} headers and b'This is the body2' body"""
         )
 
 
@@ -1849,7 +1849,7 @@ async def test_method_and_headers_matching_and_url_and_content_not_matching(
         assert (
             str(exception_info.value)
             == f"""No response can be found for POST request on https://test_url with {{'Host': 'test_url', 'User-Agent': 'python-httpx/{httpx.__version__}'}} headers and b'This is the body' body amongst:
-- Match POST requests on https://test_url2 with {{'User-Agent': 'python-httpx/{httpx.__version__}', 'Host': 'test_url'}} headers and b'This is the body2' body"""
+- Match POST request on https://test_url2 with {{'User-Agent': 'python-httpx/{httpx.__version__}', 'Host': 'test_url'}} headers and b'This is the body2' body"""
         )
 
 
@@ -1876,7 +1876,7 @@ async def test_method_and_url_matching_and_headers_and_content_not_matching(
         assert (
             str(exception_info.value)
             == f"""No response can be found for POST request on https://test_url with {{'Host': 'test_url', 'User-Agent': 'python-httpx/{httpx.__version__}'}} headers and b'This is the body' body amongst:
-- Match POST requests on https://test_url with {{'User-Agent': 'python-httpx/{httpx.__version__}', 'Host': 'test_url2'}} headers and b'This is the body2' body"""
+- Match POST request on https://test_url with {{'User-Agent': 'python-httpx/{httpx.__version__}', 'Host': 'test_url2'}} headers and b'This is the body2' body"""
         )
 
 
@@ -1903,7 +1903,7 @@ async def test_method_matching_and_url_and_headers_and_content_not_matching(
         assert (
             str(exception_info.value)
             == f"""No response can be found for POST request on https://test_url with {{'Host': 'test_url', 'User-Agent': 'python-httpx/{httpx.__version__}'}} headers and b'This is the body' body amongst:
-- Match POST requests on https://test_url2 with {{'User-Agent': 'python-httpx/{httpx.__version__}', 'Host': 'test_url2'}} headers and b'This is the body2' body"""
+- Match POST request on https://test_url2 with {{'User-Agent': 'python-httpx/{httpx.__version__}', 'Host': 'test_url2'}} headers and b'This is the body2' body"""
         )
 
 
@@ -1930,7 +1930,7 @@ async def test_method_and_url_and_headers_and_content_not_matching(
         assert (
             str(exception_info.value)
             == f"""No response can be found for POST request on https://test_url with {{'Host': 'test_url', 'User-Agent': 'python-httpx/{httpx.__version__}'}} headers and b'This is the body' body amongst:
-- Match PUT requests on https://test_url2 with {{'User-Agent': 'python-httpx/{httpx.__version__}', 'Host': 'test_url2'}} headers and b'This is the body2' body"""
+- Match PUT request on https://test_url2 with {{'User-Agent': 'python-httpx/{httpx.__version__}', 'Host': 'test_url2'}} headers and b'This is the body2' body"""
         )
 
 

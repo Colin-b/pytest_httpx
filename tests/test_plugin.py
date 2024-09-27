@@ -36,7 +36,7 @@ def test_httpx_mock_unused_response(testdir: Testdir) -> None:
     result.stdout.fnmatch_lines(
         [
             "*AssertionError: The following responses are mocked but not requested:",
-            "*  - Match all requests",
+            "*  - Match any request",
             "*  ",
             "*  If this is on purpose, refer to https://github.com/Colin-b/pytest_httpx/blob/master/README.md#allow-to-register-more-responses-than-what-will-be-requested",
         ],
@@ -81,7 +81,7 @@ def test_httpx_mock_unused_callback(testdir: Testdir) -> None:
     result.stdout.fnmatch_lines(
         [
             "*AssertionError: The following responses are mocked but not requested:",
-            "*  - Match all requests",
+            "*  - Match any request",
             "*  ",
             "*  If this is on purpose, refer to https://github.com/Colin-b/pytest_httpx/blob/master/README.md#allow-to-register-more-responses-than-what-will-be-requested",
         ],
@@ -282,8 +282,8 @@ def test_httpx_mock_unmatched_request_with_only_unmatched_responses(
     result.stdout.fnmatch_lines(
         [
             "*httpx.TimeoutException: No response can be found for GET request on https://foo22.tld amongst:",
-            "*- Match all requests on https://foo2.tld",
-            "*- Match all requests on https://foo3.tld",
+            "*- Match any request on https://foo2.tld",
+            "*- Match any request on https://foo3.tld",
         ],
         consecutive=True,
     )
@@ -291,8 +291,8 @@ def test_httpx_mock_unmatched_request_with_only_unmatched_responses(
     result.stdout.fnmatch_lines(
         [
             "*AssertionError: The following responses are mocked but not requested:",
-            "*  - Match all requests on https://foo2.tld",
-            "*  - Match all requests on https://foo3.tld",
+            "*  - Match any request on https://foo2.tld",
+            "*  - Match any request on https://foo3.tld",
             "*  ",
             "*  If this is on purpose, refer to https://github.com/Colin-b/pytest_httpx/blob/master/README.md#allow-to-register-more-responses-than-what-will-be-requested",
         ],
@@ -329,8 +329,8 @@ def test_httpx_mock_unmatched_request_with_only_matched_responses(
     result.stdout.fnmatch_lines(
         [
             "*httpx.TimeoutException: No response can be found for GET request on https://foo22.tld amongst:",
-            "*- Match all requests on https://foo.tld",
-            "*- Match all requests on https://foo.tld",
+            "*- Already matched any request on https://foo.tld",
+            "*- Already matched any request on https://foo.tld",
         ],
         consecutive=True,
     )
@@ -379,10 +379,10 @@ def test_httpx_mock_unmatched_request_with_matched_and_unmatched_responses(
     result.stdout.fnmatch_lines(
         [
             "*httpx.TimeoutException: No response can be found for GET request on https://foo22.tld amongst:",
-            "*- Match all requests on https://foo2.tld",
-            "*- Match all requests on https://foo3.tld",
-            "*- Match all requests on https://foo.tld",
-            "*- Match all requests on https://foo.tld",
+            "*- Match any request on https://foo2.tld",
+            "*- Match any request on https://foo3.tld",
+            "*- Already matched any request on https://foo.tld",
+            "*- Already matched any request on https://foo.tld",
         ],
         consecutive=True,
     )
@@ -390,8 +390,8 @@ def test_httpx_mock_unmatched_request_with_matched_and_unmatched_responses(
     result.stdout.fnmatch_lines(
         [
             "*AssertionError: The following responses are mocked but not requested:",
-            "*  - Match all requests on https://foo2.tld",
-            "*  - Match all requests on https://foo3.tld",
+            "*  - Match any request on https://foo2.tld",
+            "*  - Match any request on https://foo3.tld",
             "*  ",
             "*  If this is on purpose, refer to https://github.com/Colin-b/pytest_httpx/blob/master/README.md#allow-to-register-more-responses-than-what-will-be-requested",
         ],
