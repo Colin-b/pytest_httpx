@@ -81,6 +81,7 @@ Order of parameters in the query string does not matter, however order of values
 
 ```python
 import httpx
+import re
 from pytest_httpx import HTTPXMock
 
 
@@ -90,6 +91,20 @@ def test_url(httpx_mock: HTTPXMock):
     with httpx.Client() as client:
         response1 = client.delete("https://test_url?a=1&b=2")
         response2 = client.get("https://test_url?b=2&a=1")
+
+
+def test_url_as_pattern(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(url=re.compile(".*test.*"))
+
+    with httpx.Client() as client:
+        response = client.get("https://test_url")
+
+
+def test_url_as_httpx_url(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(url=httpx.URL("https://test_url", params={"a": "1", "b": "2"}))
+
+    with httpx.Client() as client:
+        response = client.get("https://test_url?a=1&b=2")
 ```
 
 #### Matching on HTTP method
@@ -163,7 +178,7 @@ def test_proxy_url(httpx_mock: HTTPXMock):
 
 #### Matching on HTTP headers
 
-Use `match_headers` parameter to specify the HTTP headers to reply to.
+Use `match_headers` parameter to specify the HTTP headers (as a dict) to reply to.
 
 Matching is performed on equality for each provided header.
 
@@ -181,7 +196,7 @@ def test_headers_matching(httpx_mock: HTTPXMock):
 
 #### Matching on HTTP body
 
-Use `match_content` parameter to specify the full HTTP body to reply to.
+Use `match_content` parameter to specify the full HTTP body (as bytes) to reply to.
 
 Matching is performed on equality.
 
@@ -292,7 +307,9 @@ def test_html_body(httpx_mock: HTTPXMock):
 
 ### Reply by streaming chunks
 
-Use `stream` parameter to stream chunks that you specify.
+Use `stream` parameter (as `httpx.SyncByteStream` or `httpx.AsyncByteStream`) to stream chunks that you specify.
+
+Note that `pytest_httpx.IteratorStream` can be used to provide an iterable.
 
 ```python
 import httpx
@@ -349,7 +366,7 @@ content of file 1\r
 
 ### Add non 200 response
 
-Use `status_code` parameter to specify the HTTP status code of the response.
+Use `status_code` parameter to specify the HTTP status code (as an int) of the response.
 
 ```python
 import httpx
@@ -428,7 +445,7 @@ def test_cookies(httpx_mock: HTTPXMock):
 
 ### Add HTTP/2.0 response
 
-Use `http_version` parameter to specify the HTTP protocol version of the response.
+Use `http_version` parameter to specify the HTTP protocol version (as a string) of the response.
 
 ```python
 import httpx
