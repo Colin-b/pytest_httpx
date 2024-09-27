@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `can_send_already_matched_responses` (boolean), defaulting to `False`.
 - Assertion failure message in case of unmatched responses is now linking documentation on how to deactivate the check.
 - Assertion failure message in case of unmatched requests is now linking documentation on how to deactivate the check.
+- `httpx.TimeoutException` message issued in case of unmatched request is now linking documentation on how to reuse responses (in case some responses are already matched).
 
 ### Fixed
 - Documentation now clearly state the risks associated with changing the default options.
