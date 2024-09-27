@@ -185,7 +185,7 @@ async def test_stream_response_streaming(httpx_mock: HTTPXMock) -> None:
             ]
             # Assert that stream still behaves the proper way (can only be consumed once per request)
             with pytest.raises(httpx.StreamConsumed):
-                async for part in response.aiter_raw():
+                async for _ in response.aiter_raw():
                     pass  # pragma: no cover
 
         async with client.stream(method="GET", url="https://test_url") as response:
@@ -195,7 +195,7 @@ async def test_stream_response_streaming(httpx_mock: HTTPXMock) -> None:
             ]
             # Assert that stream still behaves the proper way (can only be consumed once per request)
             with pytest.raises(httpx.StreamConsumed):
-                async for part in response.aiter_raw():
+                async for _ in response.aiter_raw():
                     pass  # pragma: no cover
 
 
@@ -214,7 +214,7 @@ async def test_content_response_streaming(httpx_mock: HTTPXMock) -> None:
             ]
             # Assert that stream still behaves the proper way (can only be consumed once per request)
             with pytest.raises(httpx.StreamConsumed):
-                async for part in response.aiter_raw():
+                async for _ in response.aiter_raw():
                     pass  # pragma: no cover
 
         async with client.stream(method="GET", url="https://test_url") as response:
@@ -223,7 +223,7 @@ async def test_content_response_streaming(httpx_mock: HTTPXMock) -> None:
             ]
             # Assert that stream still behaves the proper way (can only be consumed once per request)
             with pytest.raises(httpx.StreamConsumed):
-                async for part in response.aiter_raw():
+                async for _ in response.aiter_raw():
                     pass  # pragma: no cover
 
 
@@ -242,7 +242,7 @@ async def test_text_response_streaming(httpx_mock: HTTPXMock) -> None:
             ]
             # Assert that stream still behaves the proper way (can only be consumed once per request)
             with pytest.raises(httpx.StreamConsumed):
-                async for part in response.aiter_raw():
+                async for _ in response.aiter_raw():
                     pass  # pragma: no cover
 
         async with client.stream(method="GET", url="https://test_url") as response:
@@ -251,7 +251,7 @@ async def test_text_response_streaming(httpx_mock: HTTPXMock) -> None:
             ]
             # Assert that stream still behaves the proper way (can only be consumed once per request)
             with pytest.raises(httpx.StreamConsumed):
-                async for part in response.aiter_raw():
+                async for _ in response.aiter_raw():
                     pass  # pragma: no cover
 
 
@@ -265,14 +265,14 @@ async def test_default_response_streaming(httpx_mock: HTTPXMock) -> None:
             assert [part async for part in response.aiter_raw()] == []
             # Assert that stream still behaves the proper way (can only be consumed once per request)
             with pytest.raises(httpx.StreamConsumed):
-                async for part in response.aiter_raw():
+                async for _ in response.aiter_raw():
                     pass  # pragma: no cover
 
         async with client.stream(method="GET", url="https://test_url") as response:
             assert [part async for part in response.aiter_raw()] == []
             # Assert that stream still behaves the proper way (can only be consumed once per request)
             with pytest.raises(httpx.StreamConsumed):
-                async for part in response.aiter_raw():
+                async for _ in response.aiter_raw():
                     pass  # pragma: no cover
 
 
