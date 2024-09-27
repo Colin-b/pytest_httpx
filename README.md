@@ -629,6 +629,15 @@ def pytest_collection_modifyitems(session, config, items):
         item.add_marker(pytest.mark.httpx_mock(assert_all_responses_were_requested=False))
 ```
 
+> [!IMPORTANT]  
+> Note that [there currently is a bug in pytest](https://github.com/pytest-dev/pytest/issues/10406) where `pytest_collection_modifyitems` will actually add the marker AFTER its `module` and `class` registration.
+> 
+> Meaning the order is currently:
+> module -> class -> test suite -> test
+> 
+> instead of:
+> test suite -> module -> class -> test
+
 ### Available options
 
 #### Allow to register more responses than what will be requested
