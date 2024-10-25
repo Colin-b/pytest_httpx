@@ -24,12 +24,7 @@ class RequestDescription:
             if matcher.headers
             for header in matcher.headers
         }
-        self.expect_body = any(
-            [
-                matcher.content is not None or matcher.json is not None
-                for matcher in matchers
-            ]
-        )
+        self.expect_body = any([matcher.expect_body() for matcher in matchers])
         self.expect_proxy = any([matcher.proxy_url is not None for matcher in matchers])
 
     def __str__(self) -> str:

@@ -1,5 +1,6 @@
 import asyncio
 import math
+import os
 import re
 import time
 from collections.abc import AsyncIterable
@@ -1393,6 +1394,61 @@ async def test_request_retrieval_proxy_matching(httpx_mock: HTTPXMock) -> None:
 
 
 @pytest.mark.asyncio
+@pytest.mark.httpx_mock(can_send_already_matched_responses=True)
+async def test_requests_retrieval_files_and_data_matching(
+    httpx_mock: HTTPXMock,
+) -> None:
+    httpx_mock.add_response()
+
+    async with httpx.AsyncClient() as client:
+        await client.put(
+            "https://test_url",
+            files={"name": ("file_name", b"File content")},
+            data={"field1": "value"},
+        )
+        await client.put(
+            "https://test_url2",
+            files={"name": ("file_name", b"File content")},
+            data={"field": "value"},
+        )
+        await client.put(
+            "http://test_url2",
+            files={"name": ("file_name", b"File content")},
+            data={"field": "value"},
+        )
+
+    assert (
+        len(
+            httpx_mock.get_requests(
+                match_files={"name": ("file_name", b"File content")},
+                match_data={"field": "value"},
+            )
+        )
+        == 2
+    )
+
+
+@pytest.mark.asyncio
+@pytest.mark.httpx_mock(can_send_already_matched_responses=True)
+async def test_request_retrieval_files_and_data_matching(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response()
+
+    async with httpx.AsyncClient() as client:
+        await client.put(
+            "https://test_url",
+            files={"name": ("file_name", b"File content")},
+            data={"field": "value"},
+        )
+        await client.get("https://test_url2")
+        await client.get("http://test_url2")
+
+    assert httpx_mock.get_request(
+        match_files={"name": ("file_name", b"File content")},
+        match_data={"field": "value"},
+    )
+
+
+@pytest.mark.asyncio
 @pytest.mark.httpx_mock(
     assert_all_responses_were_requested=False, assert_all_requests_were_expected=False
 )
@@ -2147,3 +2203,139 @@ async def test_request_selection_content_matching_with_async_iterable(
         httpx_mock.get_request(match_content=b"full content 2").url
         == "https://test_url_2"
     )
+
+
+@pytest.mark.asyncio
+async def test_files_matching(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(match_files={"name": ("file_name", b"File content")})
+
+    async with httpx.AsyncClient() as client:
+        response = await client.put(
+            "https://test_url", files={"name": ("file_name", b"File content")}
+        )
+    assert response.content == b""
+
+
+@pytest.mark.asyncio
+async def test_files_and_data_matching(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(
+        match_files={"name": ("file_name", b"File content")},
+        match_data={"field": "value"},
+    )
+
+    async with httpx.AsyncClient() as client:
+        response = await client.put(
+            "https://test_url",
+            files={"name": ("file_name", b"File content")},
+            data={"field": "value"},
+        )
+    assert response.content == b""
+
+
+@pytest.mark.asyncio
+@pytest.mark.httpx_mock(
+    assert_all_responses_were_requested=False, assert_all_requests_were_expected=False
+)
+async def test_files_not_matching_name(httpx_mock: HTTPXMock, monkeypatch) -> None:
+    # Ensure generated boundary will be fbe495efe4cd41b941ca13e254d6b018
+    monkeypatch.setattr(
+        os,
+        "urandom",
+        lambda length: b"\xfb\xe4\x95\xef\xe4\xcdA\xb9A\xca\x13\xe2T\xd6\xb0\x18",
+    )
+
+    httpx_mock.add_response(match_files={"name2": ("file_name", b"File content")})
+
+    async with httpx.AsyncClient() as client:
+        with pytest.raises(httpx.TimeoutException) as exception_info:
+            await client.put(
+                "https://test_url", files={"name1": ("file_name", b"File content")}
+            )
+        assert (
+            str(exception_info.value)
+            == """No response can be found for PUT request on https://test_url with b'--fbe495efe4cd41b941ca13e254d6b018\\r\\nContent-Disposition: form-data; name="name1"; filename="file_name"\\r\\nContent-Type: application/octet-stream\\r\\n\\r\\nFile content\\r\\n--fbe495efe4cd41b941ca13e254d6b018--\\r\\n' body amongst:
+- Match any request with {'name2': ('file_name', b'File content')} files"""
+        )
+
+
+@pytest.mark.asyncio
+@pytest.mark.httpx_mock(
+    assert_all_responses_were_requested=False, assert_all_requests_were_expected=False
+)
+async def test_files_not_matching_file_name(httpx_mock: HTTPXMock, monkeypatch) -> None:
+    # Ensure generated boundary will be fbe495efe4cd41b941ca13e254d6b018
+    monkeypatch.setattr(
+        os,
+        "urandom",
+        lambda length: b"\xfb\xe4\x95\xef\xe4\xcdA\xb9A\xca\x13\xe2T\xd6\xb0\x18",
+    )
+
+    httpx_mock.add_response(match_files={"name": ("file_name2", b"File content")})
+
+    async with httpx.AsyncClient() as client:
+        with pytest.raises(httpx.TimeoutException) as exception_info:
+            await client.put(
+                "https://test_url", files={"name": ("file_name1", b"File content")}
+            )
+        assert (
+            str(exception_info.value)
+            == """No response can be found for PUT request on https://test_url with b'--fbe495efe4cd41b941ca13e254d6b018\\r\\nContent-Disposition: form-data; name="name"; filename="file_name1"\\r\\nContent-Type: application/octet-stream\\r\\n\\r\\nFile content\\r\\n--fbe495efe4cd41b941ca13e254d6b018--\\r\\n' body amongst:
+- Match any request with {'name': ('file_name2', b'File content')} files"""
+        )
+
+
+@pytest.mark.asyncio
+@pytest.mark.httpx_mock(
+    assert_all_responses_were_requested=False, assert_all_requests_were_expected=False
+)
+async def test_files_not_matching_content(httpx_mock: HTTPXMock, monkeypatch) -> None:
+    # Ensure generated boundary will be fbe495efe4cd41b941ca13e254d6b018
+    monkeypatch.setattr(
+        os,
+        "urandom",
+        lambda length: b"\xfb\xe4\x95\xef\xe4\xcdA\xb9A\xca\x13\xe2T\xd6\xb0\x18",
+    )
+
+    httpx_mock.add_response(match_files={"name": ("file_name", b"File content2")})
+
+    async with httpx.AsyncClient() as client:
+        with pytest.raises(httpx.TimeoutException) as exception_info:
+            await client.put(
+                "https://test_url", files={"name": ("file_name", b"File content1")}
+            )
+        assert (
+            str(exception_info.value)
+            == """No response can be found for PUT request on https://test_url with b'--fbe495efe4cd41b941ca13e254d6b018\\r\\nContent-Disposition: form-data; name="name"; filename="file_name"\\r\\nContent-Type: application/octet-stream\\r\\n\\r\\nFile content1\\r\\n--fbe495efe4cd41b941ca13e254d6b018--\\r\\n' body amongst:
+- Match any request with {'name': ('file_name', b'File content2')} files"""
+        )
+
+
+@pytest.mark.asyncio
+@pytest.mark.httpx_mock(
+    assert_all_responses_were_requested=False, assert_all_requests_were_expected=False
+)
+async def test_files_matching_but_data_not_matching(
+    httpx_mock: HTTPXMock, monkeypatch
+) -> None:
+    # Ensure generated boundary will be fbe495efe4cd41b941ca13e254d6b018
+    monkeypatch.setattr(
+        os,
+        "urandom",
+        lambda length: b"\xfb\xe4\x95\xef\xe4\xcdA\xb9A\xca\x13\xe2T\xd6\xb0\x18",
+    )
+
+    httpx_mock.add_response(
+        match_files={"name": ("file_name", b"File content")},
+        match_data={"field": "value"},
+    )
+
+    async with httpx.AsyncClient() as client:
+        with pytest.raises(httpx.TimeoutException) as exception_info:
+            await client.put(
+                "https://test_url", files={"name": ("file_name", b"File content")}
+            )
+        assert (
+            str(exception_info.value)
+            == """No response can be found for PUT request on https://test_url with b'--fbe495efe4cd41b941ca13e254d6b018\\r\\nContent-Disposition: form-data; name="name"; filename="file_name"\\r\\nContent-Type: application/octet-stream\\r\\n\\r\\nFile content\\r\\n--fbe495efe4cd41b941ca13e254d6b018--\\r\\n' body amongst:
+- Match any request with {'field': 'value'} multipart data and {'name': ('file_name', b'File content')} files"""
+        )

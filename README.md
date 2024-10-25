@@ -5,7 +5,7 @@
 <a href="https://github.com/Colin-b/pytest_httpx/actions"><img alt="Build status" src="https://github.com/Colin-b/pytest_httpx/workflows/Release/badge.svg"></a>
 <a href="https://github.com/Colin-b/pytest_httpx/actions"><img alt="Coverage" src="https://img.shields.io/badge/coverage-100%25-brightgreen"></a>
 <a href="https://github.com/psf/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
-<a href="https://github.com/Colin-b/pytest_httpx/actions"><img alt="Number of tests" src="https://img.shields.io/badge/tests-229 passed-blue"></a>
+<a href="https://github.com/Colin-b/pytest_httpx/actions"><img alt="Number of tests" src="https://img.shields.io/badge/tests-248 passed-blue"></a>
 <a href="https://pypi.org/project/pytest-httpx/"><img alt="Number of downloads" src="https://img.shields.io/pypi/dm/pytest_httpx"></a>
 </p>
 
@@ -237,7 +237,26 @@ def test_partial_json_matching(httpx_mock: HTTPXMock):
         response = client.post("https://test_url", json={"a": "json", "b": 2})
 ```
         
-Note that `match_content` cannot be provided if `match_json` is also provided.
+Note that `match_content` or `match_files` cannot be provided if `match_json` is also provided.
+
+##### Matching on HTTP multipart body
+
+Use `match_files` and `match_data` parameters to specify the full multipart body to reply to.
+
+Matching is performed on equality.
+
+```python
+import httpx
+from pytest_httpx import HTTPXMock
+
+def test_multipart_matching(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(match_files={"name": ("file_name", b"File content")}, match_data={"field": "value"})
+
+    with httpx.Client() as client:
+        response = client.post("https://test_url", files={"name": ("file_name", b"File content")}, data={"field": "value"})
+```
+        
+Note that `match_content` or `match_json` cannot be provided if `match_files` is also provided.
 
 ### Add JSON response
 
