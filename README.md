@@ -728,14 +728,15 @@ By default, `pytest-httpx` will mock every request.
 
 But, for instance, in case you want to write integration tests with other servers, you might want to let some requests go through.
 
-To do so, you can use the `httpx_mock` marker `non_mocked_hosts` option and provide a list of non mocked hosts.
-Every other requested hosts will be mocked as in the following example
+To do so, you can use the `httpx_mock` marker `should_mock` option and provide a callable expecting the [`httpx.Request`](https://www.python-httpx.org/api/#request) as parameter and returning a boolean.
+
+Returning `True` will ensure that the request is handled by `pytest-httpx` (mocked), `False` will let the request pass through (not mocked).
 
 ```python
 import pytest
 import httpx
 
-@pytest.mark.httpx_mock(non_mocked_hosts=["my_local_test_host"])
+@pytest.mark.httpx_mock(should_mock=lambda request: request.url.host != "www.my_local_test_host")
 def test_partial_mock(httpx_mock):
     httpx_mock.add_response()
 

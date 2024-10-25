@@ -36,9 +36,9 @@ def httpx_mock(
     def mocked_handle_request(
         transport: httpx.HTTPTransport, request: httpx.Request
     ) -> httpx.Response:
-        if request.url.host in options.non_mocked_hosts:
-            return real_handle_request(transport, request)
-        return mock._handle_request(transport, request)
+        if options.should_mock(request):
+            return mock._handle_request(transport, request)
+        return real_handle_request(transport, request)
 
     monkeypatch.setattr(
         httpx.HTTPTransport,
@@ -52,9 +52,9 @@ def httpx_mock(
     async def mocked_handle_async_request(
         transport: httpx.AsyncHTTPTransport, request: httpx.Request
     ) -> httpx.Response:
-        if request.url.host in options.non_mocked_hosts:
-            return await real_handle_async_request(transport, request)
-        return await mock._handle_async_request(transport, request)
+        if options.should_mock(request):
+            return await mock._handle_async_request(transport, request)
+        return await real_handle_async_request(transport, request)
 
     monkeypatch.setattr(
         httpx.AsyncHTTPTransport,
@@ -72,5 +72,5 @@ def httpx_mock(
 def pytest_configure(config: Config) -> None:
     config.addinivalue_line(
         "markers",
-        "httpx_mock(*, assert_all_responses_were_requested=True, assert_all_requests_were_expected=True, can_send_already_matched_responses=False, non_mocked_hosts=[]): Configure httpx_mock fixture.",
+        "httpx_mock(*, assert_all_responses_were_requested=True, assert_all_requests_were_expected=True, can_send_already_matched_responses=False, should_mock=lambda request: True): Configure httpx_mock fixture.",
     )

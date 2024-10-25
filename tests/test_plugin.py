@@ -552,17 +552,17 @@ def test_httpx_mock_unmatched_request_with_matched_and_unmatched_reusable_respon
     )
 
 
-def test_httpx_mock_non_mocked_hosts_sync(testdir: Testdir) -> None:
+def test_httpx_mock_should_mock_sync(testdir: Testdir) -> None:
     """
-    Non mocked hosts should go through while other requests should be mocked.
+    Non mocked requests should go through while other requests should be mocked.
     """
     testdir.makepyfile(
         """
         import httpx
         import pytest
 
-        @pytest.mark.httpx_mock(non_mocked_hosts=["localhost"])
-        def test_httpx_mock_non_mocked_hosts_sync(httpx_mock):
+        @pytest.mark.httpx_mock(should_mock=lambda request: request.url.host != "localhost")
+        def test_httpx_mock_should_mock_sync(httpx_mock):
             httpx_mock.add_response()
             
             with httpx.Client() as client:
@@ -582,9 +582,9 @@ def test_httpx_mock_non_mocked_hosts_sync(testdir: Testdir) -> None:
     result.assert_outcomes(passed=1)
 
 
-def test_httpx_mock_non_mocked_hosts_async(testdir: Testdir) -> None:
+def test_httpx_mock_should_mock_async(testdir: Testdir) -> None:
     """
-    Non mocked hosts should go through while other requests should be mocked.
+    Non mocked requests should go through while other requests should be mocked.
     """
     testdir.makepyfile(
         """
@@ -592,8 +592,8 @@ def test_httpx_mock_non_mocked_hosts_async(testdir: Testdir) -> None:
         import pytest
 
         @pytest.mark.asyncio
-        @pytest.mark.httpx_mock(non_mocked_hosts=["localhost"])
-        async def test_httpx_mock_non_mocked_hosts_async(httpx_mock):
+        @pytest.mark.httpx_mock(should_mock=lambda request: request.url.host != "localhost")
+        async def test_httpx_mock_should_mock_async(httpx_mock):
             httpx_mock.add_response()
             
             async with httpx.AsyncClient() as client:
@@ -619,7 +619,7 @@ def test_httpx_mock_options_on_multi_levels_are_aggregated(testdir: Testdir) -> 
 
     global (actually registered AFTER module): assert_all_responses_were_requested (tested by putting unused response)
     module: assert_all_requests_were_expected (tested by not mocking one URL)
-    test: non_mocked_hosts (tested by calling 3 URls, 2 mocked, the other one not)
+    test: should_mock (tested by calling 3 URls, 2 mocked, the other one not)
     """
     testdir.makeconftest(
         """
@@ -636,22 +636,22 @@ def test_httpx_mock_options_on_multi_levels_are_aggregated(testdir: Testdir) -> 
         import httpx
         import pytest
 
-        pytestmark = pytest.mark.httpx_mock(assert_all_requests_were_expected=False, non_mocked_hosts=["https://foo.tld"])
+        pytestmark = pytest.mark.httpx_mock(assert_all_requests_were_expected=False, should_mock=lambda request: request.url.host != "https://foo.tld")
 
         @pytest.mark.asyncio
-        @pytest.mark.httpx_mock(non_mocked_hosts=["localhost"])
-        async def test_httpx_mock_non_mocked_hosts_async(httpx_mock):
+        @pytest.mark.httpx_mock(should_mock=lambda request: request.url.host != "localhost")
+        async def test_httpx_mock_options_on_multi_levels_are_aggregated(httpx_mock):
             httpx_mock.add_response(url="https://foo.tld", headers={"x-pytest-httpx": "this was mocked"})
             
             # This response will never be used, testing that assert_all_responses_were_requested is handled 
             httpx_mock.add_response(url="https://never_called.url")
             
             async with httpx.AsyncClient() as client:
-                # Assert that previously set non_mocked_hosts was overridden
+                # Assert that previously set should_mock was overridden
                 response = await client.get("https://foo.tld")
                 assert response.headers["x-pytest-httpx"] == "this was mocked"
             
-                # Assert that latest non_mocked_hosts is handled
+                # Assert that latest should_mock is handled
                 with pytest.raises(httpx.ConnectError):
                     await client.get("https://localhost:5005")
             
@@ -677,7 +677,7 @@ def test_invalid_marker(testdir: Testdir) -> None:
         import pytest
 
         @pytest.mark.httpx_mock(foo=123)
-        def test_httpx_mock_non_mocked_hosts_async(httpx_mock):
+        def test_invalid_marker(httpx_mock):
             pass
             
     """

@@ -5,6 +5,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- Explicit support for python `3.13`.
+- The following option is now available:
+  - `should_mock` (callable returning a boolean), defaulting to always returning `True`.
+
+### Removed
+- `non_mocked_hosts` option is not available anymore. Use `should_mock` instead as in the following sample:
+  ```python
+  import pytest
+  
+  @pytest.mark.httpx_mock(non_mocked_hosts=["my_local_test_host"])
+  def test_previous_behavior(httpx_mock):
+      ...
+  
+  @pytest.mark.httpx_mock(should_mock=lambda request: request.url.host not in ["my_local_test_host"])
+  def test_new_behavior(httpx_mock):
+      ...
+  ```
+  Please note that your hosts might need to be prefixed with `www.` depending on your usage.
 
 ## [0.32.0] - 2024-09-27
 ### Added
