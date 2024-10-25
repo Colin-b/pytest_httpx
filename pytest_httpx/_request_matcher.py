@@ -144,7 +144,7 @@ class _RequestMatcher:
                 return False
             # Ensure we re-use the same boundary for comparison
             boundary = boundary_matched.group(1)
-            # TODO move to httpx internals
+            # Prevent internal httpx changes from impacting users not matching on files
             from httpx._multipart import MultipartStream
 
             multipart_content = b"".join(
