@@ -5,7 +5,7 @@
 <a href="https://github.com/Colin-b/pytest_httpx/actions"><img alt="Build status" src="https://github.com/Colin-b/pytest_httpx/workflows/Release/badge.svg"></a>
 <a href="https://github.com/Colin-b/pytest_httpx/actions"><img alt="Coverage" src="https://img.shields.io/badge/coverage-100%25-brightgreen"></a>
 <a href="https://github.com/psf/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
-<a href="https://github.com/Colin-b/pytest_httpx/actions"><img alt="Number of tests" src="https://img.shields.io/badge/tests-248 passed-blue"></a>
+<a href="https://github.com/Colin-b/pytest_httpx/actions"><img alt="Number of tests" src="https://img.shields.io/badge/tests-260 passed-blue"></a>
 <a href="https://pypi.org/project/pytest-httpx/"><img alt="Number of downloads" src="https://img.shields.io/pypi/dm/pytest_httpx"></a>
 </p>
 
@@ -257,6 +257,42 @@ def test_multipart_matching(httpx_mock: HTTPXMock):
 ```
         
 Note that `match_content` or `match_json` cannot be provided if `match_files` is also provided.
+
+#### Matching on extensions
+
+Use `match_extensions` parameter to specify the extensions (as a dict) to reply to.
+
+Matching is performed on equality for each provided extension.
+
+```python
+import httpx
+from pytest_httpx import HTTPXMock
+
+
+def test_extensions_matching(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(match_extensions={'test': 'value'})
+
+    with httpx.Client() as client:
+        response = client.get("https://test_url", extensions={"test": "value"})
+```
+
+##### Matching on HTTP timeout(s)
+
+Use `match_extensions` parameter to specify the timeouts (as a dict) to reply to.
+
+Matching is performed on the full timeout dict equality.
+
+```python
+import httpx
+from pytest_httpx import HTTPXMock
+
+
+def test_timeout_matching(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(match_extensions={'timeout': {'connect': 10, 'read': 10, 'write': 10, 'pool': 10}})
+
+    with httpx.Client() as client:
+        response = client.get("https://test_url", timeout=10)
+```
 
 ### Add JSON response
 

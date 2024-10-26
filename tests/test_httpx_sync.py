@@ -1175,6 +1175,40 @@ def test_request_retrieval_files_and_data_matching(httpx_mock: HTTPXMock) -> Non
     )
 
 
+@pytest.mark.httpx_mock(can_send_already_matched_responses=True)
+def test_requests_retrieval_extensions_matching(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response()
+
+    with httpx.Client() as client:
+        client.get("https://test_url")
+        client.get("https://test_url2", timeout=10)
+        client.get("https://test_url2", timeout=10)
+    assert (
+        len(
+            httpx_mock.get_requests(
+                match_extensions={
+                    "timeout": {"connect": 10, "read": 10, "write": 10, "pool": 10}
+                }
+            )
+        )
+        == 2
+    )
+
+
+@pytest.mark.httpx_mock(can_send_already_matched_responses=True)
+def test_request_retrieval_extensions_matching(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response()
+
+    with httpx.Client() as client:
+        client.get("https://test_url", timeout=httpx.Timeout(5, read=10))
+        client.get("https://test_url2", timeout=10)
+        client.get("http://test_url2", timeout=10)
+
+    assert httpx_mock.get_request(
+        match_extensions={"timeout": {"connect": 5, "read": 10, "write": 5, "pool": 5}}
+    )
+
+
 @pytest.mark.httpx_mock(
     assert_all_responses_were_requested=False, assert_all_requests_were_expected=False
 )
@@ -2041,3 +2075,57 @@ def test_data_without_files(httpx_mock: HTTPXMock) -> None:
         str(exception_info.value)
         == "match_data is meant to be used for multipart matching (in conjunction with match_files).Use match_content to match url encoded data."
     )
+
+
+def test_timeout_matching(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(
+        match_extensions={"timeout": {"connect": 5, "read": 5, "write": 10, "pool": 5}}
+    )
+
+    with httpx.Client() as client:
+        response = client.put("https://test_url", timeout=httpx.Timeout(5, write=10))
+    assert response.content == b""
+
+
+@pytest.mark.httpx_mock(
+    assert_all_responses_were_requested=False, assert_all_requests_were_expected=False
+)
+def test_timeout_not_matching(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(
+        match_extensions={"timeout": {"connect": 5, "read": 5, "write": 10, "pool": 5}}
+    )
+
+    with httpx.Client() as client:
+        with pytest.raises(httpx.TimeoutException) as exception_info:
+            client.get("https://test_url", extensions={"test": "value"})
+        assert (
+            str(exception_info.value)
+            == """No response can be found for GET request on https://test_url with {'timeout': {'connect': 5.0, 'read': 5.0, 'write': 5.0, 'pool': 5.0}} extensions amongst:
+- Match any request with {'timeout': {'connect': 5, 'read': 5, 'write': 10, 'pool': 5}} extensions"""
+        )
+
+
+def test_extensions_matching(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(match_extensions={"test": "value"})
+
+    with httpx.Client() as client:
+        response = client.put(
+            "https://test_url", extensions={"test": "value", "test2": "value2"}
+        )
+    assert response.content == b""
+
+
+@pytest.mark.httpx_mock(
+    assert_all_responses_were_requested=False, assert_all_requests_were_expected=False
+)
+def test_extensions_not_matching(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(match_extensions={"test": "value"})
+
+    with httpx.Client() as client:
+        with pytest.raises(httpx.TimeoutException) as exception_info:
+            client.get("https://test_url", extensions={"test": "value2"})
+        assert (
+            str(exception_info.value)
+            == """No response can be found for GET request on https://test_url with {'test': 'value2'} extensions amongst:
+- Match any request with {'test': 'value'} extensions"""
+        )

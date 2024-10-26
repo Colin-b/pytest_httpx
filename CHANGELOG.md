@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The following option is now available:
   - `should_mock` (callable returning a boolean), defaulting to always returning `True`.
 - Matching on the full multipart body can now be performed using `match_files` and `match_data` parameters.
+- Matching on extensions (including timeout) can now be performed using `match_extensions` parameter.
 
 ### Removed
 - `non_mocked_hosts` option is not available anymore. Use `should_mock` instead as in the following sample:

@@ -38,6 +38,7 @@ class _RequestMatcher:
         match_json: Optional[Any] = None,
         match_data: Optional[dict[str, Any]] = None,
         match_files: Optional[Any] = None,
+        match_extensions: Optional[dict[str, Any]] = None,
     ):
         self._options = options
         self.nb_calls = 0
@@ -53,6 +54,7 @@ class _RequestMatcher:
             if proxy_url and isinstance(proxy_url, str)
             else proxy_url
         )
+        self.extensions = match_extensions
         if self._is_matching_body_more_than_one_way():
             raise ValueError(
                 "Only one way of matching against the body can be provided. "
@@ -93,6 +95,7 @@ class _RequestMatcher:
             and self._headers_match(request)
             and self._content_match(request)
             and self._proxy_match(real_transport)
+            and self._extensions_match(request)
         )
 
     def _url_match(self, request: httpx.Request) -> bool:
@@ -165,6 +168,15 @@ class _RequestMatcher:
 
         return False
 
+    def _extensions_match(self, request: httpx.Request) -> bool:
+        if not self.extensions:
+            return True
+
+        return all(
+            request.extensions.get(extension_name) == extension_value
+            for extension_name, extension_value in self.extensions.items()
+        )
+
     def __str__(self) -> str:
         if self._options.can_send_already_matched_responses:
             matcher_description = f"Match {self.method or 'every'} request"
@@ -192,5 +204,7 @@ class _RequestMatcher:
             extra_description.append(f"{self.files} files")
         if self.proxy_url:
             extra_description.append(f"{self.proxy_url} proxy URL")
+        if self.extensions:
+            extra_description.append(f"{self.extensions} extensions")
 
         return " and ".join(extra_description)
