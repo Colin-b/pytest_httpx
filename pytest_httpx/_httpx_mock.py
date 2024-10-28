@@ -66,6 +66,9 @@ class HTTPXMock:
         :param match_headers: HTTP headers identifying the request(s) to match. Must be a dictionary.
         :param match_content: Full HTTP body identifying the request(s) to match. Must be bytes.
         :param match_json: JSON decoded HTTP body identifying the request(s) to match. Must be JSON encodable.
+        :param match_data: Multipart data (excluding files) identifying the request(s) to match. Must be a dictionary.
+        :param match_files: Multipart files identifying the request(s) to match. Refer to httpx documentation for more information on supported values: https://www.python-httpx.org/advanced/clients/#multipart-file-encoding
+        :param match_extensions: Extensions identifying the request(s) to match. Must be a dictionary.
         """
 
         json = copy.deepcopy(json) if json is not None else None
@@ -105,6 +108,9 @@ class HTTPXMock:
         :param match_headers: HTTP headers identifying the request(s) to match. Must be a dictionary.
         :param match_content: Full HTTP body identifying the request(s) to match. Must be bytes.
         :param match_json: JSON decoded HTTP body identifying the request(s) to match. Must be JSON encodable.
+        :param match_data: Multipart data (excluding files) identifying the request(s) to match. Must be a dictionary.
+        :param match_files: Multipart files identifying the request(s) to match. Refer to httpx documentation for more information on supported values: https://www.python-httpx.org/advanced/clients/#multipart-file-encoding
+        :param match_extensions: Extensions identifying the request(s) to match. Must be a dictionary.
         """
         self._callbacks.append((_RequestMatcher(self._options, **matchers), callback))
 
@@ -121,6 +127,9 @@ class HTTPXMock:
         :param match_headers: HTTP headers identifying the request(s) to match. Must be a dictionary.
         :param match_content: Full HTTP body identifying the request(s) to match. Must be bytes.
         :param match_json: JSON decoded HTTP body identifying the request(s) to match. Must be JSON encodable.
+        :param match_data: Multipart data (excluding files) identifying the request(s) to match. Must be a dictionary.
+        :param match_files: Multipart files identifying the request(s) to match. Refer to httpx documentation for more information on supported values: https://www.python-httpx.org/advanced/clients/#multipart-file-encoding
+        :param match_extensions: Extensions identifying the request(s) to match. Must be a dictionary.
         """
 
         def exception_callback(request: httpx.Request) -> None:
@@ -255,6 +264,9 @@ class HTTPXMock:
         :param match_headers: HTTP headers identifying the requests to retrieve. Must be a dictionary.
         :param match_content: Full HTTP body identifying the requests to retrieve. Must be bytes.
         :param match_json: JSON decoded HTTP body identifying the requests to retrieve. Must be JSON encodable.
+        :param match_data: Multipart data (excluding files) identifying the requests to retrieve. Must be a dictionary.
+        :param match_files: Multipart files identifying the requests to retrieve. Refer to httpx documentation for more information on supported values: https://www.python-httpx.org/advanced/clients/#multipart-file-encoding
+        :param match_extensions: Extensions identifying the requests to retrieve. Must be a dictionary.
         """
         matcher = _RequestMatcher(self._options, **matchers)
         return [
@@ -275,6 +287,9 @@ class HTTPXMock:
         :param match_headers: HTTP headers identifying the request to retrieve. Must be a dictionary.
         :param match_content: Full HTTP body identifying the request to retrieve. Must be bytes.
         :param match_json: JSON decoded HTTP body identifying the request to retrieve. Must be JSON encodable.
+        :param match_data: Multipart data (excluding files) identifying the request to retrieve. Must be a dictionary.
+        :param match_files: Multipart files identifying the request to retrieve. Refer to httpx documentation for more information on supported values: https://www.python-httpx.org/advanced/clients/#multipart-file-encoding
+        :param match_extensions: Extensions identifying the request to retrieve. Must be a dictionary.
         :raises AssertionError: in case more than one request match.
         """
         requests = self.get_requests(**matchers)

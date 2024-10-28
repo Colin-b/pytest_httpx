@@ -24,13 +24,14 @@ class RequestDescription:
             if matcher.headers
             for header in matcher.headers
         }
-        self.expect_body = any(
-            [
-                matcher.content is not None or matcher.json is not None
-                for matcher in matchers
-            ]
-        )
+        self.expect_body = any([matcher.expect_body() for matcher in matchers])
         self.expect_proxy = any([matcher.proxy_url is not None for matcher in matchers])
+        self.expected_extensions = {
+            extension
+            for matcher in matchers
+            if matcher.extensions
+            for extension in matcher.extensions
+        }
 
     def __str__(self) -> str:
         request_description = f"{self.request.method} request on {self.request.url}"
@@ -61,5 +62,13 @@ class RequestDescription:
         if self.expect_proxy:
             proxy_url = _proxy_url(self.real_transport)
             extra_description.append(f"{proxy_url if proxy_url else 'no'} proxy URL")
+
+        if self.expected_extensions:
+            present_extensions = {
+                name: value
+                for name, value in self.request.extensions.items()
+                if name in self.expected_extensions
+            }
+            extra_description.append(f"{present_extensions} extensions")
 
         return " and ".join(extra_description)

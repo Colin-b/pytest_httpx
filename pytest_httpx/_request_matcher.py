@@ -36,23 +36,53 @@ class _RequestMatcher:
         match_headers: Optional[dict[str, Any]] = None,
         match_content: Optional[bytes] = None,
         match_json: Optional[Any] = None,
+        match_data: Optional[dict[str, Any]] = None,
+        match_files: Optional[Any] = None,
+        match_extensions: Optional[dict[str, Any]] = None,
     ):
         self._options = options
         self.nb_calls = 0
         self.url = httpx.URL(url) if url and isinstance(url, str) else url
         self.method = method.upper() if method else method
         self.headers = match_headers
-        if match_content is not None and match_json is not None:
-            raise ValueError(
-                "Only one way of matching against the body can be provided. If you want to match against the JSON decoded representation, use match_json. Otherwise, use match_content."
-            )
         self.content = match_content
         self.json = match_json
+        self.data = match_data
+        self.files = match_files
         self.proxy_url = (
             httpx.URL(proxy_url)
             if proxy_url and isinstance(proxy_url, str)
             else proxy_url
         )
+        self.extensions = match_extensions
+        if self._is_matching_body_more_than_one_way():
+            raise ValueError(
+                "Only one way of matching against the body can be provided. "
+                "If you want to match against the JSON decoded representation, use match_json. "
+                "If you want to match against the multipart representation, use match_files (and match_data). "
+                "Otherwise, use match_content."
+            )
+        if self.data and not self.files:
+            raise ValueError(
+                "match_data is meant to be used for multipart matching (in conjunction with match_files)."
+                "Use match_content to match url encoded data."
+            )
+
+    def expect_body(self) -> bool:
+        matching_ways = [
+            self.content is not None,
+            self.json is not None,
+            self.files is not None,
+        ]
+        return sum(matching_ways) == 1
+
+    def _is_matching_body_more_than_one_way(self) -> bool:
+        matching_ways = [
+            self.content is not None,
+            self.json is not None,
+            self.files is not None,
+        ]
+        return sum(matching_ways) > 1
 
     def match(
         self,
@@ -65,6 +95,7 @@ class _RequestMatcher:
             and self._headers_match(request)
             and self._content_match(request)
             and self._proxy_match(real_transport)
+            and self._extensions_match(request)
         )
 
     def _url_match(self, request: httpx.Request) -> bool:
@@ -99,16 +130,32 @@ class _RequestMatcher:
         )
 
     def _content_match(self, request: httpx.Request) -> bool:
-        if self.content is None and self.json is None:
-            return True
-
         if self.content is not None:
             return request.content == self.content
-        try:
-            # httpx._content.encode_json hard codes utf-8 encoding.
-            return json.loads(request.content.decode("utf-8")) == self.json
-        except json.decoder.JSONDecodeError:
-            return False
+
+        if self.json is not None:
+            try:
+                # httpx._content.encode_json hard codes utf-8 encoding.
+                return json.loads(request.content.decode("utf-8")) == self.json
+            except json.decoder.JSONDecodeError:
+                return False
+
+        if self.files:
+            if not (
+                boundary_matched := re.match(b"^--([0-9a-f]*)\r\n", request.content)
+            ):
+                return False
+            # Ensure we re-use the same boundary for comparison
+            boundary = boundary_matched.group(1)
+            # Prevent internal httpx changes from impacting users not matching on files
+            from httpx._multipart import MultipartStream
+
+            multipart_content = b"".join(
+                MultipartStream(self.data or {}, self.files, boundary)
+            )
+            return request.content == multipart_content
+
+        return True
 
     def _proxy_match(
         self, real_transport: Union[httpx.HTTPTransport, httpx.AsyncHTTPTransport]
@@ -120,6 +167,15 @@ class _RequestMatcher:
             return _url_match(self.proxy_url, real_proxy_url)
 
         return False
+
+    def _extensions_match(self, request: httpx.Request) -> bool:
+        if not self.extensions:
+            return True
+
+        return all(
+            request.extensions.get(extension_name) == extension_value
+            for extension_name, extension_value in self.extensions.items()
+        )
 
     def __str__(self) -> str:
         if self._options.can_send_already_matched_responses:
@@ -142,7 +198,13 @@ class _RequestMatcher:
             extra_description.append(f"{self.content} body")
         if self.json is not None:
             extra_description.append(f"{self.json} json body")
+        if self.data is not None:
+            extra_description.append(f"{self.data} multipart data")
+        if self.files is not None:
+            extra_description.append(f"{self.files} files")
         if self.proxy_url:
             extra_description.append(f"{self.proxy_url} proxy URL")
+        if self.extensions:
+            extra_description.append(f"{self.extensions} extensions")
 
         return " and ".join(extra_description)

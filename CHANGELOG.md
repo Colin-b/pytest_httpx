@@ -6,6 +6,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.33.0] - 2024-10-28
+### Added
+- Explicit support for python `3.13`.
+- `should_mock` option (callable returning a boolean) is now available, defaulting to always returning `True`. Refer to documentation for more details.
+- Matching on the full multipart body can now be performed using `match_files` and `match_data` parameters. Refer to documentation for more details.
+- Matching on extensions (including timeout) can now be performed using `match_extensions` parameter. Refer to documentation for more details.
+
+### Removed
+- `non_mocked_hosts` option is not available anymore. Use `should_mock` instead as in the following sample:
+  ```python
+  import pytest
+  
+  @pytest.mark.httpx_mock(non_mocked_hosts=["my_local_test_host"])
+  def test_previous_behavior(httpx_mock):
+      ...
+  
+  @pytest.mark.httpx_mock(should_mock=lambda request: request.url.host not in ["my_local_test_host"])
+  def test_new_behavior(httpx_mock):
+      ...
+  ```
+  Please note that your hosts might need to be prefixed with `www.` depending on your usage.
+
 ## [0.32.0] - 2024-09-27
 ### Added
 - The following option is now available:
@@ -374,7 +396,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - First release, should be considered as unstable for now as design might change.
 
-[Unreleased]: https://github.com/Colin-b/pytest_httpx/compare/v0.32.0...HEAD
+[Unreleased]: https://github.com/Colin-b/pytest_httpx/compare/v0.33.0...HEAD
+[0.33.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.32.0...v0.33.0
 [0.32.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.31.2...v0.32.0
 [0.31.2]: https://github.com/Colin-b/pytest_httpx/compare/v0.31.1...v0.31.2
 [0.31.1]: https://github.com/Colin-b/pytest_httpx/compare/v0.31.0...v0.31.1
