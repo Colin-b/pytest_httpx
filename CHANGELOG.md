@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- `assert_requested` parameter is now available on responses and callbacks registration. Allowing to add optional responses while keeping other responses as mandatory. Refer to documentation for more details.
 
 ## [0.33.0] - 2024-10-28
 ### Added

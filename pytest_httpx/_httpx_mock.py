@@ -304,20 +304,19 @@ class HTTPXMock:
         self._requests_not_matched.clear()
 
     def _assert_options(self) -> None:
-        if self._options.assert_all_responses_were_requested:
-            callbacks_not_executed = [
-                matcher for matcher, _ in self._callbacks if not matcher.nb_calls
-            ]
-            matchers_description = "\n".join(
-                [f"- {matcher}" for matcher in callbacks_not_executed]
-            )
+        callbacks_not_executed = [
+            matcher for matcher, _ in self._callbacks if matcher.should_have_matched()
+        ]
+        matchers_description = "\n".join(
+            [f"- {matcher}" for matcher in callbacks_not_executed]
+        )
 
-            assert not callbacks_not_executed, (
-                "The following responses are mocked but not requested:\n"
-                f"{matchers_description}\n"
-                "\n"
-                "If this is on purpose, refer to https://github.com/Colin-b/pytest_httpx/blob/master/README.md#allow-to-register-more-responses-than-what-will-be-requested"
-            )
+        assert not callbacks_not_executed, (
+            "The following responses are mocked but not requested:\n"
+            f"{matchers_description}\n"
+            "\n"
+            "If this is on purpose, refer to https://github.com/Colin-b/pytest_httpx/blob/master/README.md#allow-to-register-more-responses-than-what-will-be-requested"
+        )
 
         if self._options.assert_all_requests_were_expected:
             requests_description = "\n".join(

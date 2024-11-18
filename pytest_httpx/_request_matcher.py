@@ -39,6 +39,7 @@ class _RequestMatcher:
         match_data: Optional[dict[str, Any]] = None,
         match_files: Optional[Any] = None,
         match_extensions: Optional[dict[str, Any]] = None,
+        assert_requested: Optional[bool] = None,
     ):
         self._options = options
         self.nb_calls = 0
@@ -55,6 +56,7 @@ class _RequestMatcher:
             else proxy_url
         )
         self.extensions = match_extensions
+        self.assert_requested = options.assert_all_responses_were_requested if assert_requested is None else assert_requested
         if self._is_matching_body_more_than_one_way():
             raise ValueError(
                 "Only one way of matching against the body can be provided. "
@@ -176,6 +178,10 @@ class _RequestMatcher:
             request.extensions.get(extension_name) == extension_value
             for extension_name, extension_value in self.extensions.items()
         )
+
+    def should_have_matched(self) -> bool:
+        """Return True if the matcher did not serve its purpose."""
+        return self.assert_requested and not self.nb_calls
 
     def __str__(self) -> str:
         if self._options.can_send_already_matched_responses:
