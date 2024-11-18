@@ -777,7 +777,22 @@ def test_more_requests_than_expected(httpx_mock):
 
 By default, `pytest-httpx` will ensure that every request that was issued was expected.
 
-You can use the `httpx_mock` marker `can_send_already_matched_responses` option to allow multiple requests to match the same registered response.
+If you want to add a response once, while allowing it to match more than once, you can use the `can_send_already_matched` parameter when [registering a response](#add-responses) or [a callback](#add-callbacks).
+
+```python
+import httpx
+
+def test_more_requests_than_responses(httpx_mock):
+    httpx_mock.add_response(can_send_already_matched=True)
+    with httpx.Client() as client:
+        client.get("https://test_url")
+        # Even if only one response was registered, the test will not fail at teardown as this request will also be matched
+        client.get("https://test_url")
+```
+
+If you don't have control over the response registration process (shared fixtures), 
+and you want to allow multiple requests to match the same registered response, 
+you can use the `httpx_mock` marker `can_send_already_matched_responses` option.
 
 With this option, in case all matching responses have been sent at least once, the last one (according to the registration order) will be sent.
 
