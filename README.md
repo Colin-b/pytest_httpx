@@ -716,9 +716,17 @@ def pytest_collection_modifyitems(session, config, items):
 
 By default, `pytest-httpx` will ensure that every response was requested during test execution.
 
-You can use the `httpx_mock` marker `assert_all_responses_were_requested` option to allow fewer requests than what you registered responses for.
+If you want to add an optional response, you can use the `assert_requested` parameter when [registering a response](#add-responses) or [a callback](#add-callbacks).
 
-This option can be useful if you add responses using shared fixtures.
+```python
+def test_fewer_requests_than_expected(httpx_mock):
+    # Even if this response never received a corresponding request, the test will not fail at teardown
+    httpx_mock.add_response(assert_requested=False)
+```
+
+If you don't have control over the response registration process (shared fixtures), 
+and you want to allow fewer requests than what you registered responses for, 
+you can use the `httpx_mock` marker `assert_all_responses_were_requested` option.
 
 > [!CAUTION]
 > Use this option at your own risk of not spotting regression (requests not sent) in your code base!
@@ -730,6 +738,18 @@ import pytest
 def test_fewer_requests_than_expected(httpx_mock):
     # Even if this response never received a corresponding request, the test will not fail at teardown
     httpx_mock.add_response()
+```
+
+Note that the `assert_requested` parameter will take precedence over the `assert_all_responses_were_requested` option.
+Meaning you can still register a response that will be checked for execution at teardown even if `assert_all_responses_were_requested` was set to `False`.
+
+```python
+import pytest
+
+@pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
+def test_force_expected_request(httpx_mock):
+    # Even if the assert_all_responses_were_requested option is set, the test will fail at teardown if this is not matched
+    httpx_mock.add_response(assert_requested=True)
 ```
 
 #### Allow to not register responses for every request

@@ -2129,3 +2129,37 @@ def test_extensions_not_matching(httpx_mock: HTTPXMock) -> None:
             == """No response can be found for GET request on https://test_url with {'test': 'value2'} extensions amongst:
 - Match any request with {'test': 'value'} extensions"""
         )
+
+
+def test_optional_response_not_matched(httpx_mock: HTTPXMock) -> None:
+    # This response is optional and the fact that it was never requested should not trigger anything
+    httpx_mock.add_response(url="https://test_url", assert_requested=False)
+    httpx_mock.add_response(url="https://test_url2")
+
+    with httpx.Client() as client:
+        response = client.get("https://test_url2")
+    assert response.content == b""
+
+
+def test_optional_response_matched(httpx_mock: HTTPXMock) -> None:
+    # This response is optional and the fact that it was never requested should not trigger anything
+    httpx_mock.add_response(url="https://test_url", assert_requested=False)
+    httpx_mock.add_response(url="https://test_url2")
+
+    with httpx.Client() as client:
+        response1 = client.get("https://test_url")
+        response2 = client.get("https://test_url2")
+    assert response1.content == b""
+    assert response2.content == b""
+
+
+@pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
+def test_mandatory_response_matched(httpx_mock: HTTPXMock) -> None:
+    # This response is optional and the fact that it was never requested should not trigger anything
+    httpx_mock.add_response(url="https://test_url")
+    # This response MUST be requested
+    httpx_mock.add_response(url="https://test_url2", assert_requested=True)
+
+    with httpx.Client() as client:
+        response = client.get("https://test_url2")
+    assert response.content == b""

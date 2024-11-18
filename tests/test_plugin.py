@@ -685,3 +685,35 @@ def test_invalid_marker(testdir: Testdir) -> None:
     result = testdir.runpytest()
     result.assert_outcomes(errors=1)
     result.stdout.re_match_lines([r".*got an unexpected keyword argument 'foo'"])
+
+
+def test_mandatory_response_not_matched(testdir: Testdir) -> None:
+    """
+    assert_requested MUST take precedence over assert_all_responses_were_requested.
+    """
+    testdir.makepyfile(
+        """
+        import httpx
+        import pytest
+
+        @pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
+        def test_mandatory_response_not_matched(httpx_mock):
+            # This response is optional and the fact that it was never requested should not trigger anything
+            httpx_mock.add_response(url="https://test_url")
+            # This response MUST be requested
+            httpx_mock.add_response(url="https://test_url2", assert_requested=True)
+            
+    """
+    )
+    result = testdir.runpytest()
+    result.assert_outcomes(errors=1, passed=1)
+    # Assert the teardown assertion failure
+    result.stdout.fnmatch_lines(
+        [
+            "*AssertionError: The following responses are mocked but not requested:",
+            "*  - Match any request on https://test_url2",
+            "*  ",
+            "*  If this is on purpose, refer to https://github.com/Colin-b/pytest_httpx/blob/master/README.md#allow-to-register-more-responses-than-what-will-be-requested",
+        ],
+        consecutive=True,
+    )
