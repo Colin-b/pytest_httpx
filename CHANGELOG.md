@@ -6,8 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
-- `assert_requested` parameter is now available on responses and callbacks registration. Allowing to add optional responses while keeping other responses as mandatory. Refer to documentation for more details.
-- `can_send_already_matched` parameter is now available on responses and callbacks registration. Allowing to add multi-match responses while keeping other responses as single-match. Refer to documentation for more details.
+- `is_optional` parameter is now available on responses and callbacks registration. Allowing to add optional responses while keeping other responses as mandatory. Refer to documentation for more details.
+- `is_reusable` parameter is now available on responses and callbacks registration. Allowing to add multi-match responses while keeping other responses as single-match. Refer to documentation for more details.
+
+### Fixed
+- `httpx_mock.get_request` will now also propose to refine filters if more than one request is found instead of only proposing to switch to `httpx_mock.get_requests`.
 
 ## [0.33.0] - 2024-10-28
 ### Added

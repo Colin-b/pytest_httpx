@@ -5,7 +5,7 @@
 <a href="https://github.com/Colin-b/pytest_httpx/actions"><img alt="Build status" src="https://github.com/Colin-b/pytest_httpx/workflows/Release/badge.svg"></a>
 <a href="https://github.com/Colin-b/pytest_httpx/actions"><img alt="Coverage" src="https://img.shields.io/badge/coverage-100%25-brightgreen"></a>
 <a href="https://github.com/psf/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
-<a href="https://github.com/Colin-b/pytest_httpx/actions"><img alt="Number of tests" src="https://img.shields.io/badge/tests-260 passed-blue"></a>
+<a href="https://github.com/Colin-b/pytest_httpx/actions"><img alt="Number of tests" src="https://img.shields.io/badge/tests-272 passed-blue"></a>
 <a href="https://pypi.org/project/pytest-httpx/"><img alt="Number of downloads" src="https://img.shields.io/pypi/dm/pytest_httpx"></a>
 </p>
 
@@ -716,12 +716,12 @@ def pytest_collection_modifyitems(session, config, items):
 
 By default, `pytest-httpx` will ensure that every response was requested during test execution.
 
-If you want to add an optional response, you can use the `assert_requested` parameter when [registering a response](#add-responses) or [a callback](#add-callbacks).
+If you want to add an optional response, you can use the `is_optional` parameter when [registering a response](#add-responses) or [a callback](#add-callbacks).
 
 ```python
 def test_fewer_requests_than_expected(httpx_mock):
     # Even if this response never received a corresponding request, the test will not fail at teardown
-    httpx_mock.add_response(assert_requested=False)
+    httpx_mock.add_response(is_optional=True)
 ```
 
 If you don't have control over the response registration process (shared fixtures), 
@@ -740,7 +740,7 @@ def test_fewer_requests_than_expected(httpx_mock):
     httpx_mock.add_response()
 ```
 
-Note that the `assert_requested` parameter will take precedence over the `assert_all_responses_were_requested` option.
+Note that the `is_optional` parameter will take precedence over the `assert_all_responses_were_requested` option.
 Meaning you can still register a response that will be checked for execution at teardown even if `assert_all_responses_were_requested` was set to `False`.
 
 ```python
@@ -749,7 +749,7 @@ import pytest
 @pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
 def test_force_expected_request(httpx_mock):
     # Even if the assert_all_responses_were_requested option is set, the test will fail at teardown if this is not matched
-    httpx_mock.add_response(assert_requested=True)
+    httpx_mock.add_response(is_optional=False)
 ```
 
 #### Allow to not register responses for every request
@@ -777,13 +777,13 @@ def test_more_requests_than_expected(httpx_mock):
 
 By default, `pytest-httpx` will ensure that every request that was issued was expected.
 
-If you want to add a response once, while allowing it to match more than once, you can use the `can_send_already_matched` parameter when [registering a response](#add-responses) or [a callback](#add-callbacks).
+If you want to add a response once, while allowing it to match more than once, you can use the `is_reusable` parameter when [registering a response](#add-responses) or [a callback](#add-callbacks).
 
 ```python
 import httpx
 
 def test_more_requests_than_responses(httpx_mock):
-    httpx_mock.add_response(can_send_already_matched=True)
+    httpx_mock.add_response(is_reusable=True)
     with httpx.Client() as client:
         client.get("https://test_url")
         # Even if only one response was registered, the test will not fail at teardown as this request will also be matched
