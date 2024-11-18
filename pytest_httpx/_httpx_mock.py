@@ -295,7 +295,7 @@ class HTTPXMock:
         requests = self.get_requests(**matchers)
         assert (
             len(requests) <= 1
-        ), f"More than one request ({len(requests)}) matched, use get_requests instead."
+        ), f"More than one request ({len(requests)}) matched, use get_requests instead or refine your filters."
         return requests[0] if requests else None
 
     def reset(self) -> None:
