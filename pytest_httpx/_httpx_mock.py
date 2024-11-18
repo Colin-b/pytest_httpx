@@ -68,7 +68,8 @@ class HTTPXMock:
         :param match_json: JSON decoded HTTP body identifying the request(s) to match. Must be JSON encodable.
         :param match_data: Multipart data (excluding files) identifying the request(s) to match. Must be a dictionary.
         :param match_files: Multipart files identifying the request(s) to match. Refer to httpx documentation for more information on supported values: https://www.python-httpx.org/advanced/clients/#multipart-file-encoding
-        :param match_extensions: Extensions identifying the request(s) to match. Must be a dictionary.
+        :param is_optional: True will mark this response as optional, False will expect a request matching it. Must be a boolean. Default to the opposite of assert_all_responses_were_requested option value (itself defaulting to True, meaning this parameter default to False).
+        :param is_reusable: True will allow re-using this response even if it already matched, False prevent re-using it. Must be a boolean. Default to the can_send_already_matched_responses option value (itself defaulting to False).
         """
 
         json = copy.deepcopy(json) if json is not None else None
@@ -111,6 +112,8 @@ class HTTPXMock:
         :param match_data: Multipart data (excluding files) identifying the request(s) to match. Must be a dictionary.
         :param match_files: Multipart files identifying the request(s) to match. Refer to httpx documentation for more information on supported values: https://www.python-httpx.org/advanced/clients/#multipart-file-encoding
         :param match_extensions: Extensions identifying the request(s) to match. Must be a dictionary.
+        :param is_optional: True will mark this callback as optional, False will expect a request matching it. Must be a boolean. Default to the opposite of assert_all_responses_were_requested option value (itself defaulting to True, meaning this parameter default to False).
+        :param is_reusable: True will allow re-using this callback even if it already matched, False prevent re-using it. Must be a boolean. Default to the can_send_already_matched_responses option value (itself defaulting to False).
         """
         self._callbacks.append((_RequestMatcher(self._options, **matchers), callback))
 
@@ -130,6 +133,8 @@ class HTTPXMock:
         :param match_data: Multipart data (excluding files) identifying the request(s) to match. Must be a dictionary.
         :param match_files: Multipart files identifying the request(s) to match. Refer to httpx documentation for more information on supported values: https://www.python-httpx.org/advanced/clients/#multipart-file-encoding
         :param match_extensions: Extensions identifying the request(s) to match. Must be a dictionary.
+        :param is_optional: True will mark this exception response as optional, False will expect a request matching it. Must be a boolean. Default to the opposite of assert_all_responses_were_requested option value (itself defaulting to True, meaning this parameter default to False).
+        :param is_reusable: True will allow re-using this exception response even if it already matched, False prevent re-using it. Must be a boolean. Default to the can_send_already_matched_responses option value (itself defaulting to False).
         """
 
         def exception_callback(request: httpx.Request) -> None:
@@ -212,7 +217,7 @@ class HTTPXMock:
             message += f" amongst:\n{matchers_description}"
             # If we could not find a response, but we have already matched responses
             # it might be that user is expecting one of those responses to be reused
-            if any(not matcher.can_send_already_matched for matcher in already_matched):
+            if any(not matcher.is_reusable for matcher in already_matched):
                 message += "\n\nIf you wanted to reuse an already matched response instead of registering it again, refer to https://github.com/Colin-b/pytest_httpx/blob/master/README.md#allow-to-register-a-response-for-more-than-one-request"
 
         return message
@@ -245,7 +250,7 @@ class HTTPXMock:
                 return callback
 
         # Or the last registered (if it can be reused)
-        if matcher.can_send_already_matched:
+        if matcher.is_reusable:
             matcher.nb_calls += 1
             return callback
 

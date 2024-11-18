@@ -689,7 +689,7 @@ def test_invalid_marker(testdir: Testdir) -> None:
 
 def test_mandatory_response_not_matched(testdir: Testdir) -> None:
     """
-    assert_requested MUST take precedence over assert_all_responses_were_requested.
+    is_optional MUST take precedence over assert_all_responses_were_requested.
     """
     testdir.makepyfile(
         """
@@ -701,7 +701,7 @@ def test_mandatory_response_not_matched(testdir: Testdir) -> None:
             # This response is optional and the fact that it was never requested should not trigger anything
             httpx_mock.add_response(url="https://test_url")
             # This response MUST be requested
-            httpx_mock.add_response(url="https://test_url2", assert_requested=True)
+            httpx_mock.add_response(url="https://test_url2", is_optional=False)
             
     """
     )
@@ -719,13 +719,13 @@ def test_mandatory_response_not_matched(testdir: Testdir) -> None:
     )
 
 
-def test_multi_response_not_matched(testdir: Testdir) -> None:
+def test_reusable_response_not_matched(testdir: Testdir) -> None:
     testdir.makepyfile(
         """
         import httpx
 
-        def test_multi_response_not_matched(httpx_mock):
-            httpx_mock.add_response(url="https://test_url2", can_send_already_matched=True)
+        def test_reusable_response_not_matched(httpx_mock):
+            httpx_mock.add_response(url="https://test_url2", is_reusable=True)
             
     """
     )
