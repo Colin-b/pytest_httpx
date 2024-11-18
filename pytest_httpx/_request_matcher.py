@@ -39,6 +39,8 @@ class _RequestMatcher:
         match_data: Optional[dict[str, Any]] = None,
         match_files: Optional[Any] = None,
         match_extensions: Optional[dict[str, Any]] = None,
+        is_optional: Optional[bool] = None,
+        is_reusable: Optional[bool] = None,
     ):
         self._options = options
         self.nb_calls = 0
@@ -55,6 +57,8 @@ class _RequestMatcher:
             else proxy_url
         )
         self.extensions = match_extensions
+        self.is_optional = not options.assert_all_responses_were_requested if is_optional is None else is_optional
+        self.is_reusable = options.can_send_already_matched_responses if is_reusable is None else is_reusable
         if self._is_matching_body_more_than_one_way():
             raise ValueError(
                 "Only one way of matching against the body can be provided. "
@@ -177,8 +181,12 @@ class _RequestMatcher:
             for extension_name, extension_value in self.extensions.items()
         )
 
+    def should_have_matched(self) -> bool:
+        """Return True if the matcher did not serve its purpose."""
+        return not self.is_optional and not self.nb_calls
+
     def __str__(self) -> str:
-        if self._options.can_send_already_matched_responses:
+        if self.is_reusable:
             matcher_description = f"Match {self.method or 'every'} request"
         else:
             matcher_description = "Already matched" if self.nb_calls else "Match"
