@@ -1,4 +1,4 @@
-from wsgiref.validate import assert_<h2 align="center">Send responses to HTTPX using pytest</h2>
+<h2 align="center">Send responses to HTTPX using pytest</h2>
 
 <p align="center">
 <a href="https://pypi.org/project/pytest-httpx/"><img alt="pypi version" src="https://img.shields.io/pypi/v/pytest_httpx"></a>
