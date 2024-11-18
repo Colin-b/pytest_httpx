@@ -717,3 +717,27 @@ def test_mandatory_response_not_matched(testdir: Testdir) -> None:
         ],
         consecutive=True,
     )
+
+
+def test_multi_response_not_matched(testdir: Testdir) -> None:
+    testdir.makepyfile(
+        """
+        import httpx
+
+        def test_multi_response_not_matched(httpx_mock):
+            httpx_mock.add_response(url="https://test_url2", can_send_already_matched=True)
+            
+    """
+    )
+    result = testdir.runpytest()
+    result.assert_outcomes(errors=1, passed=1)
+    # Assert the teardown assertion failure
+    result.stdout.fnmatch_lines(
+        [
+            "*AssertionError: The following responses are mocked but not requested:",
+            "*  - Match every request on https://test_url2",
+            "*  ",
+            "*  If this is on purpose, refer to https://github.com/Colin-b/pytest_httpx/blob/master/README.md#allow-to-register-more-responses-than-what-will-be-requested",
+        ],
+        consecutive=True,
+    )

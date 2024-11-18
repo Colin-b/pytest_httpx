@@ -2163,3 +2163,21 @@ def test_mandatory_response_matched(httpx_mock: HTTPXMock) -> None:
     with httpx.Client() as client:
         response = client.get("https://test_url2")
     assert response.content == b""
+
+
+def test_multi_response_matched_once(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url="https://test_url", can_send_already_matched=True)
+
+    with httpx.Client() as client:
+        response = client.get("https://test_url")
+    assert response.content == b""
+
+
+def test_multi_response_matched_twice(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url="https://test_url", can_send_already_matched=True)
+
+    with httpx.Client() as client:
+        response1 = client.get("https://test_url")
+        response2 = client.get("https://test_url")
+    assert response1.content == b""
+    assert response2.content == b""

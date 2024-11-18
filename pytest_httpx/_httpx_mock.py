@@ -212,7 +212,7 @@ class HTTPXMock:
             message += f" amongst:\n{matchers_description}"
             # If we could not find a response, but we have already matched responses
             # it might be that user is expecting one of those responses to be reused
-            if already_matched and not self._options.can_send_already_matched_responses:
+            if any(not matcher.can_send_already_matched for matcher in already_matched):
                 message += "\n\nIf you wanted to reuse an already matched response instead of registering it again, refer to https://github.com/Colin-b/pytest_httpx/blob/master/README.md#allow-to-register-a-response-for-more-than-one-request"
 
         return message
@@ -245,7 +245,7 @@ class HTTPXMock:
                 return callback
 
         # Or the last registered (if it can be reused)
-        if self._options.can_send_already_matched_responses:
+        if matcher.can_send_already_matched:
             matcher.nb_calls += 1
             return callback
 

@@ -40,6 +40,7 @@ class _RequestMatcher:
         match_files: Optional[Any] = None,
         match_extensions: Optional[dict[str, Any]] = None,
         assert_requested: Optional[bool] = None,
+        can_send_already_matched: Optional[bool] = None,
     ):
         self._options = options
         self.nb_calls = 0
@@ -57,6 +58,7 @@ class _RequestMatcher:
         )
         self.extensions = match_extensions
         self.assert_requested = options.assert_all_responses_were_requested if assert_requested is None else assert_requested
+        self.can_send_already_matched = options.can_send_already_matched_responses if can_send_already_matched is None else can_send_already_matched
         if self._is_matching_body_more_than_one_way():
             raise ValueError(
                 "Only one way of matching against the body can be provided. "
@@ -184,7 +186,7 @@ class _RequestMatcher:
         return self.assert_requested and not self.nb_calls
 
     def __str__(self) -> str:
-        if self._options.can_send_already_matched_responses:
+        if self.can_send_already_matched:
             matcher_description = f"Match {self.method or 'every'} request"
         else:
             matcher_description = "Already matched" if self.nb_calls else "Match"
