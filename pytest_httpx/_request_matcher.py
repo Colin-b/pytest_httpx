@@ -10,19 +10,21 @@ from pytest_httpx._options import _HTTPXMockOptions
 
 
 def _url_match(
-    url_to_match: Union[Pattern[str], httpx.URL], received: httpx.URL
+    url_to_match: Union[Pattern[str], httpx.URL], received: httpx.URL, params: Optional[dict[str, str]]
 ) -> bool:
     if isinstance(url_to_match, re.Pattern):
         return url_to_match.match(str(received)) is not None
 
     # Compare query parameters apart as order of parameters should not matter
     received_params = dict(received.params)
-    params = dict(url_to_match.params)
+    if params is None:
+        params = dict(url_to_match.params)
 
     # Remove the query parameters from the original URL to compare everything besides query parameters
     received_url = received.copy_with(query=None)
     url = url_to_match.copy_with(query=None)
 
+    print(received_params, params, (received_params == params), (url == received_url))
     return (received_params == params) and (url == received_url)
 
 
@@ -39,6 +41,7 @@ class _RequestMatcher:
         match_data: Optional[dict[str, Any]] = None,
         match_files: Optional[Any] = None,
         match_extensions: Optional[dict[str, Any]] = None,
+        match_params: Optional[dict[str, str]] = None,
         is_optional: Optional[bool] = None,
         is_reusable: Optional[bool] = None,
     ):
@@ -51,6 +54,7 @@ class _RequestMatcher:
         self.json = match_json
         self.data = match_data
         self.files = match_files
+        self.params = match_params
         self.proxy_url = (
             httpx.URL(proxy_url)
             if proxy_url and isinstance(proxy_url, str)
@@ -106,7 +110,7 @@ class _RequestMatcher:
         if not self.url:
             return True
 
-        return _url_match(self.url, request.url)
+        return _url_match(self.url, request.url, self.params)
 
     def _method_match(self, request: httpx.Request) -> bool:
         if not self.method:
@@ -168,7 +172,7 @@ class _RequestMatcher:
             return True
 
         if real_proxy_url := _proxy_url(real_transport):
-            return _url_match(self.proxy_url, real_proxy_url)
+            return _url_match(self.proxy_url, real_proxy_url, None)
 
         return False
 
@@ -214,5 +218,7 @@ class _RequestMatcher:
             extra_description.append(f"{self.proxy_url} proxy URL")
         if self.extensions:
             extra_description.append(f"{self.extensions} extensions")
+        if self.params:
+            extra_description.append(f"{self.params} params")
 
         return " and ".join(extra_description)
