@@ -24,7 +24,6 @@ def _url_match(
     received_url = received.copy_with(query=None)
     url = url_to_match.copy_with(query=None)
 
-    print(received_params, params, (received_params == params), (url == received_url))
     return (received_params == params) and (url == received_url)
 
 
