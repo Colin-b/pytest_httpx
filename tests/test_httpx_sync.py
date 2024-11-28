@@ -119,7 +119,9 @@ def test_method_not_matching(httpx_mock: HTTPXMock) -> None:
 
 
 def test_reusing_one_response(httpx_mock: HTTPXMock) -> None:
-    httpx_mock.add_response(url="https://test_url", content=b"test content", is_reusable=True)
+    httpx_mock.add_response(
+        url="https://test_url", content=b"test content", is_reusable=True
+    )
 
     with httpx.Client() as client:
         response = client.get("https://test_url")
@@ -265,7 +267,9 @@ def test_with_many_responses(httpx_mock: HTTPXMock) -> None:
 
 def test_with_many_reused_responses(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url="https://test_url", content=b"test content 1")
-    httpx_mock.add_response(url="https://test_url", content=b"test content 2", is_reusable=True)
+    httpx_mock.add_response(
+        url="https://test_url", content=b"test content 2", is_reusable=True
+    )
 
     with httpx.Client() as client:
         response = client.get("https://test_url")
@@ -907,7 +911,9 @@ def test_multi_value_headers_matching(httpx_mock: HTTPXMock) -> None:
 def test_multi_value_headers_not_matching_single_value_issued(
     httpx_mock: HTTPXMock,
 ) -> None:
-    httpx_mock.add_response(match_headers={"my-custom-header": "value1"}, is_optional=True)
+    httpx_mock.add_response(
+        match_headers={"my-custom-header": "value1"}, is_optional=True
+    )
 
     with httpx.Client() as client:
         with pytest.raises(httpx.TimeoutException) as exception_info:
@@ -929,7 +935,9 @@ def test_multi_value_headers_not_matching_single_value_issued(
 def test_multi_value_headers_not_matching_multi_value_issued(
     httpx_mock: HTTPXMock,
 ) -> None:
-    httpx_mock.add_response(match_headers={"my-custom-header": "value1, value2"}, is_optional=True)
+    httpx_mock.add_response(
+        match_headers={"my-custom-header": "value1, value2"}, is_optional=True
+    )
 
     with httpx.Client() as client:
         with pytest.raises(httpx.TimeoutException) as exception_info:
@@ -950,7 +958,8 @@ def test_multi_value_headers_not_matching_multi_value_issued(
 @pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
 def test_headers_matching_respect_case(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(
-        match_headers={"user-agent": f"python-httpx/{httpx.__version__}"}, is_optional=True
+        match_headers={"user-agent": f"python-httpx/{httpx.__version__}"},
+        is_optional=True,
     )
 
     with httpx.Client() as client:
@@ -971,7 +980,7 @@ def test_headers_not_matching(httpx_mock: HTTPXMock) -> None:
             "Host": "test_url2",
             "Host2": "test_url",
         },
-        is_optional=True
+        is_optional=True,
     )
 
     with httpx.Client() as client:
@@ -1239,7 +1248,7 @@ def test_json_not_matching(httpx_mock: HTTPXMock) -> None:
             client.post("https://test_url", json={"c": 3, "b": 2, "a": 1})
         assert (
             str(exception_info.value)
-            == """No response can be found for POST request on https://test_url with b'{"c": 3, "b": 2, "a": 1}' body amongst:
+            == """No response can be found for POST request on https://test_url with b'{"c":3,"b":2,"a":1}' body amongst:
 - Match any request with {'a': 1, 'b': 2} json body"""
         )
 
@@ -1257,7 +1266,7 @@ def test_headers_and_json_not_matching(httpx_mock: HTTPXMock) -> None:
             client.post("https://test_url", json={"c": 3, "b": 2, "a": 1})
         assert (
             str(exception_info.value)
-            == """No response can be found for POST request on https://test_url with {} headers and b'{"c": 3, "b": 2, "a": 1}' body amongst:
+            == """No response can be found for POST request on https://test_url with {} headers and b'{"c":3,"b":2,"a":1}' body amongst:
 - Match any request with {'foo': 'bar'} headers and {'a': 1, 'b': 2} json body"""
         )
 
@@ -1904,7 +1913,9 @@ def test_files_not_matching_name(httpx_mock: HTTPXMock, monkeypatch) -> None:
         lambda length: b"\xfb\xe4\x95\xef\xe4\xcdA\xb9A\xca\x13\xe2T\xd6\xb0\x18",
     )
 
-    httpx_mock.add_response(match_files={"name2": ("file_name", b"File content")}, is_optional=True)
+    httpx_mock.add_response(
+        match_files={"name2": ("file_name", b"File content")}, is_optional=True
+    )
 
     with httpx.Client() as client:
         with pytest.raises(httpx.TimeoutException) as exception_info:
@@ -1927,7 +1938,9 @@ def test_files_not_matching_file_name(httpx_mock: HTTPXMock, monkeypatch) -> Non
         lambda length: b"\xfb\xe4\x95\xef\xe4\xcdA\xb9A\xca\x13\xe2T\xd6\xb0\x18",
     )
 
-    httpx_mock.add_response(match_files={"name": ("file_name2", b"File content")}, is_optional=True)
+    httpx_mock.add_response(
+        match_files={"name": ("file_name2", b"File content")}, is_optional=True
+    )
 
     with httpx.Client() as client:
         with pytest.raises(httpx.TimeoutException) as exception_info:
@@ -1950,7 +1963,9 @@ def test_files_not_matching_content(httpx_mock: HTTPXMock, monkeypatch) -> None:
         lambda length: b"\xfb\xe4\x95\xef\xe4\xcdA\xb9A\xca\x13\xe2T\xd6\xb0\x18",
     )
 
-    httpx_mock.add_response(match_files={"name": ("file_name", b"File content2")}, is_optional=True)
+    httpx_mock.add_response(
+        match_files={"name": ("file_name", b"File content2")}, is_optional=True
+    )
 
     with httpx.Client() as client:
         with pytest.raises(httpx.TimeoutException) as exception_info:
@@ -2016,7 +2031,8 @@ def test_timeout_matching(httpx_mock: HTTPXMock) -> None:
 @pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
 def test_timeout_not_matching(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(
-        match_extensions={"timeout": {"connect": 5, "read": 5, "write": 10, "pool": 5}}, is_optional=True
+        match_extensions={"timeout": {"connect": 5, "read": 5, "write": 10, "pool": 5}},
+        is_optional=True,
     )
 
     with httpx.Client() as client:
