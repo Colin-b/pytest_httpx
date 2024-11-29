@@ -68,6 +68,8 @@ class HTTPXMock:
         :param match_json: JSON decoded HTTP body identifying the request(s) to match. Must be JSON encodable.
         :param match_data: Multipart data (excluding files) identifying the request(s) to match. Must be a dictionary.
         :param match_files: Multipart files identifying the request(s) to match. Refer to httpx documentation for more information on supported values: https://www.python-httpx.org/advanced/clients/#multipart-file-encoding
+        :param match_extensions: Extensions identifying the request(s) to match. Must be a dictionary.
+        :param match_params: HTTP URL query string params of the request(s) to match. Must be a dictionary.
         :param is_optional: True will mark this response as optional, False will expect a request matching it. Must be a boolean. Default to the opposite of assert_all_responses_were_requested option value (itself defaulting to True, meaning this parameter default to False).
         :param is_reusable: True will allow re-using this response even if it already matched, False prevent re-using it. Must be a boolean. Default to the can_send_already_matched_responses option value (itself defaulting to False).
         """
@@ -112,6 +114,7 @@ class HTTPXMock:
         :param match_data: Multipart data (excluding files) identifying the request(s) to match. Must be a dictionary.
         :param match_files: Multipart files identifying the request(s) to match. Refer to httpx documentation for more information on supported values: https://www.python-httpx.org/advanced/clients/#multipart-file-encoding
         :param match_extensions: Extensions identifying the request(s) to match. Must be a dictionary.
+        :param match_params: HTTP URL query string params of the request(s) to match. Must be a dictionary.
         :param is_optional: True will mark this callback as optional, False will expect a request matching it. Must be a boolean. Default to the opposite of assert_all_responses_were_requested option value (itself defaulting to True, meaning this parameter default to False).
         :param is_reusable: True will allow re-using this callback even if it already matched, False prevent re-using it. Must be a boolean. Default to the can_send_already_matched_responses option value (itself defaulting to False).
         """
@@ -133,6 +136,7 @@ class HTTPXMock:
         :param match_data: Multipart data (excluding files) identifying the request(s) to match. Must be a dictionary.
         :param match_files: Multipart files identifying the request(s) to match. Refer to httpx documentation for more information on supported values: https://www.python-httpx.org/advanced/clients/#multipart-file-encoding
         :param match_extensions: Extensions identifying the request(s) to match. Must be a dictionary.
+        :param match_params: HTTP URL query string params of the request(s) to match. Must be a dictionary.
         :param is_optional: True will mark this exception response as optional, False will expect a request matching it. Must be a boolean. Default to the opposite of assert_all_responses_were_requested option value (itself defaulting to True, meaning this parameter default to False).
         :param is_reusable: True will allow re-using this exception response even if it already matched, False prevent re-using it. Must be a boolean. Default to the can_send_already_matched_responses option value (itself defaulting to False).
         """

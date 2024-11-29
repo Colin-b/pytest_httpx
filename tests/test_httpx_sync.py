@@ -64,6 +64,18 @@ def test_url_query_string_matching(httpx_mock: HTTPXMock) -> None:
         assert response.content == b""
 
 
+def test_url_query_string_partial_matching(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=httpx.URL("https://test_url"), match_params = {"a": "1", "b": ANY}, is_reusable=True)
+
+    with httpx.Client() as client:
+        response = client.post("https://test_url?a=1&b=2")
+        assert response.content == b""
+
+        # Parameters order should not matter
+        response = client.get("https://test_url?b=2&a=1")
+        assert response.content == b""
+
+
 @pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
 def test_url_not_matching(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url="https://test_url", is_optional=True)
