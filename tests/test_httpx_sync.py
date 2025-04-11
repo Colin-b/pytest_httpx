@@ -1001,6 +1001,16 @@ def test_content_matching(httpx_mock: HTTPXMock) -> None:
         assert response.read() == b""
 
 
+def test_content_matching_non_bytes(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(match_content=dict(field1="value1", field2="value2"))
+
+    with httpx.Client() as client:
+        response = client.post(
+            "https://test_url", content=dict(field1="value1", field2="value2")
+        )
+        assert response.read() == b""
+
+
 def test_proxy_matching(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(proxy_url="http://user:pwd@my_other_proxy/")
 

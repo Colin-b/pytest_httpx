@@ -135,7 +135,12 @@ class _RequestMatcher:
 
     def _content_match(self, request: httpx.Request) -> bool:
         if self.content is not None:
-            return request.content == self.content
+            try:
+                request_json = json.loads(request.content.decode("utf-8"))
+                expected_json = json.loads(self.content.decode("utf-8"))
+                return request_json == expected_json
+            except (json.JSONDecodeError, UnicodeDecodeError):
+                return request.content == self.content
 
         if self.json is not None:
             try:
