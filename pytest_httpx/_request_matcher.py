@@ -10,8 +10,11 @@ from pytest_httpx._options import _HTTPXMockOptions
 
 
 def _url_match(
-    url_to_match: Union[Pattern[str], httpx.URL], received: httpx.URL, params: Optional[dict[str, str]]
+    url_to_match: Union[Pattern[str], httpx.URL],
+    received: httpx.URL,
+    params: Optional[dict[str, str]],
 ) -> bool:
+    # TODO Allow to provide a regex in URL and params as a dict
     if isinstance(url_to_match, re.Pattern):
         return url_to_match.match(str(received)) is not None
 
@@ -60,8 +63,16 @@ class _RequestMatcher:
             else proxy_url
         )
         self.extensions = match_extensions
-        self.is_optional = not options.assert_all_responses_were_requested if is_optional is None else is_optional
-        self.is_reusable = options.can_send_already_matched_responses if is_reusable is None else is_reusable
+        self.is_optional = (
+            not options.assert_all_responses_were_requested
+            if is_optional is None
+            else is_optional
+        )
+        self.is_reusable = (
+            options.can_send_already_matched_responses
+            if is_reusable is None
+            else is_reusable
+        )
         if self._is_matching_body_more_than_one_way():
             raise ValueError(
                 "Only one way of matching against the body can be provided. "
@@ -171,7 +182,7 @@ class _RequestMatcher:
             return True
 
         if real_proxy_url := _proxy_url(real_transport):
-            return _url_match(self.proxy_url, real_proxy_url, None)
+            return _url_match(self.proxy_url, real_proxy_url, params=None)
 
         return False
 

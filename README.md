@@ -107,6 +107,26 @@ def test_url_as_httpx_url(httpx_mock: HTTPXMock):
         response = client.get("https://test_url?a=1&b=2")
 ```
 
+#### Matching on query parameters
+
+Use `match_params` to partially match query parameters without having to provide a regular expression as `url`.
+
+If this parameter is provided, `url` parameter must not contain any query parameter.
+
+All query parameters have to be provided. You can however use `unittest.mock.ANY` to do partial matching.
+
+```python
+import httpx
+from pytest_httpx import HTTPXMock
+from unittest.mock import ANY
+
+def test_partial_params_matching(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(url="https://test_url", match_params={"a": "1", "b": ANY})
+
+    with httpx.Client() as client:
+        response = client.get("https://test_url?a=1&b=2")
+```
+
 #### Matching on HTTP method
 
 Use `method` parameter to specify the HTTP method (POST, PUT, DELETE, PATCH, HEAD) to reply to.

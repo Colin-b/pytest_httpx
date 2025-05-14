@@ -5,6 +5,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- `match_params` parameter is now available on responses and callbacks registration, as well as request(s) retrieval. Allowing to provide query parameters as a dict instead of being part of the matched URL.
+  - This parameter allows to perform partial query params matching ([refer to documentation](README.md#matching-on-query-parameters) for more information).
 
 ## [0.35.0] - 2024-11-28
 ### Changed
