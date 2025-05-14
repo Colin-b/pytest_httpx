@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `match_params` parameter is now available on responses and callbacks registration, as well as request(s) retrieval. Allowing to provide query parameters as a dict instead of being part of the matched URL.
   - This parameter allows to perform partial query params matching ([refer to documentation](README.md#matching-on-query-parameters) for more information).
 
+### Fixed
+- URL with more than one value for the same parameter were not matched properly (matching was performed on the first value).
+
 ## [0.35.0] - 2024-11-28
 ### Changed
 - Requires [`httpx`](https://www.python-httpx.org)==0.28.\*

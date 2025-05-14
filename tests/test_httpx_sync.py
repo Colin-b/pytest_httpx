@@ -64,20 +64,23 @@ def test_url_query_string_matching(httpx_mock: HTTPXMock) -> None:
         assert response.content == b""
 
 
-def test_url_query_string_partial_matching(httpx_mock: HTTPXMock) -> None:
+def test_url_query_params_partial_matching(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(
-        url=httpx.URL("https://test_url"),
-        match_params={"a": "1", "b": ANY},
+        url="https://test_url",
+        match_params={"a": ["1", "3"], "b": ANY, "c": "4", "d": ["5", ANY]},
         is_reusable=True,
     )
 
     with httpx.Client() as client:
-        response = client.post("https://test_url?a=1&b=2")
+        response = client.post("https://test_url?a=1&b=2&a=3&c=4&d=5&d=6")
         assert response.content == b""
 
         # Parameters order should not matter
-        response = client.get("https://test_url?b=2&a=1")
+        response = client.get("https://test_url?b=9&a=1&a=3&c=4&d=5&d=7")
         assert response.content == b""
+
+
+# TODO Test URL matching with more than one value on the same param (sucess and failure)
 
 
 @pytest.mark.httpx_mock(assert_all_requests_were_expected=False)

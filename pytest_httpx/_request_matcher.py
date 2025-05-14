@@ -4,6 +4,7 @@ from typing import Optional, Union, Any
 from re import Pattern
 
 import httpx
+from httpx import QueryParams
 
 from pytest_httpx._httpx_internals import _proxy_url
 from pytest_httpx._options import _HTTPXMockOptions
@@ -12,22 +13,31 @@ from pytest_httpx._options import _HTTPXMockOptions
 def _url_match(
     url_to_match: Union[Pattern[str], httpx.URL],
     received: httpx.URL,
-    params: Optional[dict[str, str]],
+    params: Optional[dict[str, Union[str | list[str]]]],
 ) -> bool:
     # TODO Allow to provide a regex in URL and params as a dict
     if isinstance(url_to_match, re.Pattern):
         return url_to_match.match(str(received)) is not None
 
     # Compare query parameters apart as order of parameters should not matter
-    received_params = dict(received.params)
+    received_params = to_params_dict(received.params)
     if params is None:
-        params = dict(url_to_match.params)
+        params = to_params_dict(url_to_match.params)
 
     # Remove the query parameters from the original URL to compare everything besides query parameters
     received_url = received.copy_with(query=None)
     url = url_to_match.copy_with(query=None)
 
     return (received_params == params) and (url == received_url)
+
+
+def to_params_dict(params: QueryParams) -> dict[str, Union[str | list[str]]]:
+    """Convert query parameters to a dict where the value is a string if the parameter has a single value and a list of string otherwise."""
+    d = {}
+    for key in params:
+        values = params.get_list(key)
+        d[key] = values if len(values) > 1 else values[0]
+    return d
 
 
 class _RequestMatcher:
@@ -43,7 +53,7 @@ class _RequestMatcher:
         match_data: Optional[dict[str, Any]] = None,
         match_files: Optional[Any] = None,
         match_extensions: Optional[dict[str, Any]] = None,
-        match_params: Optional[dict[str, str]] = None,
+        match_params: Optional[dict[str, Union[str | list[str]]]] = None,
         is_optional: Optional[bool] = None,
         is_reusable: Optional[bool] = None,
     ):
@@ -85,6 +95,9 @@ class _RequestMatcher:
                 "match_data is meant to be used for multipart matching (in conjunction with match_files)."
                 "Use match_content to match url encoded data."
             )
+        # TODO Prevent match_params and params in URL
+        # TODO Prevent match_params with non str values / keys
+        # TODO Prevent match_params with list values of size < 2
 
     def expect_body(self) -> bool:
         matching_ways = [
@@ -214,6 +227,8 @@ class _RequestMatcher:
     def _extra_description(self) -> str:
         extra_description = []
 
+        if self.params:
+            extra_description.append(f"{self.params} query parameters")
         if self.headers:
             extra_description.append(f"{self.headers} headers")
         if self.content is not None:
@@ -228,7 +243,5 @@ class _RequestMatcher:
             extra_description.append(f"{self.proxy_url} proxy URL")
         if self.extensions:
             extra_description.append(f"{self.extensions} extensions")
-        if self.params:
-            extra_description.append(f"{self.params} params")
 
         return " and ".join(extra_description)
