@@ -499,7 +499,7 @@ def test_headers_as_httpx_headers(httpx_mock: HTTPXMock):
 
 Cookies are sent in the `set-cookie` HTTP header.
 
-You can then send cookies in the response by setting the `set-cookie` header with [the value following key=value format]((https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie)).
+You can then send cookies in the response by setting the `set-cookie` header with [the value following key=value format](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie).
 
 ```python
 import httpx
