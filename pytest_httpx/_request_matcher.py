@@ -13,7 +13,7 @@ from pytest_httpx._options import _HTTPXMockOptions
 def _url_match(
     url_to_match: Union[Pattern[str], httpx.URL],
     received: httpx.URL,
-    params: Optional[dict[str, Union[str | list[str]]]],
+    params: Optional[dict[str, Union[str, list[str]]]],
 ) -> bool:
     # TODO Allow to provide a regex in URL and params as a dict
     if isinstance(url_to_match, re.Pattern):
@@ -31,7 +31,7 @@ def _url_match(
     return (received_params == params) and (url == received_url)
 
 
-def to_params_dict(params: QueryParams) -> dict[str, Union[str | list[str]]]:
+def to_params_dict(params: QueryParams) -> dict[str, Union[str, list[str]]]:
     """Convert query parameters to a dict where the value is a string if the parameter has a single value and a list of string otherwise."""
     d = {}
     for key in params:
@@ -53,7 +53,7 @@ class _RequestMatcher:
         match_data: Optional[dict[str, Any]] = None,
         match_files: Optional[Any] = None,
         match_extensions: Optional[dict[str, Any]] = None,
-        match_params: Optional[dict[str, Union[str | list[str]]]] = None,
+        match_params: Optional[dict[str, Union[str, list[str]]]] = None,
         is_optional: Optional[bool] = None,
         is_reusable: Optional[bool] = None,
     ):
