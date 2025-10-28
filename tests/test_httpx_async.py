@@ -915,6 +915,18 @@ async def test_non_request_exception_raising(httpx_mock: HTTPXMock) -> None:
 
 
 @pytest.mark.asyncio
+async def test_request_cancelled_exception_raising(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_exception(
+        asyncio.CancelledError("Request was cancelled"), url="https://test_url"
+    )
+
+    async with httpx.AsyncClient() as client:
+        with pytest.raises(asyncio.CancelledError) as exception_info:
+            await client.get("https://test_url")
+        assert str(exception_info.value) == "Request was cancelled"
+
+
+@pytest.mark.asyncio
 async def test_callback_returning_response(httpx_mock: HTTPXMock) -> None:
     def custom_response(request: httpx.Request) -> httpx.Response:
         return httpx.Response(status_code=200, json={"url": str(request.url)})
