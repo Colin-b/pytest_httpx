@@ -120,7 +120,7 @@ class HTTPXMock:
         """
         self._callbacks.append((_RequestMatcher(self._options, **matchers), callback))
 
-    def add_exception(self, exception: Exception, **matchers: Any) -> None:
+    def add_exception(self, exception: BaseException, **matchers: Any) -> None:
         """
         Raise an exception if a request match.
 
