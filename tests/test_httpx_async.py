@@ -903,27 +903,28 @@ async def test_request_exception_raising(httpx_mock: HTTPXMock) -> None:
 
 
 @pytest.mark.asyncio
-async def test_non_request_exception_raising(httpx_mock: HTTPXMock) -> None:
-    httpx_mock.add_exception(
-        httpx.HTTPError("Unable to read within 5.0"), url="https://test_url"
-    )
+@pytest.mark.parametrize(
+    ("exception_type", "message"),
+    [
+        pytest.param(
+            httpx.HTTPError, "Unable to read within 5.0", id="non_request_exception"
+        ),
+        pytest.param(
+            asyncio.CancelledError,
+            "Request was cancelled",
+            id="cancelled_exception",
+        ),
+    ],
+)
+async def test_exception_raising(
+    httpx_mock: HTTPXMock, exception_type: type, message: str
+) -> None:
+    httpx_mock.add_exception(exception_type(message), url="https://test_url")
 
     async with httpx.AsyncClient() as client:
-        with pytest.raises(httpx.HTTPError) as exception_info:
+        with pytest.raises(exception_type) as exception_info:
             await client.get("https://test_url")
-        assert str(exception_info.value) == "Unable to read within 5.0"
-
-
-@pytest.mark.asyncio
-async def test_request_cancelled_exception_raising(httpx_mock: HTTPXMock) -> None:
-    httpx_mock.add_exception(
-        asyncio.CancelledError("Request was cancelled"), url="https://test_url"
-    )
-
-    async with httpx.AsyncClient() as client:
-        with pytest.raises(asyncio.CancelledError) as exception_info:
-            await client.get("https://test_url")
-        assert str(exception_info.value) == "Request was cancelled"
+        assert str(exception_info.value) == message
 
 
 @pytest.mark.asyncio
