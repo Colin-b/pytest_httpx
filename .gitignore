@@ -111,3 +111,6 @@ ENV/
 .idea/
 .pypirc
 pip.ini
+
+# VS Code
+settings.json 
