@@ -50,7 +50,7 @@ issues = "https://github.com/Colin-b/pytest_httpx/issues"
 [project.optional-dependencies]
 testing = [
     # Used to check coverage
-    "pytest-cov==7.*",
+    "pytest-cov==6.*",
     # Used to run async tests
     "pytest-asyncio==1.*",
 ]
