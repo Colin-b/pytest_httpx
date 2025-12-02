@@ -65,3 +65,6 @@ version = {attr = "pytest_httpx.version.__version__"}
 [tool.pytest]
 # Silence deprecation warnings about option "asyncio_default_fixture_loop_scope"
 asyncio_default_fixture_loop_scope = "function"
+
+[tool.coverage.run]
+patch = ["subprocess"]
