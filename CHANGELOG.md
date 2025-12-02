@@ -6,14 +6,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.35.1] - 2025-12-02
+## [0.36.0] - 2025-12-02
+### Changed
+- `pytest` required version is now `9`.
+
 ### Added
+- Explicit support for python `3.14`.
 - `match_params` parameter is now available on responses and callbacks registration, as well as request(s) retrieval. Allowing to provide query parameters as a dict instead of being part of the matched URL.
   - This parameter allows to perform partial query params matching ([refer to documentation](README.md#matching-on-query-parameters) for more information).
 
 ### Fixed
 - URL with more than one value for the same parameter were not matched properly (matching was performed on the first value).
 - `httpx_mock.add_exception` is now properly documented (accepts `BaseException` instead of `Exception`).
+
+### Removed
+- `pytest` `8` is not supported anymore.
+- python `3.9` is not supported anymore.
 
 ## [0.35.0] - 2024-11-28
 ### Changed
@@ -417,8 +425,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - First release, should be considered as unstable for now as design might change.
 
-[Unreleased]: https://github.com/Colin-b/pytest_httpx/compare/v0.35.1...HEAD
-[0.35.1]: https://github.com/Colin-b/pytest_httpx/compare/v0.35.0...v0.35.1
+[Unreleased]: https://github.com/Colin-b/pytest_httpx/compare/v0.36.0...HEAD
+[0.36.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.35.0...v0.36.0
 [0.35.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.34.0...v0.35.0
 [0.34.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.33.0...v0.34.0
 [0.33.0]: https://github.com/Colin-b/pytest_httpx/compare/v0.32.0...v0.33.0
