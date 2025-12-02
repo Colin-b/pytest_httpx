@@ -90,6 +90,60 @@ async def test_url_query_params_partial_matching(httpx_mock: HTTPXMock) -> None:
 
 
 @pytest.mark.asyncio
+async def test_url_matching_with_more_than_one_value_on_same_param(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url="https://test_url?a=1&a=3", is_optional=True)
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get("https://test_url", params={"a": [1, 3]})
+        assert response.content == b""
+
+
+@pytest.mark.asyncio
+@pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
+async def test_url_not_matching_with_more_than_one_value_on_same_param_and_diff_value(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url="https://test_url?a=2&a=3", is_optional=True)
+
+    async with httpx.AsyncClient() as client:
+        with pytest.raises(httpx.TimeoutException) as exception_info:
+            await client.get("https://test_url", params={"a": [1, 3]})
+        assert (
+            str(exception_info.value)
+            == """No response can be found for GET request on https://test_url?a=1&a=3 amongst:
+- Match any request on https://test_url?a=2&a=3"""
+        )
+
+
+@pytest.mark.asyncio
+@pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
+async def test_url_not_matching_with_more_than_one_value_on_same_param_and_more_values(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url="https://test_url?a=1&a=3", is_optional=True)
+
+    async with httpx.AsyncClient() as client:
+        with pytest.raises(httpx.TimeoutException) as exception_info:
+            await client.get("https://test_url", params={"a": [1, 3, 4]})
+        assert (
+            str(exception_info.value)
+            == """No response can be found for GET request on https://test_url?a=1&a=3&a=4 amongst:
+- Match any request on https://test_url?a=1&a=3"""
+        )
+
+
+@pytest.mark.asyncio
+@pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
+async def test_url_not_matching_with_more_than_one_value_on_same_param_and_less_values(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url="https://test_url?a=1&a=3&a=4", is_optional=True)
+
+    async with httpx.AsyncClient() as client:
+        with pytest.raises(httpx.TimeoutException) as exception_info:
+            await client.get("https://test_url", params={"a": [1, 3]})
+        assert (
+            str(exception_info.value)
+            == """No response can be found for GET request on https://test_url?a=1&a=3 amongst:
+- Match any request on https://test_url?a=1&a=3&a=4"""
+        )
+
+
+@pytest.mark.asyncio
 @pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
 async def test_url_not_matching(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url="https://test_url", is_optional=True)
