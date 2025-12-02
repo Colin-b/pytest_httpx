@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "pytest-httpx"
 description = "Send responses to httpx."
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 license = {file = "LICENSE"}
 authors = [
     { name = "Colin Bounouar", email = "colin.bounouar.dev@gmail.com" },
@@ -27,18 +27,18 @@ classifiers = [
     "Natural Language :: English",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Internet :: WWW/HTTP",
     "Topic :: Software Development :: Build Tools",
     "Typing :: Typed",
 ]
 dependencies = [
     "httpx==0.28.*",
-    "pytest==8.*",
+    "pytest==9.*",
 ]
 dynamic = ["version"]
 
@@ -51,9 +51,9 @@ issues = "https://github.com/Colin-b/pytest_httpx/issues"
 [project.optional-dependencies]
 testing = [
     # Used to check coverage
-    "pytest-cov==6.*",
+    "pytest-cov==7.*",
     # Used to run async tests
-    "pytest-asyncio==0.24.*",
+    "pytest-asyncio==1.*",
 ]
 
 [project.entry-points.pytest11]
@@ -62,6 +62,9 @@ pytest_httpx = "pytest_httpx"
 [tool.setuptools.dynamic]
 version = {attr = "pytest_httpx.version.__version__"}
 
-[tool.pytest.ini_options]
+[tool.pytest]
 # Silence deprecation warnings about option "asyncio_default_fixture_loop_scope"
 asyncio_default_fixture_loop_scope = "function"
+
+[tool.coverage.run]
+patch = ["subprocess"]

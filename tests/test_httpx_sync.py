@@ -64,6 +64,199 @@ def test_url_query_string_matching(httpx_mock: HTTPXMock) -> None:
         assert response.content == b""
 
 
+def test_url_query_params_partial_matching(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(
+        url="https://test_url",
+        match_params={"a": ["1", "3"], "b": ANY, "c": "4", "d": ["5", ANY]},
+        is_reusable=True,
+    )
+
+    with httpx.Client() as client:
+        response = client.post("https://test_url?a=1&b=2&a=3&c=4&d=5&d=6")
+        assert response.content == b""
+
+        # Parameters order should not matter
+        response = client.get("https://test_url?b=9&a=1&a=3&c=4&d=5&d=7")
+        assert response.content == b""
+
+
+@pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
+def test_url_query_params_with_single_value_list(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(
+        url="https://test_url",
+        match_params={"a": ["1"]},
+        is_optional=True,
+    )
+
+    with httpx.Client() as client:
+        with pytest.raises(httpx.TimeoutException) as exception_info:
+            client.post("https://test_url?a=1")
+        assert (
+            str(exception_info.value)
+            == """No response can be found for POST request on https://test_url?a=1 amongst:
+- Match any request on https://test_url with {'a': ['1']} query parameters"""
+        )
+
+
+@pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
+def test_url_query_params_with_non_str_value(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(
+        url="https://test_url",
+        match_params={"a": 1},
+        is_optional=True,
+    )
+
+    with httpx.Client() as client:
+        with pytest.raises(httpx.TimeoutException) as exception_info:
+            client.post("https://test_url?a=1")
+        assert (
+            str(exception_info.value)
+            == """No response can be found for POST request on https://test_url?a=1 amongst:
+- Match any request on https://test_url with {'a': 1} query parameters"""
+        )
+
+
+@pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
+def test_url_query_params_with_non_str_list_value(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(
+        url="https://test_url",
+        match_params={"a": [1, "2"]},
+        is_optional=True,
+    )
+
+    with httpx.Client() as client:
+        with pytest.raises(httpx.TimeoutException) as exception_info:
+            client.post("https://test_url?a=1&a=2")
+        assert (
+            str(exception_info.value)
+            == """No response can be found for POST request on https://test_url?a=1&a=2 amongst:
+- Match any request on https://test_url with {'a': [1, '2']} query parameters"""
+        )
+
+
+@pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
+def test_url_query_params_with_non_str_name(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(
+        url="https://test_url",
+        match_params={1: "1"},
+        is_optional=True,
+    )
+
+    with httpx.Client() as client:
+        with pytest.raises(httpx.TimeoutException) as exception_info:
+            client.post("https://test_url?1=1")
+        assert (
+            str(exception_info.value)
+            == """No response can be found for POST request on https://test_url?1=1 amongst:
+- Match any request on https://test_url with {1: '1'} query parameters"""
+        )
+
+
+def test_match_params_without_url(httpx_mock: HTTPXMock) -> None:
+    with pytest.raises(ValueError) as exception_info:
+        httpx_mock.add_response(match_params={"a": "1"})
+
+    assert (
+        str(exception_info.value) == "URL must be provided when match_params is used."
+    )
+
+
+def test_query_params_in_both_url_and_match_params(httpx_mock: HTTPXMock) -> None:
+    with pytest.raises(ValueError) as exception_info:
+        httpx_mock.add_response(url="https://test_url?a=1", match_params={"a": "1"})
+
+    assert (
+        str(exception_info.value)
+        == "Provided URL must not contain any query parameter when match_params is used."
+    )
+
+
+def test_regex_url_and_match_params(httpx_mock: HTTPXMock) -> None:
+    with pytest.raises(ValueError) as exception_info:
+        httpx_mock.add_response(url=re.compile(".*test.*"), match_params={"a": "1"})
+
+    assert (
+        str(exception_info.value)
+        == "match_params cannot be used in addition to regex URL. Request this feature via https://github.com/Colin-b/pytest_httpx/issues/new?title=Regex%20URL%20should%20allow%20match_params&body=Hi,%20I%20need%20a%20regex%20to%20match%20the%20non%20query%20part%20of%20the%20URL%20only"
+    )
+
+
+@pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
+def test_url_query_params_not_matching(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(
+        url="https://test_url",
+        match_params={"a": "1"},
+        is_optional=True,
+    )
+
+    with httpx.Client() as client:
+        with pytest.raises(httpx.TimeoutException) as exception_info:
+            client.post("https://test_url?a=2")
+        assert (
+            str(exception_info.value)
+            == """No response can be found for POST request on https://test_url?a=2 amongst:
+- Match any request on https://test_url with {'a': '1'} query parameters"""
+        )
+
+
+def test_url_matching_with_more_than_one_value_on_same_param(
+    httpx_mock: HTTPXMock,
+) -> None:
+    httpx_mock.add_response(url="https://test_url?a=1&a=3", is_optional=True)
+
+    with httpx.Client() as client:
+        response = client.get("https://test_url", params={"a": [1, 3]})
+        assert response.content == b""
+
+
+@pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
+def test_url_not_matching_with_more_than_one_value_on_same_param_and_diff_value(
+    httpx_mock: HTTPXMock,
+) -> None:
+    httpx_mock.add_response(url="https://test_url?a=2&a=3", is_optional=True)
+
+    with httpx.Client() as client:
+        with pytest.raises(httpx.TimeoutException) as exception_info:
+            client.get("https://test_url", params={"a": [1, 3]})
+        assert (
+            str(exception_info.value)
+            == """No response can be found for GET request on https://test_url?a=1&a=3 amongst:
+- Match any request on https://test_url?a=2&a=3"""
+        )
+
+
+@pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
+def test_url_not_matching_with_more_than_one_value_on_same_param_and_more_values(
+    httpx_mock: HTTPXMock,
+) -> None:
+    httpx_mock.add_response(url="https://test_url?a=1&a=3", is_optional=True)
+
+    with httpx.Client() as client:
+        with pytest.raises(httpx.TimeoutException) as exception_info:
+            client.get("https://test_url", params={"a": [1, 3, 4]})
+        assert (
+            str(exception_info.value)
+            == """No response can be found for GET request on https://test_url?a=1&a=3&a=4 amongst:
+- Match any request on https://test_url?a=1&a=3"""
+        )
+
+
+@pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
+def test_url_not_matching_with_more_than_one_value_on_same_param_and_less_values(
+    httpx_mock: HTTPXMock,
+) -> None:
+    httpx_mock.add_response(url="https://test_url?a=1&a=3&a=4", is_optional=True)
+
+    with httpx.Client() as client:
+        with pytest.raises(httpx.TimeoutException) as exception_info:
+            client.get("https://test_url", params={"a": [1, 3]})
+        assert (
+            str(exception_info.value)
+            == """No response can be found for GET request on https://test_url?a=1&a=3 amongst:
+- Match any request on https://test_url?a=1&a=3&a=4"""
+        )
+
+
 @pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
 def test_url_not_matching(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url="https://test_url", is_optional=True)

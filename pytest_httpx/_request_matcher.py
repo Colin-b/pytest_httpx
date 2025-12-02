@@ -4,26 +4,39 @@ from typing import Optional, Union, Any
 from re import Pattern
 
 import httpx
+from httpx import QueryParams
 
 from pytest_httpx._httpx_internals import _proxy_url
 from pytest_httpx._options import _HTTPXMockOptions
 
 
 def _url_match(
-    url_to_match: Union[Pattern[str], httpx.URL], received: httpx.URL
+    url_to_match: Union[Pattern[str], httpx.URL],
+    received: httpx.URL,
+    params: Optional[dict[str, Union[str | list[str]]]],
 ) -> bool:
     if isinstance(url_to_match, re.Pattern):
         return url_to_match.match(str(received)) is not None
 
     # Compare query parameters apart as order of parameters should not matter
-    received_params = dict(received.params)
-    params = dict(url_to_match.params)
+    received_params = to_params_dict(received.params)
+    if params is None:
+        params = to_params_dict(url_to_match.params)
 
     # Remove the query parameters from the original URL to compare everything besides query parameters
     received_url = received.copy_with(query=None)
     url = url_to_match.copy_with(query=None)
 
     return (received_params == params) and (url == received_url)
+
+
+def to_params_dict(params: QueryParams) -> dict[str, Union[str | list[str]]]:
+    """Convert query parameters to a dict where the value is a string if the parameter has a single value and a list of string otherwise."""
+    d = {}
+    for key in params:
+        values = params.get_list(key)
+        d[key] = values if len(values) > 1 else values[0]
+    return d
 
 
 class _RequestMatcher:
@@ -39,6 +52,7 @@ class _RequestMatcher:
         match_data: Optional[dict[str, Any]] = None,
         match_files: Optional[Any] = None,
         match_extensions: Optional[dict[str, Any]] = None,
+        match_params: Optional[dict[str, Union[str | list[str]]]] = None,
         is_optional: Optional[bool] = None,
         is_reusable: Optional[bool] = None,
     ):
@@ -51,20 +65,39 @@ class _RequestMatcher:
         self.json = match_json
         self.data = match_data
         self.files = match_files
+        self.params = match_params
         self.proxy_url = (
             httpx.URL(proxy_url)
             if proxy_url and isinstance(proxy_url, str)
             else proxy_url
         )
         self.extensions = match_extensions
-        self.is_optional = not options.assert_all_responses_were_requested if is_optional is None else is_optional
-        self.is_reusable = options.can_send_already_matched_responses if is_reusable is None else is_reusable
+        self.is_optional = (
+            not options.assert_all_responses_were_requested
+            if is_optional is None
+            else is_optional
+        )
+        self.is_reusable = (
+            options.can_send_already_matched_responses
+            if is_reusable is None
+            else is_reusable
+        )
         if self._is_matching_body_more_than_one_way():
             raise ValueError(
                 "Only one way of matching against the body can be provided. "
                 "If you want to match against the JSON decoded representation, use match_json. "
                 "If you want to match against the multipart representation, use match_files (and match_data). "
                 "Otherwise, use match_content."
+            )
+        if self.params and not self.url:
+            raise ValueError("URL must be provided when match_params is used.")
+        if self.params and isinstance(self.url, re.Pattern):
+            raise ValueError(
+                "match_params cannot be used in addition to regex URL. Request this feature via https://github.com/Colin-b/pytest_httpx/issues/new?title=Regex%20URL%20should%20allow%20match_params&body=Hi,%20I%20need%20a%20regex%20to%20match%20the%20non%20query%20part%20of%20the%20URL%20only"
+            )
+        if self._is_matching_params_more_than_one_way():
+            raise ValueError(
+                "Provided URL must not contain any query parameter when match_params is used."
             )
         if self.data and not self.files:
             raise ValueError(
@@ -88,6 +121,18 @@ class _RequestMatcher:
         ]
         return sum(matching_ways) > 1
 
+    def _is_matching_params_more_than_one_way(self) -> bool:
+        url_has_params = (
+            bool(self.url.params)
+            if (self.url and isinstance(self.url, httpx.URL))
+            else False
+        )
+        matching_ways = [
+            self.params is not None,
+            url_has_params,
+        ]
+        return sum(matching_ways) > 1
+
     def match(
         self,
         real_transport: Union[httpx.HTTPTransport, httpx.AsyncHTTPTransport],
@@ -106,7 +151,7 @@ class _RequestMatcher:
         if not self.url:
             return True
 
-        return _url_match(self.url, request.url)
+        return _url_match(self.url, request.url, self.params)
 
     def _method_match(self, request: httpx.Request) -> bool:
         if not self.method:
@@ -168,7 +213,7 @@ class _RequestMatcher:
             return True
 
         if real_proxy_url := _proxy_url(real_transport):
-            return _url_match(self.proxy_url, real_proxy_url)
+            return _url_match(self.proxy_url, real_proxy_url, params=None)
 
         return False
 
@@ -200,6 +245,8 @@ class _RequestMatcher:
     def _extra_description(self) -> str:
         extra_description = []
 
+        if self.params:
+            extra_description.append(f"{self.params} query parameters")
         if self.headers:
             extra_description.append(f"{self.headers} headers")
         if self.content is not None:

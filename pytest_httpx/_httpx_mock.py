@@ -58,7 +58,7 @@ class HTTPXMock:
         :param html: HTTP body of the response (as HTML string content).
         :param stream: HTTP body of the response (as httpx.SyncByteStream or httpx.AsyncByteStream) as stream content.
         :param json: HTTP body of the response (if JSON should be used as content type) if data is not provided.
-        :param url: Full URL identifying the request(s) to match.
+        :param url: Full URL identifying the request(s) to match. Use in addition to match_params if you do not want to provide query parameters as part of the URL.
         Can be a str, a re.Pattern instance or a httpx.URL instance.
         :param method: HTTP method identifying the request(s) to match.
         :param proxy_url: Full proxy URL identifying the request(s) to match.
@@ -68,6 +68,8 @@ class HTTPXMock:
         :param match_json: JSON decoded HTTP body identifying the request(s) to match. Must be JSON encodable.
         :param match_data: Multipart data (excluding files) identifying the request(s) to match. Must be a dictionary.
         :param match_files: Multipart files identifying the request(s) to match. Refer to httpx documentation for more information on supported values: https://www.python-httpx.org/advanced/clients/#multipart-file-encoding
+        :param match_extensions: Extensions identifying the request(s) to match. Must be a dictionary.
+        :param match_params: Query string parameters identifying the request(s) to match (if not provided as part of URL already). Must be a dictionary with str keys (parameter name) and str values (or a list of str values if parameter is provided more than once).
         :param is_optional: True will mark this response as optional, False will expect a request matching it. Must be a boolean. Default to the opposite of assert_all_responses_were_requested option value (itself defaulting to True, meaning this parameter default to False).
         :param is_reusable: True will allow re-using this response even if it already matched, False prevent re-using it. Must be a boolean. Default to the can_send_already_matched_responses option value (itself defaulting to False).
         """
@@ -101,7 +103,7 @@ class HTTPXMock:
 
         :param callback: The callable that will be called upon reception of the matched request.
         It must expect one parameter, the received httpx.Request and should return a httpx.Response.
-        :param url: Full URL identifying the request(s) to match.
+        :param url: Full URL identifying the request(s) to match. Use in addition to match_params if you do not want to provide query parameters as part of the URL.
         Can be a str, a re.Pattern instance or a httpx.URL instance.
         :param method: HTTP method identifying the request(s) to match.
         :param proxy_url: Full proxy URL identifying the request(s) to match.
@@ -112,17 +114,18 @@ class HTTPXMock:
         :param match_data: Multipart data (excluding files) identifying the request(s) to match. Must be a dictionary.
         :param match_files: Multipart files identifying the request(s) to match. Refer to httpx documentation for more information on supported values: https://www.python-httpx.org/advanced/clients/#multipart-file-encoding
         :param match_extensions: Extensions identifying the request(s) to match. Must be a dictionary.
+        :param match_params: Query string parameters identifying the request(s) to match (if not provided as part of URL already). Must be a dictionary with str keys (parameter name) and str values (or a list of str values if parameter is provided more than once).
         :param is_optional: True will mark this callback as optional, False will expect a request matching it. Must be a boolean. Default to the opposite of assert_all_responses_were_requested option value (itself defaulting to True, meaning this parameter default to False).
         :param is_reusable: True will allow re-using this callback even if it already matched, False prevent re-using it. Must be a boolean. Default to the can_send_already_matched_responses option value (itself defaulting to False).
         """
         self._callbacks.append((_RequestMatcher(self._options, **matchers), callback))
 
-    def add_exception(self, exception: Exception, **matchers: Any) -> None:
+    def add_exception(self, exception: BaseException, **matchers: Any) -> None:
         """
         Raise an exception if a request match.
 
         :param exception: The exception that will be raised upon reception of the matched request.
-        :param url: Full URL identifying the request(s) to match.
+        :param url: Full URL identifying the request(s) to match. Use in addition to match_params if you do not want to provide query parameters as part of the URL.
         Can be a str, a re.Pattern instance or a httpx.URL instance.
         :param method: HTTP method identifying the request(s) to match.
         :param proxy_url: Full proxy URL identifying the request(s) to match.
@@ -133,6 +136,7 @@ class HTTPXMock:
         :param match_data: Multipart data (excluding files) identifying the request(s) to match. Must be a dictionary.
         :param match_files: Multipart files identifying the request(s) to match. Refer to httpx documentation for more information on supported values: https://www.python-httpx.org/advanced/clients/#multipart-file-encoding
         :param match_extensions: Extensions identifying the request(s) to match. Must be a dictionary.
+        :param match_params: Query string parameters identifying the request(s) to match (if not provided as part of URL already). Must be a dictionary with str keys (parameter name) and str values (or a list of str values if parameter is provided more than once).
         :param is_optional: True will mark this exception response as optional, False will expect a request matching it. Must be a boolean. Default to the opposite of assert_all_responses_were_requested option value (itself defaulting to True, meaning this parameter default to False).
         :param is_reusable: True will allow re-using this exception response even if it already matched, False prevent re-using it. Must be a boolean. Default to the can_send_already_matched_responses option value (itself defaulting to False).
         """
@@ -261,7 +265,7 @@ class HTTPXMock:
         """
         Return all requests sent that match (empty list if no requests were matched).
 
-        :param url: Full URL identifying the requests to retrieve.
+        :param url: Full URL identifying the requests to retrieve. Use in addition to match_params if you do not want to provide query parameters as part of the URL.
         Can be a str, a re.Pattern instance or a httpx.URL instance.
         :param method: HTTP method identifying the requests to retrieve. Must be an upper-cased string value.
         :param proxy_url: Full proxy URL identifying the requests to retrieve.
@@ -272,6 +276,7 @@ class HTTPXMock:
         :param match_data: Multipart data (excluding files) identifying the requests to retrieve. Must be a dictionary.
         :param match_files: Multipart files identifying the requests to retrieve. Refer to httpx documentation for more information on supported values: https://www.python-httpx.org/advanced/clients/#multipart-file-encoding
         :param match_extensions: Extensions identifying the requests to retrieve. Must be a dictionary.
+        :param match_params: Query string parameters identifying the requests to retrieve (if not provided as part of URL already). Must be a dictionary with str keys (parameter name) and str values (or a list of str values if parameter is provided more than once).
         """
         matcher = _RequestMatcher(self._options, **matchers)
         return [
@@ -284,7 +289,7 @@ class HTTPXMock:
         """
         Return the single request that match (or None).
 
-        :param url: Full URL identifying the request to retrieve.
+        :param url: Full URL identifying the request to retrieve. Use in addition to match_params if you do not want to provide query parameters as part of the URL.
         Can be a str, a re.Pattern instance or a httpx.URL instance.
         :param method: HTTP method identifying the request to retrieve. Must be an upper-cased string value.
         :param proxy_url: Full proxy URL identifying the request to retrieve.
@@ -295,6 +300,7 @@ class HTTPXMock:
         :param match_data: Multipart data (excluding files) identifying the request to retrieve. Must be a dictionary.
         :param match_files: Multipart files identifying the request to retrieve. Refer to httpx documentation for more information on supported values: https://www.python-httpx.org/advanced/clients/#multipart-file-encoding
         :param match_extensions: Extensions identifying the request to retrieve. Must be a dictionary.
+        :param match_params: Query string parameters identifying the request to retrieve (if not provided as part of URL already). Must be a dictionary with str keys (parameter name) and str values (or a list of str values if parameter is provided more than once).
         :raises AssertionError: in case more than one request match.
         """
         requests = self.get_requests(**matchers)

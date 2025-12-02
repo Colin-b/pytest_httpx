@@ -5,7 +5,7 @@
 <a href="https://github.com/Colin-b/pytest_httpx/actions"><img alt="Build status" src="https://github.com/Colin-b/pytest_httpx/workflows/Release/badge.svg"></a>
 <a href="https://github.com/Colin-b/pytest_httpx/actions"><img alt="Coverage" src="https://img.shields.io/badge/coverage-100%25-brightgreen"></a>
 <a href="https://github.com/psf/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
-<a href="https://github.com/Colin-b/pytest_httpx/actions"><img alt="Number of tests" src="https://img.shields.io/badge/tests-272 passed-blue"></a>
+<a href="https://github.com/Colin-b/pytest_httpx/actions"><img alt="Number of tests" src="https://img.shields.io/badge/tests-295 passed-blue"></a>
 <a href="https://pypi.org/project/pytest-httpx/"><img alt="Number of downloads" src="https://img.shields.io/pypi/dm/pytest_httpx"></a>
 </p>
 
@@ -105,6 +105,32 @@ def test_url_as_httpx_url(httpx_mock: HTTPXMock):
 
     with httpx.Client() as client:
         response = client.get("https://test_url?a=1&b=2")
+```
+
+#### Matching on query parameters
+
+Use `match_params` to partially match query parameters without having to provide a regular expression as `url`.
+
+If this parameter is provided, `url` parameter must not contain any query parameter.
+
+All query parameters have to be provided (as `str`). You can however use `unittest.mock.ANY` to do partial matching.
+
+```python
+import httpx
+from pytest_httpx import HTTPXMock
+from unittest.mock import ANY
+
+def test_partial_params_matching(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(url="https://test_url", match_params={"a": "1", "b": ANY})
+
+    with httpx.Client() as client:
+        response = client.get("https://test_url?a=1&b=2")
+
+def test_partial_multi_params_matching(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(url="https://test_url", match_params={"a": ["1", "3"], "b": ["2", ANY]})
+
+    with httpx.Client() as client:
+        response = client.get("https://test_url?a=1&b=2&a=3&b=4")
 ```
 
 #### Matching on HTTP method
@@ -473,7 +499,7 @@ def test_headers_as_httpx_headers(httpx_mock: HTTPXMock):
 
 Cookies are sent in the `set-cookie` HTTP header.
 
-You can then send cookies in the response by setting the `set-cookie` header with [the value following key=value format]((https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie)).
+You can then send cookies in the response by setting the `set-cookie` header with [the value following key=value format](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie).
 
 ```python
 import httpx
