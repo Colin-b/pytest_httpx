@@ -90,9 +90,7 @@ class _RequestMatcher:
                 "Otherwise, use match_content."
             )
         if self.params and not self.url:
-            raise ValueError(
-                "URL must be provided when match_params is used."
-            )
+            raise ValueError("URL must be provided when match_params is used.")
         if self.params and isinstance(self.url, re.Pattern):
             raise ValueError(
                 "match_params cannot be used in addition to regex URL. Request this feature via https://github.com/Colin-b/pytest_httpx/issues/new?title=Regex%20URL%20should%20allow%20match_params&body=Hi,%20I%20need%20a%20regex%20to%20match%20the%20non%20query%20part%20of%20the%20URL%20only"
@@ -124,7 +122,11 @@ class _RequestMatcher:
         return sum(matching_ways) > 1
 
     def _is_matching_params_more_than_one_way(self) -> bool:
-        url_has_params = bool(self.url.params) if (self.url and isinstance(self.url, httpx.URL)) else False
+        url_has_params = (
+            bool(self.url.params)
+            if (self.url and isinstance(self.url, httpx.URL))
+            else False
+        )
         matching_ways = [
             self.params is not None,
             url_has_params,
