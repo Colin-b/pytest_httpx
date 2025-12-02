@@ -90,6 +90,25 @@ async def test_url_query_params_partial_matching(httpx_mock: HTTPXMock) -> None:
 
 
 @pytest.mark.asyncio
+@pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
+async def test_url_query_params_not_matching(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(
+        url="https://test_url",
+        match_params={"a": "1"},
+        is_optional=True,
+    )
+
+    async with httpx.AsyncClient() as client:
+        with pytest.raises(httpx.TimeoutException) as exception_info:
+            await client.post("https://test_url?a=2")
+        assert (
+            str(exception_info.value)
+            == """No response can be found for POST request on https://test_url?a=2 amongst:
+- Match any request on https://test_url with {'a': '1'} query parameters"""
+        )
+
+
+@pytest.mark.asyncio
 async def test_url_matching_with_more_than_one_value_on_same_param(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url="https://test_url?a=1&a=3", is_optional=True)
 
