@@ -15,7 +15,6 @@ def _url_match(
     received: httpx.URL,
     params: Optional[dict[str, Union[str | list[str]]]],
 ) -> bool:
-    # TODO Allow to provide a regex in URL and params as a dict
     if isinstance(url_to_match, re.Pattern):
         return url_to_match.match(str(received)) is not None
 
@@ -67,7 +66,6 @@ class _RequestMatcher:
         self.data = match_data
         self.files = match_files
         self.params = match_params
-        # TODO Prevent match_params and params in URL
         self.proxy_url = (
             httpx.URL(proxy_url)
             if proxy_url and isinstance(proxy_url, str)
@@ -91,6 +89,18 @@ class _RequestMatcher:
                 "If you want to match against the multipart representation, use match_files (and match_data). "
                 "Otherwise, use match_content."
             )
+        if self.params and not self.url:
+            raise ValueError(
+                "URL must be provided when match_params is used."
+            )
+        if self.params and isinstance(self.url, re.Pattern):
+            raise ValueError(
+                "match_params cannot be used in addition to regex URL. Request this feature via https://github.com/Colin-b/pytest_httpx/issues/new?title=Regex%20URL%20should%20allow%20match_params&body=Hi,%20I%20need%20a%20regex%20to%20match%20the%20non%20query%20part%20of%20the%20URL%20only"
+            )
+        if self._is_matching_params_more_than_one_way():
+            raise ValueError(
+                "Provided URL must not contain any query parameter when match_params is used."
+            )
         if self.data and not self.files:
             raise ValueError(
                 "match_data is meant to be used for multipart matching (in conjunction with match_files)."
@@ -110,6 +120,14 @@ class _RequestMatcher:
             self.content is not None,
             self.json is not None,
             self.files is not None,
+        ]
+        return sum(matching_ways) > 1
+
+    def _is_matching_params_more_than_one_way(self) -> bool:
+        url_has_params = bool(self.url.params) if (self.url and isinstance(self.url, httpx.URL)) else False
+        matching_ways = [
+            self.params is not None,
+            url_has_params,
         ]
         return sum(matching_ways) > 1
 

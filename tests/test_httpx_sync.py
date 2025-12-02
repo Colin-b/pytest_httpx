@@ -152,6 +152,27 @@ def test_url_query_params_with_non_str_name(httpx_mock: HTTPXMock) -> None:
         )
 
 
+def test_match_params_without_url(httpx_mock: HTTPXMock) -> None:
+    with pytest.raises(ValueError) as exception_info:
+        httpx_mock.add_response(match_params={"a": "1"})
+
+    assert str(exception_info.value) == "URL must be provided when match_params is used."
+
+
+def test_query_params_in_both_url_and_match_params(httpx_mock: HTTPXMock) -> None:
+    with pytest.raises(ValueError) as exception_info:
+        httpx_mock.add_response(url="https://test_url?a=1", match_params={"a": "1"})
+
+    assert str(exception_info.value) == "Provided URL must not contain any query parameter when match_params is used."
+
+
+def test_regex_url_and_match_params(httpx_mock: HTTPXMock) -> None:
+    with pytest.raises(ValueError) as exception_info:
+        httpx_mock.add_response(url=re.compile(".*test.*"), match_params={"a": "1"})
+
+    assert str(exception_info.value) == "match_params cannot be used in addition to regex URL. Request this feature via https://github.com/Colin-b/pytest_httpx/issues/new?title=Regex%20URL%20should%20allow%20match_params&body=Hi,%20I%20need%20a%20regex%20to%20match%20the%20non%20query%20part%20of%20the%20URL%20only"
+
+
 @pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
 def test_url_query_params_not_matching(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(
