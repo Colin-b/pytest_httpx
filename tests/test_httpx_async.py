@@ -726,10 +726,10 @@ async def test_async_callback_with_await_statement(httpx_mock: HTTPXMock) -> Non
 
 @pytest.mark.asyncio
 async def test_async_callback_with_pattern_in_url(httpx_mock: HTTPXMock) -> None:
-    def custom_response(request: httpx.Request) -> httpx.Response:
+    async def custom_response(request: httpx.Request) -> httpx.Response:
         return httpx.Response(status_code=200, json={"url": str(request.url)})
 
-    def custom_response2(request: httpx.Request) -> httpx.Response:
+    async def custom_response2(request: httpx.Request) -> httpx.Response:
         return httpx.Response(
             status_code=200,
             extensions={"http_version": b"HTTP/2.0"},
@@ -1055,9 +1055,11 @@ async def test_request_exception_raising(httpx_mock: HTTPXMock) -> None:
 @pytest.mark.parametrize(
     ("exception_type", "message"),
     [
+        # httpx exception without request context
         pytest.param(
             httpx.HTTPError, "Unable to read within 5.0", id="non_request_exception"
         ),
+        # BaseException derived exception
         pytest.param(
             asyncio.CancelledError,
             "Request was cancelled",
@@ -1065,7 +1067,7 @@ async def test_request_exception_raising(httpx_mock: HTTPXMock) -> None:
         ),
     ],
 )
-async def test_exception_raising(
+async def test_non_request_exception_raising(
     httpx_mock: HTTPXMock, exception_type: type, message: str
 ) -> None:
     httpx_mock.add_exception(exception_type(message), url="https://test_url")
@@ -1091,7 +1093,7 @@ async def test_callback_returning_response(httpx_mock: HTTPXMock) -> None:
 
 @pytest.mark.asyncio
 async def test_async_callback_returning_response(httpx_mock: HTTPXMock) -> None:
-    def custom_response(request: httpx.Request) -> httpx.Response:
+    async def custom_response(request: httpx.Request) -> httpx.Response:
         return httpx.Response(status_code=200, json={"url": str(request.url)})
 
     httpx_mock.add_callback(custom_response, url="https://test_url")
@@ -1121,7 +1123,7 @@ async def test_callback_executed_twice(httpx_mock: HTTPXMock) -> None:
 
 @pytest.mark.asyncio
 async def test_async_callback_executed_twice(httpx_mock: HTTPXMock) -> None:
-    def custom_response(request: httpx.Request) -> httpx.Response:
+    async def custom_response(request: httpx.Request) -> httpx.Response:
         return httpx.Response(status_code=200, json=["content"])
 
     httpx_mock.add_callback(custom_response, is_reusable=True)
@@ -1161,7 +1163,7 @@ async def test_callback_registered_after_response(httpx_mock: HTTPXMock) -> None
 
 @pytest.mark.asyncio
 async def test_async_callback_registered_after_response(httpx_mock: HTTPXMock) -> None:
-    def custom_response(request: httpx.Request) -> httpx.Response:
+    async def custom_response(request: httpx.Request) -> httpx.Response:
         return httpx.Response(status_code=200, json=["content2"])
 
     httpx_mock.add_response(json=["content1"])
@@ -1207,7 +1209,7 @@ async def test_response_registered_after_callback(httpx_mock: HTTPXMock) -> None
 
 @pytest.mark.asyncio
 async def test_response_registered_after_async_callback(httpx_mock: HTTPXMock) -> None:
-    def custom_response(request: httpx.Request) -> httpx.Response:
+    async def custom_response(request: httpx.Request) -> httpx.Response:
         return httpx.Response(status_code=200, json=["content1"])
 
     httpx_mock.add_callback(custom_response)
@@ -1247,7 +1249,7 @@ async def test_callback_matching_method(httpx_mock: HTTPXMock) -> None:
 
 @pytest.mark.asyncio
 async def test_async_callback_matching_method(httpx_mock: HTTPXMock) -> None:
-    def custom_response(request: httpx.Request) -> httpx.Response:
+    async def custom_response(request: httpx.Request) -> httpx.Response:
         return httpx.Response(status_code=200, json=["content"])
 
     httpx_mock.add_callback(custom_response, method="GET", is_reusable=True)
@@ -2210,7 +2212,7 @@ async def test_elapsed_when_add_callback(httpx_mock: HTTPXMock) -> None:
 
 @pytest.mark.asyncio
 async def test_elapsed_when_add_async_callback(httpx_mock: HTTPXMock) -> None:
-    def custom_response(request: httpx.Request) -> httpx.Response:
+    async def custom_response(request: httpx.Request) -> httpx.Response:
         return httpx.Response(status_code=200, json={"foo": "bar"})
 
     httpx_mock.add_callback(custom_response)
