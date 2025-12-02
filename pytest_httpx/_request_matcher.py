@@ -67,26 +67,7 @@ class _RequestMatcher:
         self.data = match_data
         self.files = match_files
         self.params = match_params
-        if self.params:
-            # TODO Prevent match_params and params in URL
-            for name, values in self.params.items():
-                if not isinstance(name, str):
-                    raise ValueError(
-                        "match_params keys should only contain strings."
-                    )
-                if isinstance(values, list):
-                    if len(values) < 2:
-                        raise ValueError(
-                            "match_params values should only contain list of at least 2 elements, use the string value otherwise."
-                        )
-                    if not all(isinstance(value, str) for value in values):
-                        raise ValueError(
-                            "match_params values should only contain string or list of strings."
-                        )
-                elif not isinstance(values, str):
-                    raise ValueError(
-                        "match_params values should only contain string or list of strings."
-                    )
+        # TODO Prevent match_params and params in URL
         self.proxy_url = (
             httpx.URL(proxy_url)
             if proxy_url and isinstance(proxy_url, str)

@@ -91,6 +91,82 @@ async def test_url_query_params_partial_matching(httpx_mock: HTTPXMock) -> None:
 
 @pytest.mark.asyncio
 @pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
+async def test_url_query_params_with_single_value_list(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(
+        url="https://test_url",
+        match_params={"a": ["1"]},
+        is_optional=True,
+    )
+
+    async with httpx.AsyncClient() as client:
+        with pytest.raises(httpx.TimeoutException) as exception_info:
+            await client.post("https://test_url?a=1")
+        assert (
+            str(exception_info.value)
+            == """No response can be found for POST request on https://test_url?a=1 amongst:
+- Match any request on https://test_url with {'a': ['1']} query parameters"""
+        )
+
+
+@pytest.mark.asyncio
+@pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
+async def test_url_query_params_with_non_str_value(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(
+        url="https://test_url",
+        match_params={"a": 1},
+        is_optional=True,
+    )
+
+    async with httpx.AsyncClient() as client:
+        with pytest.raises(httpx.TimeoutException) as exception_info:
+            await client.post("https://test_url?a=1")
+        assert (
+            str(exception_info.value)
+            == """No response can be found for POST request on https://test_url?a=1 amongst:
+- Match any request on https://test_url with {'a': 1} query parameters"""
+        )
+
+
+@pytest.mark.asyncio
+@pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
+async def test_url_query_params_with_non_str_list_value(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(
+        url="https://test_url",
+        match_params={"a": [1, "2"]},
+        is_optional=True,
+    )
+
+    async with httpx.AsyncClient() as client:
+        with pytest.raises(httpx.TimeoutException) as exception_info:
+            await client.post("https://test_url?a=1&a=2")
+        assert (
+            str(exception_info.value)
+            == """No response can be found for POST request on https://test_url?a=1&a=2 amongst:
+- Match any request on https://test_url with {'a': [1, '2']} query parameters"""
+        )
+
+
+@pytest.mark.asyncio
+@pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
+async def test_url_query_params_with_non_str_name(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(
+        url="https://test_url",
+        match_params={1: "1"},
+        is_optional=True,
+    )
+
+    async with httpx.AsyncClient() as client:
+        with pytest.raises(httpx.TimeoutException) as exception_info:
+            await client.post("https://test_url?1=1")
+        assert (
+            str(exception_info.value)
+            == """No response can be found for POST request on https://test_url?1=1 amongst:
+- Match any request on https://test_url with {1: '1'} query parameters"""
+        )
+
+
+@pytest.mark.asyncio
+@pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
 async def test_url_query_params_not_matching(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(
         url="https://test_url",
