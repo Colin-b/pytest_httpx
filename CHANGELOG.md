@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - URL with more than one value for the same parameter were not matched properly (matching was performed on the first value).
+- `httpx_mock.add_exception` is now properly documented (accepts `BaseException` instead of `Exception`).
 
 ## [0.35.0] - 2024-11-28
 ### Changed
