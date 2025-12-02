@@ -185,7 +185,9 @@ async def test_url_query_params_not_matching(httpx_mock: HTTPXMock) -> None:
 
 
 @pytest.mark.asyncio
-async def test_url_matching_with_more_than_one_value_on_same_param(httpx_mock: HTTPXMock) -> None:
+async def test_url_matching_with_more_than_one_value_on_same_param(
+    httpx_mock: HTTPXMock,
+) -> None:
     httpx_mock.add_response(url="https://test_url?a=1&a=3", is_optional=True)
 
     async with httpx.AsyncClient() as client:
@@ -195,7 +197,9 @@ async def test_url_matching_with_more_than_one_value_on_same_param(httpx_mock: H
 
 @pytest.mark.asyncio
 @pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
-async def test_url_not_matching_with_more_than_one_value_on_same_param_and_diff_value(httpx_mock: HTTPXMock) -> None:
+async def test_url_not_matching_with_more_than_one_value_on_same_param_and_diff_value(
+    httpx_mock: HTTPXMock,
+) -> None:
     httpx_mock.add_response(url="https://test_url?a=2&a=3", is_optional=True)
 
     async with httpx.AsyncClient() as client:
@@ -210,7 +214,9 @@ async def test_url_not_matching_with_more_than_one_value_on_same_param_and_diff_
 
 @pytest.mark.asyncio
 @pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
-async def test_url_not_matching_with_more_than_one_value_on_same_param_and_more_values(httpx_mock: HTTPXMock) -> None:
+async def test_url_not_matching_with_more_than_one_value_on_same_param_and_more_values(
+    httpx_mock: HTTPXMock,
+) -> None:
     httpx_mock.add_response(url="https://test_url?a=1&a=3", is_optional=True)
 
     async with httpx.AsyncClient() as client:
@@ -225,7 +231,9 @@ async def test_url_not_matching_with_more_than_one_value_on_same_param_and_more_
 
 @pytest.mark.asyncio
 @pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
-async def test_url_not_matching_with_more_than_one_value_on_same_param_and_less_values(httpx_mock: HTTPXMock) -> None:
+async def test_url_not_matching_with_more_than_one_value_on_same_param_and_less_values(
+    httpx_mock: HTTPXMock,
+) -> None:
     httpx_mock.add_response(url="https://test_url?a=1&a=3&a=4", is_optional=True)
 
     async with httpx.AsyncClient() as client:

@@ -51,7 +51,7 @@ issues = "https://github.com/Colin-b/pytest_httpx/issues"
 [project.optional-dependencies]
 testing = [
     # Used to check coverage
-    "pytest-cov==6.*",
+    "pytest-cov==7.*",
     # Used to run async tests
     "pytest-asyncio==1.*",
 ]
@@ -65,3 +65,6 @@ version = {attr = "pytest_httpx.version.__version__"}
 [tool.pytest]
 # Silence deprecation warnings about option "asyncio_default_fixture_loop_scope"
 asyncio_default_fixture_loop_scope = "function"
+
+[tool.coverage.run]
+patch = ["subprocess"]
