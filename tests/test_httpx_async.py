@@ -189,7 +189,6 @@ async def test_url_query_params_bool_matching(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(
         url=httpx.URL("https://test_url"),
         match_params={"a": True, "b": False},
-        is_reusable=True,
     )
 
     async with httpx.AsyncClient() as client:
