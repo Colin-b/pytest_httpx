@@ -22,6 +22,8 @@ def _url_match(
     received_params = to_params_dict(received.params)
     if params is None:
         params = to_params_dict(url_to_match.params)
+    else:
+        params = to_params_dict(QueryParams(params))
 
     # Remove the query parameters from the original URL to compare everything besides query parameters
     received_url = received.copy_with(query=None)

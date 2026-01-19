@@ -185,6 +185,19 @@ async def test_url_query_params_not_matching(httpx_mock: HTTPXMock) -> None:
 
 
 @pytest.mark.asyncio
+async def test_url_query_params_bool_matching(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(
+        url=httpx.URL("https://test_url"),
+        match_params={"a": True, "b": False},
+        is_reusable=True,
+    )
+
+    async with httpx.AsyncClient() as client:
+        response = await client.post("https://test_url?a=true&b=false")
+        assert response.content == b""
+
+
+@pytest.mark.asyncio
 async def test_url_matching_with_more_than_one_value_on_same_param(
     httpx_mock: HTTPXMock,
 ) -> None:
