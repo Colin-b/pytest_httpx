@@ -14,15 +14,30 @@ from pytest_httpx._options import _HTTPXMockOptions
 def _url_match(
     url_to_match: Union[Pattern[str], httpx.URL],
     received: httpx.URL,
+    params: Optional[dict[str, Union[str | list[str]]]],
 ) -> bool:
     if isinstance(url_to_match, re.Pattern):
         return url_to_match.match(str(received)) is not None
+
+    # Compare query parameters apart as order of parameters should not matter
+    received_params = to_params_dict(received.params)
+    if params is None:
+        params = to_params_dict(url_to_match.params)
+    else:
+        params = {
+            k: (
+                primitive_value_to_str(v)
+                if isinstance(v, (str, int, float, bool))
+                else v
+            )
+            for k, v in params.items()
+        }
 
     # Remove the query parameters from the original URL to compare everything besides query parameters
     received_url = received.copy_with(query=None)
     url = url_to_match.copy_with(query=None)
 
-    return url == received_url
+    return (received_params == params) and (url == received_url)
 
 
 def to_params_dict(params: QueryParams) -> dict[str, Union[str | list[str]]]:
@@ -135,7 +150,6 @@ class _RequestMatcher:
     ) -> bool:
         return (
             self._url_match(request)
-            and self._match_params(request)
             and self._method_match(request)
             and self._headers_match(request)
             and self._content_match(request)
@@ -147,17 +161,7 @@ class _RequestMatcher:
         if not self.url:
             return True
 
-        return _url_match(self.url, request.url)
-
-    def _match_params(self, request: httpx.Request) -> bool:
-        # Compare query parameters apart as order of parameters should not matter
-        received_params = to_params_dict(request.url.params)
-        if self.params is None:
-            params = to_params_dict(self.url.params)
-        else:
-            params = {k: primitive_value_to_str(v) for k, v in self.params.items()}
-
-        return received_params == params
+        return _url_match(self.url, request.url, self.params)
 
     def _method_match(self, request: httpx.Request) -> bool:
         if not self.method:
@@ -219,7 +223,7 @@ class _RequestMatcher:
             return True
 
         if real_proxy_url := _proxy_url(real_transport):
-            return _url_match(self.proxy_url, real_proxy_url)
+            return _url_match(self.proxy_url, real_proxy_url, params=None)
 
         return False
 
