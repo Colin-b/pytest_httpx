@@ -192,7 +192,7 @@ async def test_url_query_params_bool_matching(httpx_mock: HTTPXMock) -> None:
     )
 
     async with httpx.AsyncClient() as client:
-        response = await client.post("https://test_url?a=true&b=false")
+        response = await client.get("https://test_url", params={"a": True, "b": False})
         assert response.content == b""
 
 

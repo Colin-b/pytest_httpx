@@ -199,6 +199,17 @@ def test_url_query_params_not_matching(httpx_mock: HTTPXMock) -> None:
         )
 
 
+def test_url_query_params_bool_matching(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(
+        url=httpx.URL("https://test_url"),
+        match_params={"a": True, "b": False},
+    )
+
+    with httpx.Client() as client:
+        response = client.get("https://test_url", params={"a": True, "b": False})
+        assert response.content == b""
+
+
 def test_url_matching_with_more_than_one_value_on_same_param(
     httpx_mock: HTTPXMock,
 ) -> None:
