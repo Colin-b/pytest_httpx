@@ -110,6 +110,25 @@ async def test_url_query_params_with_single_value_list(httpx_mock: HTTPXMock) ->
 
 @pytest.mark.asyncio
 @pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
+async def test_url_query_params_with_non_str_value(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(
+        url="https://test_url",
+        match_params={"a": 1},
+        is_optional=True,
+    )
+
+    async with httpx.AsyncClient() as client:
+        with pytest.raises(httpx.TimeoutException) as exception_info:
+            await client.post("https://test_url?a=1")
+        assert (
+            str(exception_info.value)
+            == """No response can be found for POST request on https://test_url?a=1 amongst:
+- Match any request on https://test_url with {'a': 1} query parameters"""
+        )
+
+
+@pytest.mark.asyncio
+@pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
 async def test_url_query_params_with_non_str_list_value(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(
         url="https://test_url",
@@ -166,7 +185,9 @@ async def test_url_query_params_not_matching(httpx_mock: HTTPXMock) -> None:
 
 
 @pytest.mark.asyncio
-async def test_url_query_params_bool_matching(httpx_mock: HTTPXMock) -> None:
+async def test_url_query_params_bool_matching_with_params(
+    httpx_mock: HTTPXMock,
+) -> None:
     httpx_mock.add_response(
         url=httpx.URL("https://test_url"),
         match_params={"a": True, "b": False},
@@ -174,6 +195,20 @@ async def test_url_query_params_bool_matching(httpx_mock: HTTPXMock) -> None:
 
     async with httpx.AsyncClient() as client:
         response = await client.get("https://test_url", params={"a": True, "b": False})
+        assert response.content == b""
+
+
+@pytest.mark.asyncio
+async def test_url_query_params_bool_matching_with_params_list_value(
+    httpx_mock: HTTPXMock,
+) -> None:
+    httpx_mock.add_response(
+        url=httpx.URL("https://test_url"),
+        match_params={"a": [True, "1", "2"]},
+    )
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get("https://test_url", params={"a": [True, 1, "2"]})
         assert response.content == b""
 
 
@@ -186,6 +221,20 @@ async def test_url_query_params_bool_matching_in_url(httpx_mock: HTTPXMock) -> N
 
     async with httpx.AsyncClient() as client:
         response = await client.get("https://test_url?a=true&b=false")
+        assert response.content == b""
+
+
+@pytest.mark.asyncio
+async def test_url_query_params_bool_matching_in_url_list_value(
+    httpx_mock: HTTPXMock,
+) -> None:
+    httpx_mock.add_response(
+        url=httpx.URL("https://test_url"),
+        match_params={"a": [True, "1", "2"]},
+    )
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get("https://test_url?a=true&a=1&a=2")
         assert response.content == b""
 
 

@@ -5,16 +5,19 @@ from re import Pattern
 
 import httpx
 from httpx import QueryParams
-from httpx._utils import primitive_value_to_str
 
-from pytest_httpx._httpx_internals import _proxy_url
+from pytest_httpx._httpx_internals import _proxy_url, _primitive_value_to_str
 from pytest_httpx._options import _HTTPXMockOptions
+
+
+def _normalize_bool(value: Union[str | bool]) -> Any:
+    return _primitive_value_to_str(value) if isinstance(value, bool) else value
 
 
 def _url_match(
     url_to_match: Union[Pattern[str], httpx.URL],
     received: httpx.URL,
-    params: Optional[dict[str, Union[str | list[str]]]],
+    params: Optional[dict[str, Union[str | list[str] | bool]]],
 ) -> bool:
     if isinstance(url_to_match, re.Pattern):
         return url_to_match.match(str(received)) is not None
@@ -26,9 +29,9 @@ def _url_match(
     else:
         params = {
             k: (
-                primitive_value_to_str(v)
-                if isinstance(v, (str, int, float, bool))
-                else v
+                [_normalize_bool(x) for x in v]
+                if isinstance(v, list)
+                else _normalize_bool(v)
             )
             for k, v in params.items()
         }
