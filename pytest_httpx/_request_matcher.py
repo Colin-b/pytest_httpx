@@ -10,7 +10,7 @@ from pytest_httpx._httpx_internals import _proxy_url, _primitive_value_to_str
 from pytest_httpx._options import _HTTPXMockOptions
 
 
-def _normalize_bool(value: Union[str | bool]) -> Any:
+def _normalize_bool(value: Union[str | bool]) -> str:
     return _primitive_value_to_str(value) if isinstance(value, bool) else value
 
 
