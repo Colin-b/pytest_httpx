@@ -202,8 +202,7 @@ async def test_url_query_params_stringification_for_matching_with_params(
 
     async with httpx.AsyncClient() as client:
         response = await client.get("https://test_url", params=request_params)
-
-    assert response.content == b""
+        assert response.content == b""
 
 
 @pytest.mark.asyncio
@@ -223,8 +222,7 @@ async def test_url_query_params_stringification_for_matching_in_url(
 
     async with httpx.AsyncClient() as client:
         response = await client.get(url)
-
-    assert response.content == b""
+        assert response.content == b""
 
 
 @pytest.mark.asyncio

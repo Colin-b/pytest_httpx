@@ -216,8 +216,7 @@ def test_url_query_params_stringification_for_matching_with_params(
 
     with httpx.Client() as client:
         response = client.get("https://test_url", params=request_params)
-
-    assert response.content == b""
+        assert response.content == b""
 
 
 @pytest.mark.parametrize(
@@ -236,8 +235,7 @@ def test_url_query_params_stringification_for_matching_in_url(
 
     with httpx.Client() as client:
         response = client.get(url)
-
-    assert response.content == b""
+        assert response.content == b""
 
 
 def test_url_matching_with_more_than_one_value_on_same_param(
