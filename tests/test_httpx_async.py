@@ -4,6 +4,7 @@ import os
 import re
 import time
 from collections.abc import AsyncIterable
+from typing import Union
 
 import httpx
 import pytest
@@ -225,7 +226,31 @@ async def test_url_query_params_bool_matching_in_url(httpx_mock: HTTPXMock) -> N
 
 
 @pytest.mark.asyncio
-async def test_url_query_params_bool_matching_in_url_list_value(
+@pytest.mark.parametrize(
+    ("incoming_value", "expected_result"),
+    [
+        (True, "true"),
+        (False, "false"),
+        ("string", "string"),
+    ],
+)
+async def test_url_query_params_matching(
+    httpx_mock: HTTPXMock,
+    incoming_value: Union[bool, str],
+    expected_result: str,
+) -> None:
+    httpx_mock.add_response(
+        url=httpx.URL("https://test_url"),
+        match_params={"a": incoming_value},
+    )
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get(f"https://test_url?a={expected_result}")
+        assert response.content == b""
+
+
+@pytest.mark.asyncio
+async def test_url_query_params_matching_list_value(
     httpx_mock: HTTPXMock,
 ) -> None:
     httpx_mock.add_response(

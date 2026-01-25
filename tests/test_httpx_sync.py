@@ -1,6 +1,7 @@
 import os
 import re
 from collections.abc import Iterable
+from typing import Union
 from unittest.mock import ANY
 
 import httpx
@@ -223,18 +224,30 @@ def test_url_query_params_bool_matching_with_params_list_value(
         assert response.content == b""
 
 
-def test_url_query_params_bool_matching_in_url(httpx_mock: HTTPXMock) -> None:
+@pytest.mark.parametrize(
+    ("incoming_value", "expected_result"),
+    [
+        (True, "true"),
+        (False, "false"),
+        ("string", "string"),
+    ],
+)
+def test_url_query_params_matching(
+    httpx_mock: HTTPXMock,
+    incoming_value: Union[bool, str],
+    expected_result: str,
+) -> None:
     httpx_mock.add_response(
         url=httpx.URL("https://test_url"),
-        match_params={"a": True, "b": False},
+        match_params={"a": incoming_value},
     )
 
     with httpx.Client() as client:
-        response = client.get("https://test_url?a=true&b=false")
+        response = client.get(f"https://test_url?a={expected_result}")
         assert response.content == b""
 
 
-def test_url_query_params_bool_matching_in_url_list_value(
+def test_url_query_params_matching_list_value(
     httpx_mock: HTTPXMock,
 ) -> None:
     httpx_mock.add_response(
