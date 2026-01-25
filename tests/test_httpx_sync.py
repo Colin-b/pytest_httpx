@@ -1,7 +1,7 @@
 import os
 import re
 from collections.abc import Iterable
-from typing import Union
+from typing import Union, Any
 from unittest.mock import ANY
 
 import httpx
@@ -200,64 +200,44 @@ def test_url_query_params_not_matching(httpx_mock: HTTPXMock) -> None:
         )
 
 
-def test_url_query_params_bool_matching_with_params(httpx_mock: HTTPXMock) -> None:
-    httpx_mock.add_response(
-        url=httpx.URL("https://test_url"),
-        match_params={"a": True, "b": False},
-    )
-
-    with httpx.Client() as client:
-        response = client.get("https://test_url", params={"a": True, "b": False})
-        assert response.content == b""
-
-
-def test_url_query_params_bool_matching_with_params_list_value(
+@pytest.mark.parametrize(
+    ("match_params", "request_params"),
+    [
+        ({"a": True, "b": False}, {"a": True, "b": False}),
+        ({"a": [True, "1", "2"]}, {"a": [True, 1, "2"]}),
+    ],
+)
+def test_url_query_params_stringification_for_matching_with_params(
     httpx_mock: HTTPXMock,
+    match_params: dict[str, Any],
+    request_params: dict[str, Any],
 ) -> None:
-    httpx_mock.add_response(
-        url=httpx.URL("https://test_url"),
-        match_params={"a": [True, "1", "2"]},
-    )
+    httpx_mock.add_response(url="https://test_url", match_params=match_params)
 
     with httpx.Client() as client:
-        response = client.get("https://test_url", params={"a": [True, 1, "2"]})
-        assert response.content == b""
+        response = client.get("https://test_url", params=request_params)
+
+    assert response.content == b""
 
 
 @pytest.mark.parametrize(
-    ("incoming_value", "expected_result"),
+    ("match_params", "url"),
     [
-        (True, "true"),
-        (False, "false"),
-        ("string", "string"),
+        ({"a": True, "b": False}, "https://test_url?a=true&b=false"),
+        ({"a": [True, "1", "2"]}, "https://test_url?a=true&a=1&a=2"),
     ],
 )
-def test_url_query_params_matching(
+def test_url_query_params_stringification_for_matching_in_url(
     httpx_mock: HTTPXMock,
-    incoming_value: Union[bool, str],
-    expected_result: str,
+    match_params: dict[str, Any],
+    url: str,
 ) -> None:
-    httpx_mock.add_response(
-        url=httpx.URL("https://test_url"),
-        match_params={"a": incoming_value},
-    )
+    httpx_mock.add_response(url="https://test_url", match_params=match_params)
 
     with httpx.Client() as client:
-        response = client.get(f"https://test_url?a={expected_result}")
-        assert response.content == b""
+        response = client.get(url)
 
-
-def test_url_query_params_matching_list_value(
-    httpx_mock: HTTPXMock,
-) -> None:
-    httpx_mock.add_response(
-        url=httpx.URL("https://test_url"),
-        match_params={"a": [True, "1", "2"]},
-    )
-
-    with httpx.Client() as client:
-        response = client.get("https://test_url?a=true&a=1&a=2")
-        assert response.content == b""
+    assert response.content == b""
 
 
 def test_url_matching_with_more_than_one_value_on_same_param(

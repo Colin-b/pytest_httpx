@@ -4,7 +4,7 @@ import os
 import re
 import time
 from collections.abc import AsyncIterable
-from typing import Union
+from typing import Union, Any
 
 import httpx
 import pytest
@@ -186,81 +186,45 @@ async def test_url_query_params_not_matching(httpx_mock: HTTPXMock) -> None:
 
 
 @pytest.mark.asyncio
-async def test_url_query_params_bool_matching_with_params(
+@pytest.mark.parametrize(
+    ("match_params", "request_params"),
+    [
+        ({"a": True, "b": False}, {"a": True, "b": False}),
+        ({"a": [True, "1", "2"]}, {"a": [True, 1, "2"]}),
+    ],
+)
+async def test_url_query_params_stringification_for_matching_with_params(
     httpx_mock: HTTPXMock,
+    match_params: dict[str, Any],
+    request_params: dict[str, Any],
 ) -> None:
-    httpx_mock.add_response(
-        url=httpx.URL("https://test_url"),
-        match_params={"a": True, "b": False},
-    )
+    httpx_mock.add_response(url="https://test_url", match_params=match_params)
 
     async with httpx.AsyncClient() as client:
-        response = await client.get("https://test_url", params={"a": True, "b": False})
-        assert response.content == b""
+        response = await client.get("https://test_url", params=request_params)
 
-
-@pytest.mark.asyncio
-async def test_url_query_params_bool_matching_with_params_list_value(
-    httpx_mock: HTTPXMock,
-) -> None:
-    httpx_mock.add_response(
-        url=httpx.URL("https://test_url"),
-        match_params={"a": [True, "1", "2"]},
-    )
-
-    async with httpx.AsyncClient() as client:
-        response = await client.get("https://test_url", params={"a": [True, 1, "2"]})
-        assert response.content == b""
-
-
-@pytest.mark.asyncio
-async def test_url_query_params_bool_matching_in_url(httpx_mock: HTTPXMock) -> None:
-    httpx_mock.add_response(
-        url=httpx.URL("https://test_url"),
-        match_params={"a": True, "b": False},
-    )
-
-    async with httpx.AsyncClient() as client:
-        response = await client.get("https://test_url?a=true&b=false")
-        assert response.content == b""
+    assert response.content == b""
 
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    ("incoming_value", "expected_result"),
+    ("match_params", "url"),
     [
-        (True, "true"),
-        (False, "false"),
-        ("string", "string"),
+        ({"a": True, "b": False}, "https://test_url?a=true&b=false"),
+        ({"a": [True, "1", "2"]}, "https://test_url?a=true&a=1&a=2"),
     ],
 )
-async def test_url_query_params_matching(
+async def test_url_query_params_stringification_for_matching_in_url(
     httpx_mock: HTTPXMock,
-    incoming_value: Union[bool, str],
-    expected_result: str,
+    match_params: dict[str, Any],
+    url: str,
 ) -> None:
-    httpx_mock.add_response(
-        url=httpx.URL("https://test_url"),
-        match_params={"a": incoming_value},
-    )
+    httpx_mock.add_response(url="https://test_url", match_params=match_params)
 
     async with httpx.AsyncClient() as client:
-        response = await client.get(f"https://test_url?a={expected_result}")
-        assert response.content == b""
+        response = await client.get(url)
 
-
-@pytest.mark.asyncio
-async def test_url_query_params_matching_list_value(
-    httpx_mock: HTTPXMock,
-) -> None:
-    httpx_mock.add_response(
-        url=httpx.URL("https://test_url"),
-        match_params={"a": [True, "1", "2"]},
-    )
-
-    async with httpx.AsyncClient() as client:
-        response = await client.get("https://test_url?a=true&a=1&a=2")
-        assert response.content == b""
+    assert response.content == b""
 
 
 @pytest.mark.asyncio
