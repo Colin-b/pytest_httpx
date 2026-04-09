@@ -198,11 +198,56 @@ async def test_url_query_params_not_matching(httpx_mock: HTTPXMock) -> None:
 @pytest.mark.parametrize(
     ("match_params", "request_params"),
     [
-        ({"a": True, "b": False}, {"a": True, "b": False}),
-        ({"a": [True, "1", "2"]}, {"a": [True, 1, "2"]}),
+        # Primitive types in match and request (different order)
+        ({"b1": True, "b2": False}, {"b2": False, "b1": True}),
+        ({"i1": 1, "i2": 0, "i3": -1}, {"i2": 0, "i3": -1, "i1": 1}),
+        ({"f1": 1.1, "f2": 0.0, "f3": -0.1}, {"f2": 0.0, "f3": -0.1, "f1": 1.1}),
+        # str type in match and primitive types in request (different order)
+        ({"b1": "true", "b2": "false"}, {"b2": False, "b1": True}),
+        ({"i1": "1", "i2": "0", "i3": "-1"}, {"i2": 0, "i3": -1, "i1": 1}),
+        ({"f1": "1.1", "f2": "0.0", "f3": "-0.1"}, {"f2": 0.0, "f3": -0.1, "f1": 1.1}),
+        # Primitive types in match and str type in request (different order)
+        ({"b1": True, "b2": False}, {"b2": "false", "b1": "true"}),
+        ({"i1": 1, "i2": 0, "i3": -1}, {"i2": "0", "i3": "-1", "i1": "1"}),
+        ({"f1": 1.1, "f2": 0.0, "f3": -0.1}, {"f2": "0.0", "f3": "-0.1", "f1": "1.1"}),
+        # List with different primitive types in match and request
+        (
+            {
+                "a": [
+                    True,
+                    False,
+                    "false",
+                    "true",
+                    1,
+                    "1",
+                    0,
+                    "0",
+                    1.1,
+                    "1.2",
+                    0.0,
+                    "0.0",
+                ]
+            },
+            {
+                "a": [
+                    "true",
+                    "false",
+                    False,
+                    True,
+                    "1",
+                    1,
+                    "0",
+                    0,
+                    "1.1",
+                    1.2,
+                    "0.0",
+                    0.0,
+                ]
+            },
+        ),
     ],
 )
-async def test_url_query_params_stringification_for_matching_with_params(
+async def test_match_params_with_non_str_values_and_params_provided_as_dict(
     httpx_mock: HTTPXMock,
     match_params: dict[str, Any],
     request_params: dict[str, Any],
@@ -218,11 +263,40 @@ async def test_url_query_params_stringification_for_matching_with_params(
 @pytest.mark.parametrize(
     ("match_params", "url"),
     [
-        ({"a": True, "b": False}, "https://test_url?a=true&b=false"),
-        ({"a": [True, "1", "2"]}, "https://test_url?a=true&a=1&a=2"),
+        # Primitive types in match (different order)
+        ({"b1": True, "b2": False}, "https://test_url?b2=false&b1=true"),
+        ({"i1": 1, "i2": 0, "i3": -1}, "https://test_url?i2=0&i3=-1&i1=1"),
+        ({"f1": 1.1, "f2": 0.0, "f3": -0.1}, "https://test_url?f2=0.0&f3=-0.1&f1=1.1"),
+        # str type in match (different order)
+        ({"b1": "true", "b2": "false"}, "https://test_url?b2=false&b1=true"),
+        ({"i1": "1", "i2": "0", "i3": "-1"}, "https://test_url?i2=0&i3=-1&i1=1"),
+        (
+            {"f1": "1.1", "f2": "0.0", "f3": "-0.1"},
+            "https://test_url?f2=0.0&f3=-0.1&f1=1.1",
+        ),
+        # List with different primitive types in match
+        (
+            {
+                "a": [
+                    True,
+                    False,
+                    "false",
+                    "true",
+                    1,
+                    "1",
+                    0,
+                    "0",
+                    1.1,
+                    "1.2",
+                    0.0,
+                    "0.0",
+                ]
+            },
+            "https://test_url?a=true&a=false&a=false&a=true&a=1&a=1&a=0&a=0&a=1.1&a=1.2&a=0.0&a=0.0",
+        ),
     ],
 )
-async def test_url_query_params_stringification_for_matching_in_url(
+async def test_match_params_with_non_str_values_and_params_in_requested_url(
     httpx_mock: HTTPXMock,
     match_params: dict[str, Any],
     url: str,
