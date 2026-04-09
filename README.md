@@ -131,7 +131,7 @@ Use `match_params` to partially match query parameters without having to provide
 
 If this parameter is provided, `url` parameter must not contain any query parameter.
 
-All query parameters have to be provided as strings (`str`). However, **boolean values (True and False) are automatically converted to "true" and "false"** in the query string, so you can use them directly in `match_params`. You can also use `unittest.mock.ANY` for partial matching.
+All query parameters have to be provided. You can however use `unittest.mock.ANY` to do partial matching.
 
 ```python
 import httpx
@@ -139,13 +139,13 @@ from pytest_httpx import HTTPXMock
 from unittest.mock import ANY
 
 def test_partial_params_matching(httpx_mock: HTTPXMock):
-    httpx_mock.add_response(url="https://test_url", match_params={"a": "1", "b": ANY})
+    httpx_mock.add_response(url="https://test_url", match_params={"a": 1, "b": ANY})
 
     with httpx.Client() as client:
         response = client.get("https://test_url?a=1&b=2")
 
 def test_partial_multi_params_matching(httpx_mock: HTTPXMock):
-    httpx_mock.add_response(url="https://test_url", match_params={"a": ["1", "3"], "b": ["2", ANY]})
+    httpx_mock.add_response(url="https://test_url", match_params={"a": ["1", 3], "b": ["2", ANY]})
 
     with httpx.Client() as client:
         response = client.get("https://test_url?a=1&b=2&a=3&b=4")

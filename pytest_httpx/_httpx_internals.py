@@ -16,7 +16,6 @@ HeaderTypes = Union[
     Sequence[tuple[str, str]],
     Sequence[tuple[bytes, bytes]],
 ]
-
 PrimitiveData = Optional[Union[str, int, float, bool]]
 
 
@@ -60,18 +59,3 @@ def _proxy_url(
         real_pool := real_transport._pool, (httpcore.HTTPProxy, httpcore.AsyncHTTPProxy)
     ):
         return _to_httpx_url(real_pool._proxy_url, real_pool._proxy_headers)
-
-
-def _primitive_value_to_str(value: PrimitiveData) -> str:
-    """
-    Coerce a primitive data type into a string value.
-
-    Note that we prefer JSON-style 'true'/'false' for boolean values here.
-    """
-    if value is True:
-        return "true"
-    elif value is False:
-        return "false"
-    elif value is None:
-        return ""
-    return str(value)
