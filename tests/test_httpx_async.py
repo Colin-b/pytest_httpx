@@ -77,16 +77,16 @@ async def test_url_query_string_matching(httpx_mock: HTTPXMock) -> None:
 async def test_url_query_params_partial_matching(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(
         url=httpx.URL("https://test_url"),
-        match_params={"a": ["1", "3"], "b": ANY, "c": "4", "d": ["5", ANY]},
+        match_params={"a": ["1", "3"], "b": ANY, "c": "4", "d": ["5", ANY], "e": [ANY]},
         is_reusable=True,
     )
 
     async with httpx.AsyncClient() as client:
-        response = await client.post("https://test_url?a=1&b=2&a=3&c=4&d=5&d=6")
+        response = await client.post("https://test_url?a=1&b=2&a=3&c=4&d=5&d=6&e=7")
         assert response.content == b""
 
         # Parameters order should not matter
-        response = await client.get("https://test_url?b=9&a=1&a=3&c=4&d=5&d=7")
+        response = await client.get("https://test_url?b=9&a=1&a=3&c=4&d=5&e=7&d=7")
         assert response.content == b""
 
 
