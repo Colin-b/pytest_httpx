@@ -1,6 +1,7 @@
 import os
 import re
 from collections.abc import Iterable
+from typing import Union, Any
 from unittest.mock import ANY
 
 import httpx
@@ -205,6 +206,44 @@ def test_url_query_params_not_matching(httpx_mock: HTTPXMock) -> None:
             == """No response can be found for POST request on https://test_url?a=2 amongst:
 - Match any request on https://test_url with {'a': '1'} query parameters"""
         )
+
+
+@pytest.mark.parametrize(
+    ("match_params", "request_params"),
+    [
+        ({"a": True, "b": False}, {"a": True, "b": False}),
+        ({"a": [True, "1", "2"]}, {"a": [True, 1, "2"]}),
+    ],
+)
+def test_url_query_params_stringification_for_matching_with_params(
+    httpx_mock: HTTPXMock,
+    match_params: dict[str, Any],
+    request_params: dict[str, Any],
+) -> None:
+    httpx_mock.add_response(url="https://test_url", match_params=match_params)
+
+    with httpx.Client() as client:
+        response = client.get("https://test_url", params=request_params)
+        assert response.content == b""
+
+
+@pytest.mark.parametrize(
+    ("match_params", "url"),
+    [
+        ({"a": True, "b": False}, "https://test_url?a=true&b=false"),
+        ({"a": [True, "1", "2"]}, "https://test_url?a=true&a=1&a=2"),
+    ],
+)
+def test_url_query_params_stringification_for_matching_in_url(
+    httpx_mock: HTTPXMock,
+    match_params: dict[str, Any],
+    url: str,
+) -> None:
+    httpx_mock.add_response(url="https://test_url", match_params=match_params)
+
+    with httpx.Client() as client:
+        response = client.get(url)
+        assert response.content == b""
 
 
 def test_url_matching_with_more_than_one_value_on_same_param(

@@ -4,6 +4,7 @@ import os
 import re
 import time
 from collections.abc import AsyncIterable
+from typing import Union, Any
 
 import httpx
 import pytest
@@ -191,6 +192,46 @@ async def test_url_query_params_not_matching(httpx_mock: HTTPXMock) -> None:
             == """No response can be found for POST request on https://test_url?a=2 amongst:
 - Match any request on https://test_url with {'a': '1'} query parameters"""
         )
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("match_params", "request_params"),
+    [
+        ({"a": True, "b": False}, {"a": True, "b": False}),
+        ({"a": [True, "1", "2"]}, {"a": [True, 1, "2"]}),
+    ],
+)
+async def test_url_query_params_stringification_for_matching_with_params(
+    httpx_mock: HTTPXMock,
+    match_params: dict[str, Any],
+    request_params: dict[str, Any],
+) -> None:
+    httpx_mock.add_response(url="https://test_url", match_params=match_params)
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get("https://test_url", params=request_params)
+        assert response.content == b""
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("match_params", "url"),
+    [
+        ({"a": True, "b": False}, "https://test_url?a=true&b=false"),
+        ({"a": [True, "1", "2"]}, "https://test_url?a=true&a=1&a=2"),
+    ],
+)
+async def test_url_query_params_stringification_for_matching_in_url(
+    httpx_mock: HTTPXMock,
+    match_params: dict[str, Any],
+    url: str,
+) -> None:
+    httpx_mock.add_response(url="https://test_url", match_params=match_params)
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get(url)
+        assert response.content == b""
 
 
 @pytest.mark.asyncio

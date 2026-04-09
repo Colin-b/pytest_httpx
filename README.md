@@ -131,7 +131,7 @@ Use `match_params` to partially match query parameters without having to provide
 
 If this parameter is provided, `url` parameter must not contain any query parameter.
 
-All query parameters have to be provided (as `str`). You can however use `unittest.mock.ANY` to do partial matching.
+All query parameters have to be provided as strings (`str`). However, **boolean values (True and False) are automatically converted to "true" and "false"** in the query string, so you can use them directly in `match_params`. You can also use `unittest.mock.ANY` for partial matching.
 
 ```python
 import httpx

@@ -6,14 +6,18 @@ from re import Pattern
 import httpx
 from httpx import QueryParams
 
-from pytest_httpx._httpx_internals import _proxy_url
+from pytest_httpx._httpx_internals import _proxy_url, _primitive_value_to_str
 from pytest_httpx._options import _HTTPXMockOptions
+
+
+def _normalize_bool(value: Union[str | bool]) -> str:
+    return _primitive_value_to_str(value) if isinstance(value, bool) else value
 
 
 def _url_match(
     url_to_match: Union[Pattern[str], httpx.URL],
     received: httpx.URL,
-    params: Optional[dict[str, Union[str | list[str]]]],
+    params: Optional[dict[str, Union[str | list[str] | bool]]],
 ) -> bool:
     if isinstance(url_to_match, re.Pattern):
         return url_to_match.match(str(received)) is not None
@@ -22,6 +26,15 @@ def _url_match(
     received_params = to_params_dict(received.params)
     if params is None:
         params = to_params_dict(url_to_match.params)
+    else:
+        params = {
+            k: (
+                [_normalize_bool(x) for x in v]
+                if isinstance(v, list)
+                else _normalize_bool(v)
+            )
+            for k, v in params.items()
+        }
 
     # Remove the query parameters from the original URL to compare everything besides query parameters
     received_url = received.copy_with(query=None)
@@ -52,7 +65,7 @@ class _RequestMatcher:
         match_data: Optional[dict[str, Any]] = None,
         match_files: Optional[Any] = None,
         match_extensions: Optional[dict[str, Any]] = None,
-        match_params: Optional[dict[str, Union[str | list[str]]]] = None,
+        match_params: Optional[dict[str, Union[str | list[str] | bool]]] = None,
         is_optional: Optional[bool] = None,
         is_reusable: Optional[bool] = None,
     ):
