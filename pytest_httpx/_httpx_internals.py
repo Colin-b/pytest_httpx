@@ -16,6 +16,7 @@ HeaderTypes = Union[
     Sequence[tuple[str, str]],
     Sequence[tuple[bytes, bytes]],
 ]
+PrimitiveData = Optional[Union[str, int, float, bool]]
 
 
 class IteratorStream(AsyncIteratorByteStream, IteratorByteStream):

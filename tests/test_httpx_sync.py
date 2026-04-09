@@ -1,6 +1,7 @@
 import os
 import re
 from collections.abc import Iterable
+from typing import Any
 from unittest.mock import ANY
 
 import httpx
@@ -67,16 +68,16 @@ def test_url_query_string_matching(httpx_mock: HTTPXMock) -> None:
 def test_url_query_params_partial_matching(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(
         url="https://test_url",
-        match_params={"a": ["1", "3"], "b": ANY, "c": "4", "d": ["5", ANY]},
+        match_params={"a": ["1", "3"], "b": ANY, "c": "4", "d": ["5", ANY], "e": [ANY]},
         is_reusable=True,
     )
 
     with httpx.Client() as client:
-        response = client.post("https://test_url?a=1&b=2&a=3&c=4&d=5&d=6")
+        response = client.post("https://test_url?a=1&b=2&a=3&c=4&d=5&d=6&e=7")
         assert response.content == b""
 
         # Parameters order should not matter
-        response = client.get("https://test_url?b=9&a=1&a=3&c=4&d=5&d=7")
+        response = client.get("https://test_url?b=9&a=1&a=3&c=4&d=5&e=7&d=7")
         assert response.content == b""
 
 
@@ -88,76 +89,23 @@ def test_url_as_pattern_ignoring_query_parameters(httpx_mock: HTTPXMock):
         assert response.content == b""
 
 
-@pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
 def test_url_query_params_with_single_value_list(httpx_mock: HTTPXMock) -> None:
-    httpx_mock.add_response(
-        url="https://test_url",
-        match_params={"a": ["1"]},
-        is_optional=True,
-    )
+    httpx_mock.add_response(url="https://test_url", match_params={"a": ["1"]})
 
     with httpx.Client() as client:
-        with pytest.raises(httpx.TimeoutException) as exception_info:
-            client.post("https://test_url?a=1")
-        assert (
-            str(exception_info.value)
-            == """No response can be found for POST request on https://test_url?a=1 amongst:
-- Match any request on https://test_url with {'a': ['1']} query parameters"""
-        )
+        response = client.post("https://test_url?a=1")
+        assert response.content == b""
 
 
-@pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
-def test_url_query_params_with_non_str_value(httpx_mock: HTTPXMock) -> None:
-    httpx_mock.add_response(
-        url="https://test_url",
-        match_params={"a": 1},
-        is_optional=True,
-    )
-
-    with httpx.Client() as client:
-        with pytest.raises(httpx.TimeoutException) as exception_info:
-            client.post("https://test_url?a=1")
-        assert (
-            str(exception_info.value)
-            == """No response can be found for POST request on https://test_url?a=1 amongst:
-- Match any request on https://test_url with {'a': 1} query parameters"""
-        )
-
-
-@pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
-def test_url_query_params_with_non_str_list_value(httpx_mock: HTTPXMock) -> None:
-    httpx_mock.add_response(
-        url="https://test_url",
-        match_params={"a": [1, "2"]},
-        is_optional=True,
-    )
-
-    with httpx.Client() as client:
-        with pytest.raises(httpx.TimeoutException) as exception_info:
-            client.post("https://test_url?a=1&a=2")
-        assert (
-            str(exception_info.value)
-            == """No response can be found for POST request on https://test_url?a=1&a=2 amongst:
-- Match any request on https://test_url with {'a': [1, '2']} query parameters"""
-        )
-
-
-@pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
 def test_url_query_params_with_non_str_name(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(
         url="https://test_url",
         match_params={1: "1"},
-        is_optional=True,
     )
 
     with httpx.Client() as client:
-        with pytest.raises(httpx.TimeoutException) as exception_info:
-            client.post("https://test_url?1=1")
-        assert (
-            str(exception_info.value)
-            == """No response can be found for POST request on https://test_url?1=1 amongst:
-- Match any request on https://test_url with {1: '1'} query parameters"""
-        )
+        response = client.post("https://test_url?1=1")
+        assert response.content == b""
 
 
 def test_match_params_without_url(httpx_mock: HTTPXMock) -> None:
@@ -205,6 +153,118 @@ def test_url_query_params_not_matching(httpx_mock: HTTPXMock) -> None:
             == """No response can be found for POST request on https://test_url?a=2 amongst:
 - Match any request on https://test_url with {'a': '1'} query parameters"""
         )
+
+
+@pytest.mark.parametrize(
+    ("match_params", "request_params"),
+    [
+        # Primitive types in match and request (different order)
+        ({"b1": True, "b2": False}, {"b2": False, "b1": True}),
+        ({"i1": 1, "i2": 0, "i3": -1}, {"i2": 0, "i3": -1, "i1": 1}),
+        ({"f1": 1.1, "f2": 0.0, "f3": -0.1}, {"f2": 0.0, "f3": -0.1, "f1": 1.1}),
+        # str type in match and primitive types in request (different order)
+        ({"b1": "true", "b2": "false"}, {"b2": False, "b1": True}),
+        ({"i1": "1", "i2": "0", "i3": "-1"}, {"i2": 0, "i3": -1, "i1": 1}),
+        ({"f1": "1.1", "f2": "0.0", "f3": "-0.1"}, {"f2": 0.0, "f3": -0.1, "f1": 1.1}),
+        # Primitive types in match and str type in request (different order)
+        ({"b1": True, "b2": False}, {"b2": "false", "b1": "true"}),
+        ({"i1": 1, "i2": 0, "i3": -1}, {"i2": "0", "i3": "-1", "i1": "1"}),
+        ({"f1": 1.1, "f2": 0.0, "f3": -0.1}, {"f2": "0.0", "f3": "-0.1", "f1": "1.1"}),
+        # List with different primitive types in match and request
+        (
+            {
+                "a": [
+                    True,
+                    False,
+                    "false",
+                    "true",
+                    1,
+                    "1",
+                    0,
+                    "0",
+                    1.1,
+                    "1.2",
+                    0.0,
+                    "0.0",
+                ]
+            },
+            {
+                "a": [
+                    "true",
+                    "false",
+                    False,
+                    True,
+                    "1",
+                    1,
+                    "0",
+                    0,
+                    "1.1",
+                    1.2,
+                    "0.0",
+                    0.0,
+                ]
+            },
+        ),
+    ],
+)
+def test_match_params_with_non_str_values_and_params_provided_as_dict(
+    httpx_mock: HTTPXMock,
+    match_params: dict[str, Any],
+    request_params: dict[str, Any],
+) -> None:
+    httpx_mock.add_response(url="https://test_url", match_params=match_params)
+
+    with httpx.Client() as client:
+        response = client.get("https://test_url", params=request_params)
+        assert response.content == b""
+
+
+@pytest.mark.parametrize(
+    ("match_params", "url"),
+    [
+        # Primitive types in match (different order)
+        ({"b1": True, "b2": False}, "https://test_url?b2=false&b1=true"),
+        ({"i1": 1, "i2": 0, "i3": -1}, "https://test_url?i2=0&i3=-1&i1=1"),
+        ({"f1": 1.1, "f2": 0.0, "f3": -0.1}, "https://test_url?f2=0.0&f3=-0.1&f1=1.1"),
+        # str type in match (different order)
+        ({"b1": "true", "b2": "false"}, "https://test_url?b2=false&b1=true"),
+        ({"i1": "1", "i2": "0", "i3": "-1"}, "https://test_url?i2=0&i3=-1&i1=1"),
+        (
+            {"f1": "1.1", "f2": "0.0", "f3": "-0.1"},
+            "https://test_url?f2=0.0&f3=-0.1&f1=1.1",
+        ),
+        # List with different primitive types in match
+        (
+            {
+                "a": [
+                    True,
+                    False,
+                    "false",
+                    "true",
+                    1,
+                    "1",
+                    0,
+                    "0",
+                    1.1,
+                    "1.2",
+                    0.0,
+                    "0.0",
+                ]
+            },
+            "https://test_url?a=true&a=false&a=false&a=true&a=1&a=1&a=0&a=0&a=1.1&a=1.2&a=0.0&a=0.0",
+        ),
+    ],
+)
+def test_match_params_with_non_str_values_and_params_in_requested_url(
+    httpx_mock: HTTPXMock,
+    match_params: dict[str, Any],
+    url: str,
+) -> None:
+    httpx_mock.add_response(url="https://test_url", match_params=match_params)
+
+    with httpx.Client() as client:
+        response = client.get(url)
+        assert response.content == b""
 
 
 def test_url_matching_with_more_than_one_value_on_same_param(
