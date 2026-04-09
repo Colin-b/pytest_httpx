@@ -2,12 +2,30 @@ import json
 import re
 from typing import Optional, Union, Any, Sequence
 from re import Pattern
+from unittest.mock import ANY
 
 import httpx
 from httpx import QueryParams
 
 from pytest_httpx._httpx_internals import _proxy_url, PrimitiveData
 from pytest_httpx._options import _HTTPXMockOptions
+
+
+def convert_back_mock_any(original: dict, new: dict) -> None:
+    """
+    As mock.ANY was converted to "<ANY>" by httpx, we set back the value to mock.ANY when needed.
+    """
+    for key, values in original.items():
+        if values is ANY:
+            new[key] = ANY
+        elif isinstance(values, list):
+            if len(values) == 1:
+                if values[0] is ANY:
+                    new[key] = ANY
+            else:
+                for index, value in enumerate(values):
+                    if value is ANY:
+                        new[key][index] = ANY
 
 
 def _url_match(
@@ -20,15 +38,17 @@ def _url_match(
 
     # Compare query parameters apart as order of parameters should not matter
     received_params = to_params_dict(received.params)
-    params = to_params_dict(
+    expected_params = to_params_dict(
         url_to_match.params if params is None else QueryParams(params)
     )
+    if params:
+        convert_back_mock_any(params, expected_params)
 
     # Remove the query parameters from the original URL to compare everything besides query parameters
     received_url = received.copy_with(query=None)
     url = url_to_match.copy_with(query=None)
 
-    return (received_params == params) and (url == received_url)
+    return (received_params == expected_params) and (url == received_url)
 
 
 def to_params_dict(params: QueryParams) -> dict[str, Union[str | list[str]]]:
