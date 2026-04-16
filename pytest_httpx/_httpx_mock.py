@@ -161,10 +161,19 @@ class HTTPXMock:
         if callback:
             response = callback(request)
 
-            if response:
+            if isinstance(response, httpx.Response):
                 return _unread(response)
 
-        self._request_not_matched(real_transport, request)
+            raise self._request_not_matched(
+                request,
+                self._explain_that_callback_must_return_a_response(
+                    real_transport, request
+                ),
+            )
+
+        raise self._request_not_matched(
+            request, self._explain_that_no_response_was_found(real_transport, request)
+        )
 
     async def _handle_async_request(
         self,
@@ -179,23 +188,35 @@ class HTTPXMock:
         if callback:
             response = callback(request)
 
-            if response:
-                if inspect.isawaitable(response):
-                    response = await response
+            if inspect.isawaitable(response):
+                response = await response
+
+            if isinstance(response, httpx.Response):
                 return _unread(response)
 
-        self._request_not_matched(real_transport, request)
+            raise self._request_not_matched(
+                request,
+                self._explain_that_callback_must_return_a_response(
+                    real_transport, request
+                ),
+            )
+
+        raise self._request_not_matched(
+            request, self._explain_that_no_response_was_found(real_transport, request)
+        )
 
     def _request_not_matched(
-        self,
-        real_transport: Union[httpx.AsyncHTTPTransport, httpx.HTTPTransport],
-        request: httpx.Request,
-    ) -> NoReturn:
+        self, request: httpx.Request, message: str
+    ) -> httpx.TimeoutException:
         self._requests_not_matched.append(request)
-        raise httpx.TimeoutException(
-            self._explain_that_no_response_was_found(real_transport, request),
-            request=request,
-        )
+        return httpx.TimeoutException(message, request=request)
+
+    def _explain_that_callback_must_return_a_response(
+        self,
+        real_transport: Union[httpx.BaseTransport, httpx.AsyncBaseTransport],
+        request: httpx.Request,
+    ) -> str:
+        return f"Callback registered for {RequestDescription(real_transport, request, [])} MUST return httpx.Response"
 
     def _explain_that_no_response_was_found(
         self,

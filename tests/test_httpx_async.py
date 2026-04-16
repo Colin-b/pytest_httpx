@@ -1174,6 +1174,43 @@ async def test_callback_returning_response(httpx_mock: HTTPXMock) -> None:
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("return_value", [None, "not a response"])
+@pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
+async def test_callback_not_returning_a_response(
+    httpx_mock: HTTPXMock, return_value: str | None
+) -> None:
+    httpx_mock.add_callback(lambda request: return_value, url="https://test_url")
+
+    async with httpx.AsyncClient() as client:
+        with pytest.raises(httpx.TimeoutException) as exception_info:
+            await client.get("https://test_url")
+        assert (
+            str(exception_info.value)
+            == "Callback registered for GET request on https://test_url MUST return httpx.Response"
+        )
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("return_value", [None, "not a response"])
+@pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
+async def test_async_callback_not_returning_a_response(
+    httpx_mock: HTTPXMock, return_value: str | None
+) -> None:
+    async def invalid_response(request: httpx.Request) -> httpx.Response:
+        return return_value
+
+    httpx_mock.add_callback(invalid_response, url="https://test_url")
+
+    async with httpx.AsyncClient() as client:
+        with pytest.raises(httpx.TimeoutException) as exception_info:
+            await client.get("https://test_url")
+        assert (
+            str(exception_info.value)
+            == "Callback registered for GET request on https://test_url MUST return httpx.Response"
+        )
+
+
+@pytest.mark.asyncio
 async def test_async_callback_returning_response(httpx_mock: HTTPXMock) -> None:
     async def custom_response(request: httpx.Request) -> httpx.Response:
         return httpx.Response(status_code=200, json={"url": str(request.url)})
@@ -1518,10 +1555,36 @@ async def test_content_matching(httpx_mock: HTTPXMock) -> None:
 
 
 @pytest.mark.asyncio
-async def test_proxy_matching(httpx_mock: HTTPXMock) -> None:
+async def test_proxy_matching_with_authentication(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(proxy_url="http://user:pwd@my_other_proxy/")
 
     async with httpx.AsyncClient(proxy="http://user:pwd@my_other_proxy") as client:
+        response = await client.get("https://test_url")
+        assert response.read() == b""
+
+
+@pytest.mark.asyncio
+async def test_proxy_matching_with_custom_proxy_headers(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(proxy_url="http://my_test_proxy/")
+
+    async with httpx.AsyncClient(
+        proxy=httpx.Proxy("http://my_test_proxy", headers={"X-Something": "value"})
+    ) as client:
+        response = await client.get("https://test_url")
+        assert response.read() == b""
+
+
+@pytest.mark.asyncio
+async def test_proxy_matching_with_authentication_and_custom_proxy_headers(
+    httpx_mock: HTTPXMock,
+) -> None:
+    httpx_mock.add_response(proxy_url="http://user:pwd@my_other_proxy/")
+
+    async with httpx.AsyncClient(
+        proxy=httpx.Proxy(
+            "http://user:pwd@my_other_proxy", headers={"X-Something": "value"}
+        )
+    ) as client:
         response = await client.get("https://test_url")
         assert response.read() == b""
 
