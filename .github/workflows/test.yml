@@ -26,7 +26,12 @@ jobs:
         pre-commit run --all-files
     - name: Test
       run: |
-        pytest --cov=pytest_httpx --cov-fail-under=100 --cov-report=term-missing --runpytest=subprocess --cov-branch --cov-report=xml
+        pytest --cov=pytest_httpx --cov-fail-under=100 --cov-report=term-missing --runpytest=subprocess --cov-branch --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
+    - name: Upload test results to Codecov
+      uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        report-type: test_results
     - name: Upload coverage reports to Codecov
       uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
       with:
