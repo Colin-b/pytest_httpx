@@ -1043,6 +1043,22 @@ def test_callback_returning_response(httpx_mock: HTTPXMock) -> None:
         assert response.headers["content-type"] == "application/json"
 
 
+@pytest.mark.parametrize("return_value", [None, "not a response"])
+@pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
+def test_callback_not_returning_a_response(
+    httpx_mock: HTTPXMock, return_value: str | None
+) -> None:
+    httpx_mock.add_callback(lambda request: return_value, url="https://test_url")
+
+    with httpx.Client() as client:
+        with pytest.raises(httpx.TimeoutException) as exception_info:
+            client.get("https://test_url")
+        assert (
+            str(exception_info.value)
+            == "Callback registered for GET request on https://test_url MUST return httpx.Response"
+        )
+
+
 def test_callback_executed_twice(httpx_mock: HTTPXMock) -> None:
     def custom_response(request: httpx.Request) -> httpx.Response:
         return httpx.Response(status_code=200, json=["content"])
