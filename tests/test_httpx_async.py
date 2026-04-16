@@ -1555,10 +1555,36 @@ async def test_content_matching(httpx_mock: HTTPXMock) -> None:
 
 
 @pytest.mark.asyncio
-async def test_proxy_matching(httpx_mock: HTTPXMock) -> None:
+async def test_proxy_matching_with_authentication(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(proxy_url="http://user:pwd@my_other_proxy/")
 
     async with httpx.AsyncClient(proxy="http://user:pwd@my_other_proxy") as client:
+        response = await client.get("https://test_url")
+        assert response.read() == b""
+
+
+@pytest.mark.asyncio
+async def test_proxy_matching_with_custom_proxy_headers(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(proxy_url="http://my_test_proxy/")
+
+    async with httpx.AsyncClient(
+        proxy=httpx.Proxy("http://my_test_proxy", headers={"X-Something": "value"})
+    ) as client:
+        response = await client.get("https://test_url")
+        assert response.read() == b""
+
+
+@pytest.mark.asyncio
+async def test_proxy_matching_with_authentication_and_custom_proxy_headers(
+    httpx_mock: HTTPXMock,
+) -> None:
+    httpx_mock.add_response(proxy_url="http://user:pwd@my_other_proxy/")
+
+    async with httpx.AsyncClient(
+        proxy=httpx.Proxy(
+            "http://user:pwd@my_other_proxy", headers={"X-Something": "value"}
+        )
+    ) as client:
         response = await client.get("https://test_url")
         assert response.read() == b""
 

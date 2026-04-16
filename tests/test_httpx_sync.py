@@ -1276,10 +1276,34 @@ def test_content_matching(httpx_mock: HTTPXMock) -> None:
         assert response.read() == b""
 
 
-def test_proxy_matching(httpx_mock: HTTPXMock) -> None:
+def test_proxy_matching_with_authentication(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(proxy_url="http://user:pwd@my_other_proxy/")
 
     with httpx.Client(proxy="http://user:pwd@my_other_proxy") as client:
+        response = client.get("https://test_url")
+        assert response.read() == b""
+
+
+def test_proxy_matching_with_custom_proxy_headers(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(proxy_url="http://my_test_proxy/")
+
+    with httpx.Client(
+        proxy=httpx.Proxy("http://my_test_proxy", headers={"X-Something": "value"})
+    ) as client:
+        response = client.get("https://test_url")
+        assert response.read() == b""
+
+
+def test_proxy_matching_with_authentication_and_custom_proxy_headers(
+    httpx_mock: HTTPXMock,
+) -> None:
+    httpx_mock.add_response(proxy_url="http://user:pwd@my_other_proxy/")
+
+    with httpx.Client(
+        proxy=httpx.Proxy(
+            "http://user:pwd@my_other_proxy", headers={"X-Something": "value"}
+        )
+    ) as client:
         response = client.get("https://test_url")
         assert response.read() == b""
 
