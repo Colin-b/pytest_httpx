@@ -53,11 +53,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `non_mocked_hosts` option is not available anymore. Use `should_mock` instead as in the following sample:
   ```python
   import pytest
-  
+
   @pytest.mark.httpx_mock(non_mocked_hosts=["my_local_test_host"])
   def test_previous_behavior(httpx_mock):
       ...
-  
+
   @pytest.mark.httpx_mock(should_mock=lambda request: request.url.host not in ["my_local_test_host"])
   def test_new_behavior(httpx_mock):
       ...
@@ -109,7 +109,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ```python
   # Apply marker to whole module
   pytestmark = pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
-  
+
   # Or to specific tests
   @pytest.mark.httpx_mock(non_mocked_hosts=[...])
   def test_foo(httpx_mock):
@@ -178,7 +178,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.23.1] - 2023-08-02
 ### Fixed
-- Version `0.23.0` introduced a regression removing the support for mutating json content provided in `httpx_mock.add_response`. 
+- Version `0.23.0` introduced a regression removing the support for mutating json content provided in `httpx_mock.add_response`.
   - This is fixed, you can now expect the JSON return being as it was when provided to `httpx_mock.add_response`:
 ```python
     mutating_json = {"content": "request 1"}

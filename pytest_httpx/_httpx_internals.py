@@ -59,3 +59,4 @@ def _proxy_url(
         real_pool := real_transport._pool, (httpcore.HTTPProxy, httpcore.AsyncHTTPProxy)
     ):
         return _to_httpx_url(real_pool._proxy_url, real_pool._proxy_headers)
+    return None

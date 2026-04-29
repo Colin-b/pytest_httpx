@@ -705,7 +705,9 @@ def test_request_with_pattern_in_url(httpx_mock: HTTPXMock) -> None:
         client.get("https://unmatched")
         client.get("https://test_url", headers={"X-Test": "1"})
 
-    assert httpx_mock.get_request(url=re.compile(".*test.*")).headers["x-test"] == "1"
+    request = httpx_mock.get_request(url=re.compile(".*test.*"))
+    assert request is not None
+    assert request.headers["x-test"] == "1"
 
 
 def test_requests_with_pattern_in_url(httpx_mock: HTTPXMock) -> None:
@@ -852,34 +854,41 @@ def test_requests_retrieval(httpx_mock: HTTPXMock) -> None:
         client.patch("https://test_url", content=b"sent content 5")
         client.delete("https://test_url", headers={"X-Test": "test header 4"})
 
-    assert (
-        httpx_mock.get_request(url=httpx.URL("https://test_url"), method="PATCH").read()
-        == b"sent content 5"
+    patch_request = httpx_mock.get_request(
+        url=httpx.URL("https://test_url"), method="PATCH"
     )
-    assert (
-        httpx_mock.get_request(url=httpx.URL("https://test_url"), method="HEAD").read()
-        == b""
+    assert patch_request is not None
+    assert patch_request.read() == b"sent content 5"
+
+    head_request = httpx_mock.get_request(
+        url=httpx.URL("https://test_url"), method="HEAD"
     )
-    assert (
-        httpx_mock.get_request(url=httpx.URL("https://test_url"), method="PUT").read()
-        == b"sent content 3"
+    assert head_request is not None
+    assert head_request.read() == b""
+
+    put_request = httpx_mock.get_request(
+        url=httpx.URL("https://test_url"), method="PUT"
     )
-    assert (
-        httpx_mock.get_request(url=httpx.URL("https://test_url"), method="GET").headers[
-            "x-test"
-        ]
-        == "test header 1"
+    assert put_request is not None
+    assert put_request.read() == b"sent content 3"
+
+    get_request = httpx_mock.get_request(
+        url=httpx.URL("https://test_url"), method="GET"
     )
-    assert (
-        httpx_mock.get_request(url=httpx.URL("https://test_url"), method="POST").read()
-        == b"sent content 2"
+    assert get_request is not None
+    assert get_request.headers["x-test"] == "test header 1"
+
+    post_request = httpx_mock.get_request(
+        url=httpx.URL("https://test_url"), method="POST"
     )
-    assert (
-        httpx_mock.get_request(
-            url=httpx.URL("https://test_url"), method="DELETE"
-        ).headers["x-test"]
-        == "test header 4"
+    assert post_request is not None
+    assert post_request.read() == b"sent content 2"
+
+    delete_request = httpx_mock.get_request(
+        url=httpx.URL("https://test_url"), method="DELETE"
     )
+    assert delete_request is not None
+    assert delete_request.headers["x-test"] == "test header 4"
 
 
 def test_requests_retrieval_on_same_url(httpx_mock: HTTPXMock) -> None:
@@ -903,6 +912,7 @@ def test_request_retrieval_on_same_url(httpx_mock: HTTPXMock) -> None:
         client.get("https://test_url2", headers={"X-TEST": "test header 2"})
 
     request = httpx_mock.get_request(url=httpx.URL("https://test_url"))
+    assert request is not None
     assert request.headers["x-test"] == "test header 1"
 
 
@@ -927,6 +937,7 @@ def test_request_retrieval_on_same_method(httpx_mock: HTTPXMock) -> None:
         client.post("https://test_url", headers={"X-TEST": "test header 2"})
 
     request = httpx_mock.get_request(method="GET")
+    assert request is not None
     assert request.headers["x-test"] == "test header 1"
 
 
@@ -965,6 +976,7 @@ def test_default_request_retrieval(httpx_mock: HTTPXMock) -> None:
         client.post("https://test_url", headers={"X-TEST": "test header 1"})
 
     request = httpx_mock.get_request()
+    assert request is not None
     assert request.headers["x-test"] == "test header 1"
 
 
@@ -1141,15 +1153,15 @@ def test_request_retrieval_with_more_than_one(testdir: Testdir) -> None:
     """
     testdir.makepyfile("""
         import httpx
-        
-        
+
+
         def test_request_retrieval_with_more_than_one(httpx_mock):
             httpx_mock.add_response(is_reusable=True)
-        
+
             with httpx.Client() as client:
                 client.get("https://test_url", headers={"X-TEST": "test header 1"})
                 client.get("https://test_url", headers={"X-TEST": "test header 2"})
-        
+
             httpx_mock.get_request(url=httpx.URL("https://test_url"))
     """)
     result = testdir.runpytest()
@@ -2168,14 +2180,14 @@ def test_request_selection_content_matching_with_iterable(
     with httpx.Client() as client:
         client.put("https://test_url_2", content=stream_content_2())
         client.put("https://test_url_1", content=stream_content_1())
-    assert (
-        httpx_mock.get_request(match_content=b"full content 1").url
-        == "https://test_url_1"
-    )
-    assert (
-        httpx_mock.get_request(match_content=b"full content 2").url
-        == "https://test_url_2"
-    )
+
+    request1 = httpx_mock.get_request(match_content=b"full content 1")
+    assert request1 is not None
+    assert request1.url == "https://test_url_1"
+
+    request2 = httpx_mock.get_request(match_content=b"full content 2")
+    assert request2 is not None
+    assert request2.url == "https://test_url_2"
 
 
 def test_files_matching(httpx_mock: HTTPXMock) -> None:

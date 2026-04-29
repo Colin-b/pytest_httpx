@@ -187,7 +187,7 @@ class _RequestMatcher:
             return True
 
         encoding = request.headers.encoding
-        request_headers = {}
+        request_headers: dict = {}
         # Can be cleaned based on the outcome of https://github.com/encode/httpx/discussions/2841
         for raw_name, raw_value in request.headers.raw:
             if raw_name in request_headers:
@@ -273,7 +273,7 @@ class _RequestMatcher:
         if self.headers:
             extra_description.append(f"{self.headers} headers")
         if self.content is not None:
-            extra_description.append(f"{self.content} body")
+            extra_description.append(f"{self.content!r} body")
         if self.json is not None:
             extra_description.append(f"{self.json} json body")
         if self.data is not None:

@@ -5,8 +5,8 @@ def test_fixture_is_available(testdir: Testdir) -> None:
     # create a temporary pytest test file
     testdir.makepyfile("""
         import httpx
-        
-        
+
+
         def test_http(httpx_mock):
             mock = httpx_mock.add_response(url="https://foo.tld")
             r = httpx.get("https://foo.tld")
@@ -64,7 +64,7 @@ def test_httpx_mock_unused_callback(testdir: Testdir) -> None:
         def test_httpx_mock_unused_callback(httpx_mock):
             def unused(*args, **kwargs):
                 pass
-        
+
             httpx_mock.add_callback(unused)
 
     """)
@@ -93,7 +93,7 @@ def test_httpx_mock_unused_callback_without_assertion(testdir: Testdir) -> None:
         def test_httpx_mock_unused_callback_without_assertion(httpx_mock):
             def unused(*args, **kwargs):
                 pass
-        
+
             httpx_mock.add_callback(unused)
 
     """)
@@ -247,7 +247,7 @@ def test_httpx_mock_unmatched_request_with_only_unmatched_responses(
             httpx_mock.add_response(url="https://foo2.tld")
             # This response will not be sent (because test execution failed earlier)
             httpx_mock.add_response(url="https://foo3.tld")
-            
+
             with httpx.Client() as client:
                 # This request will not be matched
                 client.get("https://foo22.tld")
@@ -291,7 +291,7 @@ def test_httpx_mock_unmatched_request_with_only_unmatched_reusable_responses(
             httpx_mock.add_response(url="https://foo2.tld", method="GET")
             # This response will not be sent (because test execution failed earlier)
             httpx_mock.add_response(url="https://foo3.tld")
-            
+
             with httpx.Client() as client:
                 # This request will not be matched
                 client.get("https://foo22.tld")
@@ -334,7 +334,7 @@ def test_httpx_mock_unmatched_request_with_only_matched_responses(
             httpx_mock.add_response(url="https://foo.tld")
             # Sent response
             httpx_mock.add_response(url="https://foo.tld")
-            
+
             with httpx.Client() as client:
                 client.get("https://foo.tld")
                 client.get("https://foo.tld")
@@ -381,7 +381,7 @@ def test_httpx_mock_unmatched_request_with_only_matched_reusable_responses(
             httpx_mock.add_response(url="https://foo.tld")
             # Sent response
             httpx_mock.add_response(url="https://foo3.tld")
-            
+
             with httpx.Client() as client:
                 client.get("https://foo.tld")
                 client.get("https://foo.tld")
@@ -430,7 +430,7 @@ def test_httpx_mock_unmatched_request_with_matched_and_unmatched_responses(
             httpx_mock.add_response(url="https://foo.tld")
             # This response will not be sent (because test execution failed earlier)
             httpx_mock.add_response(url="https://foo3.tld")
-            
+
             with httpx.Client() as client:
                 client.get("https://foo.tld")
                 client.get("https://foo.tld")
@@ -484,7 +484,7 @@ def test_httpx_mock_unmatched_request_with_matched_and_unmatched_reusable_respon
             httpx_mock.add_response(url="https://foo2.tld")
             # This response will not be sent (because test execution failed earlier)
             httpx_mock.add_response(url="https://foo4.tld")
-            
+
             with httpx.Client() as client:
                 client.get("https://foo.tld")
                 client.get("https://foo2.tld")
@@ -531,18 +531,18 @@ def test_httpx_mock_should_mock_sync(testdir: Testdir) -> None:
         @pytest.mark.httpx_mock(should_mock=lambda request: request.url.host != "localhost")
         def test_httpx_mock_should_mock_sync(httpx_mock):
             httpx_mock.add_response()
-            
+
             with httpx.Client() as client:
                 # Mocked request
                 client.get("https://foo.tld")
-            
+
                 # Non mocked request
                 with pytest.raises(httpx.ConnectError):
                     client.get("https://localhost:5005")
-            
+
             # Assert that a single request was mocked
             assert len(httpx_mock.get_requests()) == 1
-            
+
     """)
     result = testdir.runpytest()
     result.assert_outcomes(passed=1)
@@ -560,18 +560,18 @@ def test_httpx_mock_should_mock_async(testdir: Testdir) -> None:
         @pytest.mark.httpx_mock(should_mock=lambda request: request.url.host != "localhost")
         async def test_httpx_mock_should_mock_async(httpx_mock):
             httpx_mock.add_response()
-            
+
             async with httpx.AsyncClient() as client:
                 # Mocked request
                 await client.get("https://foo.tld")
-            
+
                 # Non mocked request
                 with pytest.raises(httpx.ConnectError):
                     await client.get("https://localhost:5005")
-            
+
             # Assert that a single request was mocked
             assert len(httpx_mock.get_requests()) == 1
-            
+
     """)
     result = testdir.runpytest()
     result.assert_outcomes(passed=1)
@@ -603,26 +603,26 @@ def test_httpx_mock_options_on_multi_levels_are_aggregated(testdir: Testdir) -> 
         @pytest.mark.httpx_mock(should_mock=lambda request: request.url.host != "localhost")
         async def test_httpx_mock_options_on_multi_levels_are_aggregated(httpx_mock):
             httpx_mock.add_response(url="https://foo.tld", headers={"x-pytest-httpx": "this was mocked"})
-            
-            # This response will never be used, testing that assert_all_responses_were_requested is handled 
+
+            # This response will never be used, testing that assert_all_responses_were_requested is handled
             httpx_mock.add_response(url="https://never_called.url")
-            
+
             async with httpx.AsyncClient() as client:
                 # Assert that previously set should_mock was overridden
                 response = await client.get("https://foo.tld")
                 assert response.headers["x-pytest-httpx"] == "this was mocked"
-            
+
                 # Assert that latest should_mock is handled
                 with pytest.raises(httpx.ConnectError):
                     await client.get("https://localhost:5005")
-            
+
                 # Assert that assert_all_requests_were_expected is the one at module level
                 with pytest.raises(httpx.TimeoutException):
                     await client.get("https://unexpected.url")
-            
-            # Assert that 2 requests out of 3 were mocked 
+
+            # Assert that 2 requests out of 3 were mocked
             assert len(httpx_mock.get_requests()) == 2
-            
+
     """)
     result = testdir.runpytest()
     result.assert_outcomes(passed=1)
@@ -638,7 +638,7 @@ def test_invalid_marker(testdir: Testdir) -> None:
         @pytest.mark.httpx_mock(foo=123)
         def test_invalid_marker(httpx_mock):
             pass
-            
+
     """)
     result = testdir.runpytest()
     result.assert_outcomes(errors=1)
@@ -659,7 +659,7 @@ def test_mandatory_response_not_matched(testdir: Testdir) -> None:
             httpx_mock.add_response(url="https://test_url")
             # This response MUST be requested
             httpx_mock.add_response(url="https://test_url2", is_optional=False)
-            
+
     """)
     result = testdir.runpytest()
     result.assert_outcomes(errors=1, passed=1)
@@ -681,7 +681,7 @@ def test_reusable_response_not_matched(testdir: Testdir) -> None:
 
         def test_reusable_response_not_matched(httpx_mock):
             httpx_mock.add_response(url="https://test_url2", is_reusable=True)
-            
+
     """)
     result = testdir.runpytest()
     result.assert_outcomes(errors=1, passed=1)

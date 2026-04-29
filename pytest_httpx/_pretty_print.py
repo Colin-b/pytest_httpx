@@ -44,7 +44,7 @@ class RequestDescription:
 
         if self.expected_headers:
             headers_encoding = self.request.headers.encoding
-            present_headers = {}
+            present_headers: dict = {}
             # Can be cleaned based on the outcome of https://github.com/encode/httpx/discussions/2841
             for name, lower_name, value in self.request.headers._list:
                 if lower_name in self.expected_headers:

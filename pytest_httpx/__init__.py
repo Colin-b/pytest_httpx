@@ -22,11 +22,11 @@ def httpx_mock(
     monkeypatch: MonkeyPatch,
     request: FixtureRequest,
 ) -> Generator[HTTPXMock, None, None]:
-    options = {}
+    httpx_mock_markers: dict = {}
     for marker in request.node.iter_markers("httpx_mock"):
-        options = marker.kwargs | options
+        httpx_mock_markers = marker.kwargs | httpx_mock_markers
     __tracebackhide__ = methodcaller("errisinstance", TypeError)
-    options = _HTTPXMockOptions(**options)
+    options = _HTTPXMockOptions(**httpx_mock_markers)
 
     mock = HTTPXMock(options)
 
