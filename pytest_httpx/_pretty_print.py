@@ -1,5 +1,4 @@
-import httpx
-
+from pytest_httpx._compat import httpx
 from pytest_httpx._httpx_internals import _proxy_url
 from pytest_httpx._request_matcher import _RequestMatcher
 
