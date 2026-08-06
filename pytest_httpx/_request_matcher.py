@@ -4,8 +4,7 @@ from typing import Optional, Union, Any, Sequence
 from re import Pattern
 from unittest.mock import ANY
 
-import httpx
-from httpx import QueryParams
+from pytest_httpx._compat import httpx
 
 from pytest_httpx._httpx_internals import _proxy_url, PrimitiveData
 from pytest_httpx._options import _HTTPXMockOptions
@@ -39,7 +38,7 @@ def _url_match(
     # Compare query parameters apart as order of parameters should not matter
     received_params = to_params_dict(received.params)
     expected_params = to_params_dict(
-        url_to_match.params if params is None else QueryParams(params)
+        url_to_match.params if params is None else httpx.QueryParams(params)
     )
     if params:
         convert_back_mock_any(params, expected_params)
@@ -51,7 +50,7 @@ def _url_match(
     return (received_params == expected_params) and (url == received_url)
 
 
-def to_params_dict(params: QueryParams) -> dict[str, Union[str | list[str]]]:
+def to_params_dict(params: httpx.QueryParams) -> dict[str, Union[str | list[str]]]:
     """Convert query parameters to a dict where the value is a string if the parameter has a single value and a list of string otherwise."""
     d = {}
     for key in params:
