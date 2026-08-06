@@ -2,11 +2,7 @@ import base64
 from collections.abc import AsyncIterator, Iterable, Iterator, Sequence
 from typing import TypeAlias
 
-import httpcore
-import httpx
-
-# TODO Get rid of this internal import
-from httpx._content import AsyncIteratorByteStream, IteratorByteStream
+from pytest_httpx._compat import httpcore, httpx
 
 # Those types are internally defined within httpx._types
 HeaderTypes: TypeAlias = (
@@ -19,7 +15,11 @@ HeaderTypes: TypeAlias = (
 PrimitiveData: TypeAlias = str | int | float | bool | None
 
 
-class IteratorStream(AsyncIteratorByteStream, IteratorByteStream):
+# TODO Get rid of these internal classes
+class IteratorStream(
+    httpx._content.AsyncIteratorByteStream,
+    httpx._content.IteratorByteStream,
+):
     def __init__(self, stream: Iterable[bytes]):
         class Stream:
             def __iter__(self) -> Iterator[bytes]:
@@ -29,8 +29,7 @@ class IteratorStream(AsyncIteratorByteStream, IteratorByteStream):
                 for chunk in stream:
                     yield chunk
 
-        AsyncIteratorByteStream.__init__(self, stream=Stream())
-        IteratorByteStream.__init__(self, stream=Stream())
+        super().__init__(stream=Stream())
 
 
 def _to_httpx_url(url: httpcore.URL, headers: list[tuple[bytes, bytes]]) -> httpx.URL:

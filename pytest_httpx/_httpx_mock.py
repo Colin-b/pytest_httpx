@@ -3,9 +3,8 @@ import inspect
 from collections.abc import Awaitable, Callable
 from typing import Any
 
-import httpx
-
 from pytest_httpx import _httpx_internals
+from pytest_httpx._compat import httpx
 from pytest_httpx._options import _HTTPXMockOptions
 from pytest_httpx._pretty_print import RequestDescription
 from pytest_httpx._request_matcher import _RequestMatcher
