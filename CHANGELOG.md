@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Sending a non UTF8 body while having a `json` matcher registered will not raise a `UnicodeDecodeError` anymore.
 - `match_params` is now handling `bool`, `int` and `float` values in addition to `str`. Only str values were previously expected.
 - A meaningful error will now be returned when a callback that does not return an `httpx.Response` is called.
+### Added
+- Support for httpx2 is implemented via a httpx/httpx2 compatibility module.
 
 ### Removed
 - python `3.10` is not supported anymore.
