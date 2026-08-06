@@ -3,7 +3,7 @@ import inspect
 from typing import Union, Optional, Callable, Any
 from collections.abc import Awaitable
 
-import httpx
+from pytest_httpx._compat import httpx
 
 from pytest_httpx import _httpx_internals
 from pytest_httpx._options import _HTTPXMockOptions

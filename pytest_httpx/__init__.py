@@ -1,10 +1,10 @@
 from collections.abc import Generator
 from operator import methodcaller
 
-import httpx
 import pytest
 from pytest import Config, FixtureRequest, MonkeyPatch
 
+from pytest_httpx._compat import httpx
 from pytest_httpx._httpx_mock import HTTPXMock
 from pytest_httpx._httpx_internals import IteratorStream
 from pytest_httpx._options import _HTTPXMockOptions
