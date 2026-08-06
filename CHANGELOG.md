@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A meaningful error will now be returned when a callback that does not return an `httpx.Response` is called.
 - Responses with a `Content-Encoding` (such as `gzip`) provided via `content` can now be read by the client. They previously failed with `httpx.DecodingError`.
 
+### Added
+- Support for httpx2 is implemented via a httpx/httpx2 compatibility module.
+
 ### Removed
 - python `3.10` is not supported anymore.
 
