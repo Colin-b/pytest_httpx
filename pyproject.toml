@@ -39,8 +39,6 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
-    "httpx==0.28.*",
-    "httpx2==2.*",
     "pytest==9.*",
 ]
 dynamic = ["version"]
@@ -52,6 +50,8 @@ changelog = "https://github.com/Colin-b/pytest_httpx/blob/master/CHANGELOG.md"
 issues = "https://github.com/Colin-b/pytest_httpx/issues"
 
 [project.optional-dependencies]
+httpx = ["httpx==0.28.*"]
+httpx2 = ["httpx2==2.*"]
 testing = [
     # Used to check coverage
     "pytest-cov==7.*",
