@@ -1596,6 +1596,42 @@ def test_match_json_invalid_json(httpx_mock: HTTPXMock) -> None:
         )
 
 
+@pytest.mark.parametrize("content", [b'{"a":"\xff"}', b'{"a":"\xc3"}'])
+@pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
+def test_match_json_invalid_utf8(httpx_mock: HTTPXMock, content: bytes) -> None:
+    httpx_mock.add_response(match_json={"a": "value"})
+
+    with httpx.Client() as client:
+        with pytest.raises(httpx.TimeoutException) as exception_info:
+            client.post("https://test_url", content=content)
+        assert exception_info.value.request.content == content
+        assert "No response can be found" in str(exception_info.value)
+        assert client.post("https://test_url", json={"a": "value"}).status_code == 200
+
+
+def test_match_json_binary_content_fallback(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(match_json={"a": "value"}, status_code=201)
+    httpx_mock.add_response(match_content=b"\xff", status_code=202)
+
+    with httpx.Client() as client:
+        assert client.post("https://test_url", content=b"\xff").status_code == 202
+        assert client.post("https://test_url", json={"a": "value"}).status_code == 201
+
+
+def test_requests_retrieval_json_matching_with_binary_content(
+    httpx_mock: HTTPXMock,
+) -> None:
+    httpx_mock.add_response(is_reusable=True)
+
+    with httpx.Client() as client:
+        binary_request = client.post("https://test_url", content=b"\xff").request
+        json_request = client.post("https://test_url", json={"a": "value"}).request
+
+    assert httpx_mock.get_requests(match_json={"a": "value"}) == [json_request]
+    assert httpx_mock.get_request(match_json={"a": "value"}) is json_request
+    assert httpx_mock.get_request(match_content=b"\xff") is binary_request
+
+
 def test_headers_and_content_matching(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(
         match_headers={"User-Agent": f"python-httpx/{httpx.__version__}"},

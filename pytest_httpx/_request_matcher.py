@@ -209,7 +209,7 @@ class _RequestMatcher:
             try:
                 # httpx._content.encode_json hard codes utf-8 encoding.
                 return json.loads(request.content.decode("utf-8")) == self.json
-            except json.decoder.JSONDecodeError:
+            except (UnicodeDecodeError, json.decoder.JSONDecodeError):
                 return False
 
         if self.files:
