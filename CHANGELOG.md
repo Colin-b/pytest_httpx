@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Explicit support for python `3.15`.
 
 ### Fixed
+- JSON body matching now rejects invalid UTF8 without interrupting other matchers or request retrieval.
 - `match_params` is now handling `bool`, `int` and `float` values in addition to `str`. Only str values were previously expected.
 - A meaningful error will now be returned when a callback that does not return an `httpx.Response` is called.
 
