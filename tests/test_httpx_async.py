@@ -5,11 +5,11 @@ import re
 import time
 from collections.abc import AsyncIterable
 from typing import Any
+from unittest.mock import ANY
 
 import httpx
 import pytest
 from pytest import Testdir
-from unittest.mock import ANY
 
 import pytest_httpx
 from pytest_httpx import HTTPXMock
