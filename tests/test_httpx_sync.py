@@ -1605,7 +1605,9 @@ def test_match_json_invalid_utf8(httpx_mock: HTTPXMock, content: bytes) -> None:
             client.post("https://test_url", content=content)
         assert exception_info.value.request.content == content
         assert "No response can be found" in str(exception_info.value)
-        assert client.post("https://test_url", json={"a": "value"}).status_code == 200
+
+        response = client.post("https://test_url", json={"a": "value"})
+        assert response.status_code == 200
 
 
 def test_match_json_binary_content_fallback(httpx_mock: HTTPXMock) -> None:
@@ -1613,8 +1615,10 @@ def test_match_json_binary_content_fallback(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(match_content=b"\xff", status_code=202)
 
     with httpx.Client() as client:
-        assert client.post("https://test_url", content=b"\xff").status_code == 202
-        assert client.post("https://test_url", json={"a": "value"}).status_code == 201
+        response = client.post("https://test_url", content=b"\xff")
+        assert response.status_code == 202
+        response = client.post("https://test_url", json={"a": "value"})
+        assert response.status_code == 201
 
 
 def test_requests_retrieval_json_matching_with_binary_content(

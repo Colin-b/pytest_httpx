@@ -1875,6 +1875,7 @@ async def test_match_json_invalid_utf8(httpx_mock: HTTPXMock, content: bytes) ->
             await client.post("https://test_url", content=content)
         assert exception_info.value.request.content == content
         assert "No response can be found" in str(exception_info.value)
+
         response = await client.post("https://test_url", json={"a": "value"})
         assert response.status_code == 200
 
