@@ -223,7 +223,7 @@ def test_proxy_url(httpx_mock: HTTPXMock):
 
 Use `match_headers` parameter to specify the HTTP headers (as a dict) to reply to.
 
-Matching is performed on equality for each provided header.
+Matching is performed on equality for each provided header.[^header-absence]
 
 ```python
 import httpx
@@ -236,6 +236,8 @@ def test_headers_matching(httpx_mock: HTTPXMock):
     with httpx.Client() as client:
         response = client.get("https://test_url")
 ```
+
+[^header-absence]: Matching on the absence of a header is currently not supported. [Retrieve the request](#check-sent-requests) after it is sent and assert that the header is absent from `request.headers`.
 
 #### Matching on HTTP body
 
@@ -680,7 +682,8 @@ from pytest_httpx import HTTPXMock
 
 
 def test_many_requests(httpx_mock: HTTPXMock):
-    httpx_mock.add_response(is_reusable=True)
+    httpx_mock.add_response()
+    httpx_mock.add_response()
 
     with httpx.Client() as client:
         response1 = client.get("https://test_url")
@@ -708,27 +711,6 @@ You can add criteria so that requests will be returned only in case of a more sp
 
 Note that requests are [selected the same way as responses](#how-response-is-selected).
 Meaning that you can transpose `httpx_mock.add_response` calls in the related examples into `httpx_mock.get_requests` or `httpx_mock.get_request`.
-
-### Check that a header was not sent
-
-Retrieve the request and assert that the header is absent from `request.headers`.
-This checks a captured request after the call.
-
-```python
-import httpx
-from pytest_httpx import HTTPXMock
-
-
-def test_request_without_header(httpx_mock: HTTPXMock):
-    httpx_mock.add_response()
-
-    with httpx.Client() as client:
-        client.get("https://test_url")
-
-    request = httpx_mock.get_request()
-    assert request is not None
-    assert "X-Debug" not in request.headers
-```
 
 ## Configuring httpx_mock
 
