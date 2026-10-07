@@ -1,5 +1,3 @@
-from typing import Union
-
 import httpx
 
 from pytest_httpx._httpx_internals import _proxy_url
@@ -9,7 +7,7 @@ from pytest_httpx._request_matcher import _RequestMatcher
 class RequestDescription:
     def __init__(
         self,
-        real_transport: Union[httpx.BaseTransport, httpx.AsyncBaseTransport],
+        real_transport: httpx.BaseTransport | httpx.AsyncBaseTransport,
         request: httpx.Request,
         matchers: list[_RequestMatcher],
     ):
@@ -24,8 +22,8 @@ class RequestDescription:
             if matcher.headers
             for header in matcher.headers
         }
-        self.expect_body = any([matcher.expect_body() for matcher in matchers])
-        self.expect_proxy = any([matcher.proxy_url is not None for matcher in matchers])
+        self.expect_body = any(matcher.expect_body() for matcher in matchers)
+        self.expect_proxy = any(matcher.proxy_url is not None for matcher in matchers)
         self.expected_extensions = {
             extension
             for matcher in matchers

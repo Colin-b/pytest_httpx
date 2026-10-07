@@ -1,22 +1,22 @@
 import base64
-from typing import Union, Optional
-from collections.abc import Sequence, Iterable, AsyncIterator, Iterator
+from collections.abc import AsyncIterator, Iterable, Iterator, Sequence
+from typing import TypeAlias
 
 import httpcore
 import httpx
 
 # TODO Get rid of this internal import
-from httpx._content import IteratorByteStream, AsyncIteratorByteStream
+from httpx._content import AsyncIteratorByteStream, IteratorByteStream
 
 # Those types are internally defined within httpx._types
-HeaderTypes = Union[
-    httpx.Headers,
-    dict[str, str],
-    dict[bytes, bytes],
-    Sequence[tuple[str, str]],
-    Sequence[tuple[bytes, bytes]],
-]
-PrimitiveData = Optional[Union[str, int, float, bool]]
+HeaderTypes: TypeAlias = (
+    httpx.Headers
+    | dict[str, str]
+    | dict[bytes, bytes]
+    | Sequence[tuple[str, str]]
+    | Sequence[tuple[bytes, bytes]]
+)
+PrimitiveData: TypeAlias = str | int | float | bool | None
 
 
 class IteratorStream(AsyncIteratorByteStream, IteratorByteStream):
@@ -53,8 +53,8 @@ def _to_httpx_url(url: httpcore.URL, headers: list[tuple[bytes, bytes]]) -> http
 
 
 def _proxy_url(
-    real_transport: Union[httpx.HTTPTransport, httpx.AsyncHTTPTransport],
-) -> Optional[httpx.URL]:
+    real_transport: httpx.HTTPTransport | httpx.AsyncHTTPTransport,
+) -> httpx.URL | None:
     if isinstance(
         real_pool := real_transport._pool, (httpcore.HTTPProxy, httpcore.AsyncHTTPProxy)
     ):

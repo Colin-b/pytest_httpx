@@ -14,9 +14,8 @@ from pytest_httpx import HTTPXMock
 
 @pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
 def test_without_response(httpx_mock: HTTPXMock) -> None:
-    with pytest.raises(Exception) as exception_info:
-        with httpx.Client() as client:
-            client.get("https://test_url")
+    with pytest.raises(Exception) as exception_info, httpx.Client() as client:
+        client.get("https://test_url")
     assert (
         str(exception_info.value)
         == """No response can be found for GET request on https://test_url"""
