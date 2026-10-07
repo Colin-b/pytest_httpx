@@ -1,13 +1,14 @@
 import json
 import re
-from typing import Optional, Union, Any, Sequence
+from collections.abc import Sequence
 from re import Pattern
+from typing import Any
 from unittest.mock import ANY
 
 import httpx
 from httpx import QueryParams
 
-from pytest_httpx._httpx_internals import _proxy_url, PrimitiveData
+from pytest_httpx._httpx_internals import PrimitiveData, _proxy_url
 from pytest_httpx._options import _HTTPXMockOptions
 
 
@@ -29,9 +30,9 @@ def convert_back_mock_any(original: dict, new: dict) -> None:
 
 
 def _url_match(
-    url_to_match: Union[Pattern[str], httpx.URL],
+    url_to_match: Pattern[str] | httpx.URL,
     received: httpx.URL,
-    params: Optional[dict[str, Union[PrimitiveData, Sequence[PrimitiveData]]]],
+    params: dict[str, PrimitiveData | Sequence[PrimitiveData]] | None,
 ) -> bool:
     if isinstance(url_to_match, re.Pattern):
         return url_to_match.match(str(received)) is not None
@@ -51,7 +52,7 @@ def _url_match(
     return (received_params == expected_params) and (url == received_url)
 
 
-def to_params_dict(params: QueryParams) -> dict[str, Union[str | list[str]]]:
+def to_params_dict(params: QueryParams) -> dict[str, str | list[str]]:
     """Convert query parameters to a dict where the value is a string if the parameter has a single value and a list of string otherwise."""
     d = {}
     for key in params:
@@ -64,20 +65,18 @@ class _RequestMatcher:
     def __init__(
         self,
         options: _HTTPXMockOptions,
-        url: Optional[Union[str, Pattern[str], httpx.URL]] = None,
-        method: Optional[str] = None,
-        proxy_url: Optional[Union[str, Pattern[str], httpx.URL]] = None,
-        match_headers: Optional[dict[str, Any]] = None,
-        match_content: Optional[bytes] = None,
-        match_json: Optional[Any] = None,
-        match_data: Optional[dict[str, Any]] = None,
-        match_files: Optional[Any] = None,
-        match_extensions: Optional[dict[str, Any]] = None,
-        match_params: Optional[
-            dict[str, Union[PrimitiveData, Sequence[PrimitiveData]]]
-        ] = None,
-        is_optional: Optional[bool] = None,
-        is_reusable: Optional[bool] = None,
+        url: str | Pattern[str] | httpx.URL | None = None,
+        method: str | None = None,
+        proxy_url: str | Pattern[str] | httpx.URL | None = None,
+        match_headers: dict[str, Any] | None = None,
+        match_content: bytes | None = None,
+        match_json: Any | None = None,
+        match_data: dict[str, Any] | None = None,
+        match_files: Any | None = None,
+        match_extensions: dict[str, Any] | None = None,
+        match_params: dict[str, PrimitiveData | Sequence[PrimitiveData]] | None = None,
+        is_optional: bool | None = None,
+        is_reusable: bool | None = None,
     ):
         self._options = options
         self.nb_calls = 0
@@ -158,7 +157,7 @@ class _RequestMatcher:
 
     def match(
         self,
-        real_transport: Union[httpx.HTTPTransport, httpx.AsyncHTTPTransport],
+        real_transport: httpx.HTTPTransport | httpx.AsyncHTTPTransport,
         request: httpx.Request,
     ) -> bool:
         return (
@@ -230,7 +229,7 @@ class _RequestMatcher:
         return True
 
     def _proxy_match(
-        self, real_transport: Union[httpx.HTTPTransport, httpx.AsyncHTTPTransport]
+        self, real_transport: httpx.HTTPTransport | httpx.AsyncHTTPTransport
     ) -> bool:
         if not self.proxy_url:
             return True

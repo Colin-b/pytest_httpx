@@ -1,7 +1,7 @@
 import copy
 import inspect
-from typing import Union, Optional, Callable, Any
-from collections.abc import Awaitable
+from collections.abc import Awaitable, Callable
+from typing import Any
 
 import httpx
 
@@ -20,16 +20,14 @@ class HTTPXMock:
         """Private and subject to breaking changes without notice."""
         self._options = options
         self._requests: list[
-            tuple[Union[httpx.HTTPTransport, httpx.AsyncHTTPTransport], httpx.Request]
+            tuple[httpx.HTTPTransport | httpx.AsyncHTTPTransport, httpx.Request]
         ] = []
         self._callbacks: list[
             tuple[
                 _RequestMatcher,
                 Callable[
                     [httpx.Request],
-                    Union[
-                        Optional[httpx.Response], Awaitable[Optional[httpx.Response]]
-                    ],
+                    httpx.Response | None | Awaitable[httpx.Response | None],
                 ],
             ]
         ] = []
@@ -39,10 +37,10 @@ class HTTPXMock:
         self,
         status_code: int = 200,
         http_version: str = "HTTP/1.1",
-        headers: Optional[_httpx_internals.HeaderTypes] = None,
-        content: Optional[bytes] = None,
-        text: Optional[str] = None,
-        html: Optional[str] = None,
+        headers: _httpx_internals.HeaderTypes | None = None,
+        content: bytes | None = None,
+        text: str | None = None,
+        html: str | None = None,
         stream: Any = None,
         json: Any = None,
         **matchers: Any,
@@ -94,7 +92,7 @@ class HTTPXMock:
         self,
         callback: Callable[
             [httpx.Request],
-            Union[Optional[httpx.Response], Awaitable[Optional[httpx.Response]]],
+            httpx.Response | None | Awaitable[httpx.Response | None],
         ],
         **matchers: Any,
     ) -> None:
@@ -213,14 +211,14 @@ class HTTPXMock:
 
     def _explain_that_callback_must_return_a_response(
         self,
-        real_transport: Union[httpx.BaseTransport, httpx.AsyncBaseTransport],
+        real_transport: httpx.BaseTransport | httpx.AsyncBaseTransport,
         request: httpx.Request,
     ) -> str:
         return f"Callback registered for {RequestDescription(real_transport, request, [])} MUST return httpx.Response"
 
     def _explain_that_no_response_was_found(
         self,
-        real_transport: Union[httpx.BaseTransport, httpx.AsyncBaseTransport],
+        real_transport: httpx.BaseTransport | httpx.AsyncBaseTransport,
         request: httpx.Request,
     ) -> str:
         matchers = [matcher for matcher, _ in self._callbacks]
@@ -249,14 +247,14 @@ class HTTPXMock:
 
     def _get_callback(
         self,
-        real_transport: Union[httpx.HTTPTransport, httpx.AsyncHTTPTransport],
+        real_transport: httpx.HTTPTransport | httpx.AsyncHTTPTransport,
         request: httpx.Request,
-    ) -> Optional[
+    ) -> (
         Callable[
-            [httpx.Request],
-            Union[Optional[httpx.Response], Awaitable[Optional[httpx.Response]]],
+            [httpx.Request], httpx.Response | None | Awaitable[httpx.Response | None]
         ]
-    ]:
+        | None
+    ):
         callbacks = [
             (matcher, callback)
             for matcher, callback in self._callbacks
@@ -306,7 +304,7 @@ class HTTPXMock:
             if matcher.match(real_transport, request)
         ]
 
-    def get_request(self, **matchers: Any) -> Optional[httpx.Request]:
+    def get_request(self, **matchers: Any) -> httpx.Request | None:
         """
         Return the single request that match (or None).
 

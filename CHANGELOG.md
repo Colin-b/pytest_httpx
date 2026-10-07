@@ -5,10 +5,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- Explicit support for python `3.15`.
+
 ### Fixed
 - JSON body matching now rejects invalid UTF8 without interrupting other matchers or request retrieval.
 - `match_params` is now handling `bool`, `int` and `float` values in addition to `str`. Only str values were previously expected.
 - A meaningful error will now be returned when a callback that does not return an `httpx.Response` is called.
+
+### Removed
+- python `3.10` is not supported anymore.
 
 ## [0.36.2] - 2026-04-09
 ### Fixed
