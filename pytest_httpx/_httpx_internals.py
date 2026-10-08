@@ -15,21 +15,19 @@ HeaderTypes = Union[
 PrimitiveData = Optional[Union[str, int, float, bool]]
 
 
-# TODO Get rid of these internal classes
 class IteratorStream(
-    httpx._content.AsyncIteratorByteStream,
-    httpx._content.IteratorByteStream,
+    httpx.AsyncByteStream,
+    httpx.SyncByteStream,
 ):
     def __init__(self, stream: Iterable[bytes]):
-        class Stream:
-            def __iter__(self) -> Iterator[bytes]:
-                yield from stream
+        self._stream = stream
 
-            async def __aiter__(self) -> AsyncIterator[bytes]:
-                for chunk in stream:
-                    yield chunk
+    def __iter__(self) -> Iterator[bytes]:
+        yield from self._stream
 
-        super().__init__(stream=Stream())
+    async def __aiter__(self) -> AsyncIterator[bytes]:
+        for chunk in self._stream:
+            yield chunk
 
 
 def _to_httpx_url(url: httpcore.URL, headers: list[tuple[bytes, bytes]]) -> httpx.URL:
