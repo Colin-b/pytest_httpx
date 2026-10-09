@@ -1,6 +1,6 @@
 from typing import Callable
 
-from pytest_httpx._compat import httpx
+from pytest_httpx._httpx_compat import httpx
 
 
 class _HTTPXMockOptions:

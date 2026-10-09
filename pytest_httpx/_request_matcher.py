@@ -4,7 +4,7 @@ from typing import Optional, Union, Any, Sequence
 from re import Pattern
 from unittest.mock import ANY
 
-from pytest_httpx._compat import httpx
+from pytest_httpx._httpx_compat import httpx, HttpxBackend
 
 from pytest_httpx._httpx_internals import _proxy_url, PrimitiveData
 from pytest_httpx._options import _HTTPXMockOptions
@@ -28,6 +28,7 @@ def convert_back_mock_any(original: dict, new: dict) -> None:
 
 
 def _url_match(
+    backend: HttpxBackend,
     url_to_match: Union[Pattern[str], httpx.URL],
     received: httpx.URL,
     params: Optional[dict[str, Union[PrimitiveData, Sequence[PrimitiveData]]]],
@@ -35,10 +36,15 @@ def _url_match(
     if isinstance(url_to_match, re.Pattern):
         return url_to_match.match(str(received)) is not None
 
+    # The expected URL may have been built with a different backend than the one
+    # that received the request, so normalize it to the request's backend before
+    # comparing (URLs from different backends are never equal to each other).
+    url_to_match = backend.httpx.URL(str(url_to_match))
+
     # Compare query parameters apart as order of parameters should not matter
     received_params = to_params_dict(received.params)
     expected_params = to_params_dict(
-        url_to_match.params if params is None else httpx.QueryParams(params)
+        url_to_match.params if params is None else backend.httpx.QueryParams(params)
     )
     if params:
         convert_back_mock_any(params, expected_params)
@@ -157,23 +163,24 @@ class _RequestMatcher:
 
     def match(
         self,
+        backend: HttpxBackend,
         real_transport: Union[httpx.HTTPTransport, httpx.AsyncHTTPTransport],
         request: httpx.Request,
     ) -> bool:
         return (
-            self._url_match(request)
+            self._url_match(backend, request)
             and self._method_match(request)
             and self._headers_match(request)
-            and self._content_match(request)
-            and self._proxy_match(real_transport)
+            and self._content_match(backend, request)
+            and self._proxy_match(backend, real_transport)
             and self._extensions_match(request)
         )
 
-    def _url_match(self, request: httpx.Request) -> bool:
+    def _url_match(self, backend: HttpxBackend, request: httpx.Request) -> bool:
         if not self.url:
             return True
 
-        return _url_match(self.url, request.url, self.params)
+        return _url_match(backend, self.url, request.url, self.params)
 
     def _method_match(self, request: httpx.Request) -> bool:
         if not self.method:
@@ -200,7 +207,7 @@ class _RequestMatcher:
             for header_name, header_value in self.headers.items()
         )
 
-    def _content_match(self, request: httpx.Request) -> bool:
+    def _content_match(self, backend: HttpxBackend, request: httpx.Request) -> bool:
         if self.content is not None:
             return request.content == self.content
 
@@ -219,7 +226,7 @@ class _RequestMatcher:
             # Ensure we re-use the same boundary for comparison
             boundary = boundary_matched.group(1)
             # Prevent internal httpx changes from impacting users not matching on files
-            from httpx._multipart import MultipartStream
+            MultipartStream = backend.httpx._multipart.MultipartStream
 
             multipart_content = b"".join(
                 MultipartStream(self.data or {}, self.files, boundary)
@@ -229,13 +236,15 @@ class _RequestMatcher:
         return True
 
     def _proxy_match(
-        self, real_transport: Union[httpx.HTTPTransport, httpx.AsyncHTTPTransport]
+        self,
+        backend: HttpxBackend,
+        real_transport: Union[httpx.HTTPTransport, httpx.AsyncHTTPTransport],
     ) -> bool:
         if not self.proxy_url:
             return True
 
-        if real_proxy_url := _proxy_url(real_transport):
-            return _url_match(self.proxy_url, real_proxy_url, params=None)
+        if real_proxy_url := _proxy_url(backend, real_transport):
+            return _url_match(backend, self.proxy_url, real_proxy_url, params=None)
 
         return False
 

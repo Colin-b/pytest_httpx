@@ -2,7 +2,7 @@ import base64
 from typing import Union, Optional
 from collections.abc import Sequence, Iterable, AsyncIterator, Iterator
 
-from pytest_httpx._compat import httpx, httpcore
+from pytest_httpx._httpx_compat import httpx, HttpxBackend, get_backends, httpcore
 
 # Those types are internally defined within httpx._types
 HeaderTypes = Union[
@@ -15,10 +15,17 @@ HeaderTypes = Union[
 PrimitiveData = Optional[Union[str, int, float, bool]]
 
 
-class IteratorStream(
-    httpx.AsyncByteStream,
-    httpx.SyncByteStream,
-):
+def _iterator_stream_bases() -> list[type]:
+    bases: list[type] = []
+
+    for backend in get_backends():
+        bases.append(backend.httpx.SyncByteStream)
+        bases.append(backend.httpx.AsyncByteStream)
+
+    return bases
+
+
+class IteratorStream(*_iterator_stream_bases()):  # type: ignore[misc]
     def __init__(self, stream: Iterable[bytes]):
         self._stream = stream
 
@@ -30,10 +37,12 @@ class IteratorStream(
             yield chunk
 
 
-def _to_httpx_url(url: httpcore.URL, headers: list[tuple[bytes, bytes]]) -> httpx.URL:
+def _to_httpx_url(
+    backend: HttpxBackend, url: httpcore.URL, headers: list[tuple[bytes, bytes]]
+) -> httpx.URL:
     for name, value in headers:
         if b"Proxy-Authorization" == name:
-            return httpx.URL(
+            return backend.httpx.URL(
                 scheme=url.scheme.decode(),
                 host=url.host.decode(),
                 port=url.port,
@@ -41,7 +50,7 @@ def _to_httpx_url(url: httpcore.URL, headers: list[tuple[bytes, bytes]]) -> http
                 userinfo=base64.b64decode(value[6:]),
             )
 
-    return httpx.URL(
+    return backend.httpx.URL(
         scheme=url.scheme.decode(),
         host=url.host.decode(),
         port=url.port,
@@ -50,10 +59,12 @@ def _to_httpx_url(url: httpcore.URL, headers: list[tuple[bytes, bytes]]) -> http
 
 
 def _proxy_url(
+    backend: HttpxBackend,
     real_transport: Union[httpx.HTTPTransport, httpx.AsyncHTTPTransport],
 ) -> Optional[httpx.URL]:
     if isinstance(
-        real_pool := real_transport._pool, (httpcore.HTTPProxy, httpcore.AsyncHTTPProxy)
+        real_pool := real_transport._pool,
+        (backend.httpcore.HTTPProxy, backend.httpcore.AsyncHTTPProxy),
     ):
-        return _to_httpx_url(real_pool._proxy_url, real_pool._proxy_headers)
+        return _to_httpx_url(backend, real_pool._proxy_url, real_pool._proxy_headers)
     return None
