@@ -1,4 +1,4 @@
-from pytest_httpx._httpx_compat import HttpxBackend, httpx
+from pytest_httpx._httpx_compat import HTTPXBackend, httpx
 from pytest_httpx._httpx_internals import _proxy_url
 from pytest_httpx._request_matcher import _RequestMatcher
 
@@ -6,7 +6,7 @@ from pytest_httpx._request_matcher import _RequestMatcher
 class RequestDescription:
     def __init__(
         self,
-        backend: HttpxBackend,
+        backend: HTTPXBackend,
         real_transport: httpx.BaseTransport | httpx.AsyncBaseTransport,
         request: httpx.Request,
         matchers: list[_RequestMatcher],
