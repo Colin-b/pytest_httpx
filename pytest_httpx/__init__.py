@@ -4,16 +4,18 @@ from operator import methodcaller
 import pytest
 from pytest import Config, FixtureRequest, MonkeyPatch
 
-from pytest_httpx._httpx_compat import HttpxBackend, get_backends
+from pytest_httpx._httpx_compat import HTTPXBackend, get_backends
 from pytest_httpx._httpx_internals import IteratorStream
 from pytest_httpx._httpx_mock import HTTPXMock
 from pytest_httpx._options import _HTTPXMockOptions
 from pytest_httpx.version import __version__
 
 __all__ = (
+    "HTTPXBackend",
     "HTTPXMock",
     "IteratorStream",
     "__version__",
+    "get_backends",
 )
 
 
@@ -21,7 +23,7 @@ def _mock_backend(
     monkeypatch: MonkeyPatch,
     options: _HTTPXMockOptions,
     mock: HTTPXMock,
-    backend: HttpxBackend,
+    backend: HTTPXBackend,
 ) -> None:
     # Mock synchronous requests
     real_handle_request = backend.httpx.HTTPTransport.handle_request

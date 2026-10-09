@@ -4,7 +4,7 @@ from collections.abc import Awaitable, Callable
 from typing import Any
 
 from pytest_httpx import _httpx_internals
-from pytest_httpx._httpx_compat import HttpxBackend, httpx
+from pytest_httpx._httpx_compat import HTTPXBackend, httpx
 from pytest_httpx._options import _HTTPXMockOptions
 from pytest_httpx._pretty_print import RequestDescription
 from pytest_httpx._request_matcher import _RequestMatcher
@@ -152,7 +152,7 @@ class HTTPXMock:
 
     def _handle_request(
         self,
-        backend: HttpxBackend,
+        backend: HTTPXBackend,
         real_transport: httpx.HTTPTransport,
         request: httpx.Request,
     ) -> httpx.Response:
@@ -187,7 +187,7 @@ class HTTPXMock:
 
     async def _handle_async_request(
         self,
-        backend: HttpxBackend,
+        backend: HTTPXBackend,
         real_transport: httpx.AsyncHTTPTransport,
         request: httpx.Request,
     ) -> httpx.Response:
@@ -224,14 +224,14 @@ class HTTPXMock:
         )
 
     def _request_not_matched(
-        self, backend: HttpxBackend, request: httpx.Request, message: str
+        self, backend: HTTPXBackend, request: httpx.Request, message: str
     ) -> httpx.TimeoutException:
         self._requests_not_matched.append(request)
         return backend.httpx.TimeoutException(message, request=request)
 
     def _explain_that_callback_must_return_a_response(
         self,
-        backend: HttpxBackend,
+        backend: HTTPXBackend,
         real_transport: httpx.BaseTransport | httpx.AsyncBaseTransport,
         request: httpx.Request,
     ) -> str:
@@ -239,7 +239,7 @@ class HTTPXMock:
 
     def _explain_that_no_response_was_found(
         self,
-        backend: HttpxBackend,
+        backend: HTTPXBackend,
         real_transport: httpx.BaseTransport | httpx.AsyncBaseTransport,
         request: httpx.Request,
     ) -> str:
@@ -269,7 +269,7 @@ class HTTPXMock:
 
     def _get_callback(
         self,
-        backend: HttpxBackend,
+        backend: HTTPXBackend,
         real_transport: httpx.HTTPTransport | httpx.AsyncHTTPTransport,
         request: httpx.Request,
     ) -> (
@@ -389,14 +389,14 @@ class HTTPXMock:
 _BACKEND_ATTRIBUTE = "__pytest_httpx_backend"
 
 
-def _set_backend(request: httpx.Request, backend: HttpxBackend) -> None:
+def _set_backend(request: httpx.Request, backend: HTTPXBackend) -> None:
     # Store the intercepting backend on the request so that backend-agnostic
     # callbacks (e.g. the one built by `add_response`) can build a response
     # with the matching library.
     setattr(request, _BACKEND_ATTRIBUTE, backend)
 
 
-def _get_backend(request: httpx.Request) -> HttpxBackend:
+def _get_backend(request: httpx.Request) -> HTTPXBackend:
     return getattr(request, _BACKEND_ATTRIBUTE)
 
 

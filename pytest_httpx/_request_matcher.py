@@ -5,7 +5,7 @@ from re import Pattern
 from typing import Any
 from unittest.mock import ANY
 
-from pytest_httpx._httpx_compat import HttpxBackend, httpx
+from pytest_httpx._httpx_compat import HTTPXBackend, httpx
 from pytest_httpx._httpx_internals import PrimitiveData, _proxy_url
 from pytest_httpx._options import _HTTPXMockOptions
 
@@ -28,7 +28,7 @@ def convert_back_mock_any(original: dict, new: dict) -> None:
 
 
 def _url_match(
-    backend: HttpxBackend,
+    backend: HTTPXBackend,
     url_to_match: Pattern[str] | httpx.UR,
     received: httpx.URL,
     params: dict[str, PrimitiveData | Sequence[PrimitiveData]] | None,
@@ -161,7 +161,7 @@ class _RequestMatcher:
 
     def match(
         self,
-        backend: HttpxBackend,
+        backend: HTTPXBackend,
         real_transport: httpx.HTTPTransport | httpx.AsyncHTTPTransport,
         request: httpx.Request,
     ) -> bool:
@@ -174,7 +174,7 @@ class _RequestMatcher:
             and self._extensions_match(request)
         )
 
-    def _url_match(self, backend: HttpxBackend, request: httpx.Request) -> bool:
+    def _url_match(self, backend: HTTPXBackend, request: httpx.Request) -> bool:
         if not self.url:
             return True
 
@@ -205,7 +205,7 @@ class _RequestMatcher:
             for header_name, header_value in self.headers.items()
         )
 
-    def _content_match(self, backend: HttpxBackend, request: httpx.Request) -> bool:
+    def _content_match(self, backend: HTTPXBackend, request: httpx.Request) -> bool:
         if self.content is not None:
             return request.content == self.content
 
@@ -235,7 +235,7 @@ class _RequestMatcher:
 
     def _proxy_match(
         self,
-        backend: HttpxBackend,
+        backend: HTTPXBackend,
         real_transport: httpx.HTTPTransport | httpx.AsyncHTTPTransport,
     ) -> bool:
         if not self.proxy_url:

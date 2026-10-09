@@ -10,35 +10,35 @@ class PytestHTTPXDeprecationWarning(UserWarning):
 
 
 @dataclass(frozen=True)
-class HttpxBackend:
+class HTTPXBackend:
     name: Literal["httpx", "httpx2"]
     httpx: ModuleType
     httpcore: ModuleType
 
 
 @cache
-def get_backends() -> list[HttpxBackend]:
+def get_backends() -> list[HTTPXBackend]:
     """Return every httpx backend found in the environment."""
 
     backends = []
 
     try:
-        import httpx2
         import httpcore2
-    except ModuleNotFoundError:
+        import httpx2
+    except ModuleNotFoundError:  # pragma: no cover
         pass
     else:
-        backends.append(HttpxBackend("httpx2", httpx2, httpcore2))
+        backends.append(HTTPXBackend("httpx2", httpx2, httpcore2))
 
     try:
-        import httpx as httpx_
         import httpcore as httpcore_
-    except ModuleNotFoundError:
+        import httpx as httpx_
+    except ModuleNotFoundError:  # pragma: no cover
         pass
     else:
-        backends.append(HttpxBackend("httpx", httpx_, httpcore_))
+        backends.append(HTTPXBackend("httpx", httpx_, httpcore_))
 
-    if not backends:
+    if not backends:  # pragma: no cover
         raise RuntimeError(
             "pytest-httpx requires either httpx or httpx2 to be installed.\n"
             "They are now optional dependencies, install the matching extra with:\n"
@@ -51,8 +51,8 @@ def get_backends() -> list[HttpxBackend]:
 
 
 if TYPE_CHECKING:
-    import httpx2 as httpx
     import httpcore2 as httpcore
+    import httpx2 as httpx
 else:
     # A module-level backend for global httpx/httpcore names references.
     _backends = get_backends()
@@ -60,7 +60,7 @@ else:
     httpx = _default_backend.httpx
     httpcore = _default_backend.httpcore
 
-    if any(backend.name == "httpx" for backend in _backends):
+    if any(backend.name == "httpx" for backend in _backends):  # pragma: no cover
         warnings.warn(
             "Using httpx with pytest-httpx is deprecated; consider using httpx2 instead.",
             PytestHTTPXDeprecationWarning,

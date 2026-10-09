@@ -2,7 +2,7 @@ import base64
 from collections.abc import AsyncIterator, Iterable, Iterator, Sequence
 from typing import TypeAlias
 
-from pytest_httpx._httpx_compat import HttpxBackend, get_backends, httpcore, httpx
+from pytest_httpx._httpx_compat import HTTPXBackend, get_backends, httpcore, httpx
 
 # Those types are internally defined within httpx._types
 HeaderTypes: TypeAlias = (
@@ -38,7 +38,7 @@ class IteratorStream(*_iterator_stream_bases()):  # type: ignore[misc]
 
 
 def _to_httpx_url(
-    backend: HttpxBackend, url: httpcore.URL, headers: list[tuple[bytes, bytes]]
+    backend: HTTPXBackend, url: httpcore.URL, headers: list[tuple[bytes, bytes]]
 ) -> httpx.URL:
     for name, value in headers:
         if b"Proxy-Authorization" == name:
@@ -59,7 +59,7 @@ def _to_httpx_url(
 
 
 def _proxy_url(
-    backend: HttpxBackend,
+    backend: HTTPXBackend,
     real_transport: httpx.HTTPTransport | httpx.AsyncHTTPTransport,
 ) -> httpx.URL | None:
     if isinstance(
