@@ -235,7 +235,7 @@ class HTTPXMock:
         real_transport: httpx.BaseTransport | httpx.AsyncBaseTransport,
         request: httpx.Request,
     ) -> str:
-        return f"Callback registered for {RequestDescription(backend, real_transport, request, [])} MUST return httpx.Response"
+        return f"Callback registered for {RequestDescription(backend, real_transport, request, [])} MUST return {backend.name}.Response"
 
     def _explain_that_no_response_was_found(
         self,

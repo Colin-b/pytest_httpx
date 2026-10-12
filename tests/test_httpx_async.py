@@ -1309,7 +1309,7 @@ async def test_callback_not_returning_a_response(
             await client.get("https://test_url")
         assert (
             str(exception_info.value)
-            == "Callback registered for GET request on https://test_url MUST return httpx.Response"
+            == f"Callback registered for GET request on https://test_url MUST return {backend.name}.Response"
         )
 
 
@@ -1332,7 +1332,7 @@ async def test_async_callback_not_returning_a_response(
             await client.get("https://test_url")
         assert (
             str(exception_info.value)
-            == "Callback registered for GET request on https://test_url MUST return httpx.Response"
+            == f"Callback registered for GET request on https://test_url MUST return {backend.name}.Response"
         )
 
 
