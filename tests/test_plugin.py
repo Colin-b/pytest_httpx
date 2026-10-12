@@ -1,7 +1,13 @@
 import pytest
 from pytest import Testdir
 
+from pytest_httpx import get_backends
+
 pytestmark = pytest.mark.usefixtures("plugin_tests_conftest")
+
+
+def backends_count() -> int:
+    return len(get_backends())
 
 
 def test_fixture_is_available(testdir: Testdir) -> None:
@@ -14,7 +20,7 @@ def test_fixture_is_available(testdir: Testdir) -> None:
     """)
 
     result = testdir.runpytest()
-    result.assert_outcomes(passed=1)
+    result.assert_outcomes(passed=backends_count())
 
 
 def test_httpx_mock_unused_response(testdir: Testdir) -> None:
@@ -26,7 +32,7 @@ def test_httpx_mock_unused_response(testdir: Testdir) -> None:
             httpx_mock.add_response()
     """)
     result = testdir.runpytest()
-    result.assert_outcomes(errors=1, passed=1)
+    result.assert_outcomes(errors=backends_count(), passed=backends_count())
     result.stdout.fnmatch_lines(
         [
             "*AssertionError: The following responses are mocked but not requested:",
@@ -51,7 +57,7 @@ def test_httpx_mock_unused_response_without_assertion(testdir: Testdir) -> None:
             httpx_mock.add_response()
     """)
     result = testdir.runpytest()
-    result.assert_outcomes(passed=1)
+    result.assert_outcomes(passed=backends_count())
 
 
 def test_httpx_mock_unused_callback(testdir: Testdir) -> None:
@@ -67,7 +73,7 @@ def test_httpx_mock_unused_callback(testdir: Testdir) -> None:
 
     """)
     result = testdir.runpytest()
-    result.assert_outcomes(errors=1, passed=1)
+    result.assert_outcomes(errors=backends_count(), passed=backends_count())
     result.stdout.fnmatch_lines(
         [
             "*AssertionError: The following responses are mocked but not requested:",
@@ -96,7 +102,7 @@ def test_httpx_mock_unused_callback_without_assertion(testdir: Testdir) -> None:
 
     """)
     result = testdir.runpytest()
-    result.assert_outcomes(passed=1)
+    result.assert_outcomes(passed=backends_count())
 
 
 def test_httpx_mock_unexpected_request(testdir: Testdir) -> None:
@@ -114,7 +120,7 @@ def test_httpx_mock_unexpected_request(testdir: Testdir) -> None:
                     client.get("https://foo.tld")
     """)
     result = testdir.runpytest()
-    result.assert_outcomes(errors=1, passed=1)
+    result.assert_outcomes(errors=backends_count(), passed=backends_count())
     result.stdout.fnmatch_lines(
         [
             "*AssertionError: The following requests were not expected:",
@@ -142,7 +148,7 @@ def test_httpx_mock_unexpected_request_without_assertion(testdir: Testdir) -> No
                     client.get("https://foo.tld")
     """)
     result = testdir.runpytest()
-    result.assert_outcomes(passed=1)
+    result.assert_outcomes(passed=backends_count())
 
 
 def test_httpx_mock_already_matched_response(testdir: Testdir) -> None:
@@ -162,7 +168,7 @@ def test_httpx_mock_already_matched_response(testdir: Testdir) -> None:
                     client.get("https://foo.tld")
     """)
     result = testdir.runpytest()
-    result.assert_outcomes(errors=1, passed=1)
+    result.assert_outcomes(errors=backends_count(), passed=backends_count())
     result.stdout.fnmatch_lines(
         [
             "*AssertionError: The following requests were not expected:",
@@ -191,7 +197,7 @@ def test_httpx_mock_reusing_matched_response(testdir: Testdir) -> None:
                 client.get("https://foo.tld")
     """)
     result = testdir.runpytest()
-    result.assert_outcomes(passed=1)
+    result.assert_outcomes(passed=backends_count())
 
 
 def test_httpx_mock_unmatched_request_without_responses(
@@ -208,7 +214,7 @@ def test_httpx_mock_unmatched_request_without_responses(
                 client.get("https://foo3.tld")
     """)
     result = testdir.runpytest()
-    result.assert_outcomes(errors=1, failed=1)
+    result.assert_outcomes(errors=backends_count(), failed=backends_count())
     # Assert the error that occurred
     result.stdout.re_match_lines(
         [
@@ -247,7 +253,7 @@ def test_httpx_mock_unmatched_request_with_only_unmatched_responses(
                 client.get("https://foo3.tld")
     """)
     result = testdir.runpytest()
-    result.assert_outcomes(errors=1, failed=1)
+    result.assert_outcomes(errors=backends_count(), failed=backends_count())
     # Assert the error that occurred
     result.stdout.re_match_lines(
         [
@@ -290,7 +296,7 @@ def test_httpx_mock_unmatched_request_with_only_unmatched_reusable_responses(
                 client.get("https://foo3.tld")
     """)
     result = testdir.runpytest()
-    result.assert_outcomes(errors=1, failed=1)
+    result.assert_outcomes(errors=backends_count(), failed=backends_count())
     # Assert the error that occurred
     result.stdout.re_match_lines(
         [
@@ -334,7 +340,7 @@ def test_httpx_mock_unmatched_request_with_only_matched_responses(
                 client.get("https://foo3.tld")
     """)
     result = testdir.runpytest()
-    result.assert_outcomes(errors=1, failed=1)
+    result.assert_outcomes(errors=backends_count(), failed=backends_count())
     # Assert the error that occurred
     result.stdout.re_match_lines(
         [
@@ -381,7 +387,7 @@ def test_httpx_mock_unmatched_request_with_only_matched_reusable_responses(
                 client.get("https://foo3.tld")
     """)
     result = testdir.runpytest()
-    result.assert_outcomes(errors=1, failed=1)
+    result.assert_outcomes(errors=backends_count(), failed=backends_count())
     # Assert the error that occurred
     result.stdout.re_match_lines(
         [
@@ -428,7 +434,7 @@ def test_httpx_mock_unmatched_request_with_matched_and_unmatched_responses(
                 client.get("https://foo3.tld")
     """)
     result = testdir.runpytest()
-    result.assert_outcomes(errors=1, failed=1)
+    result.assert_outcomes(errors=backends_count(), failed=backends_count())
     # Assert the error that occurred
     result.stdout.re_match_lines(
         [
@@ -482,7 +488,7 @@ def test_httpx_mock_unmatched_request_with_matched_and_unmatched_reusable_respon
                 client.get("https://foo2.tld")
     """)
     result = testdir.runpytest()
-    result.assert_outcomes(errors=1, failed=1)
+    result.assert_outcomes(errors=backends_count(), failed=backends_count())
     # Assert the error that occurred
     result.stdout.re_match_lines(
         [
@@ -531,7 +537,7 @@ def test_httpx_mock_should_mock_sync(testdir: Testdir) -> None:
 
     """)
     result = testdir.runpytest()
-    result.assert_outcomes(passed=1)
+    result.assert_outcomes(passed=backends_count())
 
 
 def test_httpx_mock_should_mock_async(testdir: Testdir) -> None:
@@ -559,7 +565,7 @@ def test_httpx_mock_should_mock_async(testdir: Testdir) -> None:
 
     """)
     result = testdir.runpytest()
-    result.assert_outcomes(passed=1)
+    result.assert_outcomes(passed=backends_count())
 
 
 def test_httpx_mock_options_on_multi_levels_are_aggregated(testdir: Testdir) -> None:
@@ -613,7 +619,7 @@ def test_httpx_mock_options_on_multi_levels_are_aggregated(testdir: Testdir) -> 
 
     """)
     result = testdir.runpytest()
-    result.assert_outcomes(passed=1)
+    result.assert_outcomes(passed=backends_count())
 
 
 def test_invalid_marker(testdir: Testdir) -> None:
@@ -629,7 +635,7 @@ def test_invalid_marker(testdir: Testdir) -> None:
 
     """)
     result = testdir.runpytest()
-    result.assert_outcomes(errors=1)
+    result.assert_outcomes(errors=backends_count())
     result.stdout.re_match_lines([r".*got an unexpected keyword argument 'foo'"])
 
 
@@ -649,7 +655,7 @@ def test_mandatory_response_not_matched(testdir: Testdir) -> None:
 
     """)
     result = testdir.runpytest()
-    result.assert_outcomes(errors=1, passed=1)
+    result.assert_outcomes(errors=backends_count(), passed=backends_count())
     # Assert the teardown assertion failure
     result.stdout.fnmatch_lines(
         [
@@ -669,7 +675,7 @@ def test_reusable_response_not_matched(testdir: Testdir) -> None:
 
     """)
     result = testdir.runpytest()
-    result.assert_outcomes(errors=1, passed=1)
+    result.assert_outcomes(errors=backends_count(), passed=backends_count())
     # Assert the teardown assertion failure
     result.stdout.fnmatch_lines(
         [

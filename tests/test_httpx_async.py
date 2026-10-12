@@ -11,7 +11,7 @@ import pytest
 from pytest import Testdir
 
 import pytest_httpx
-from pytest_httpx import HTTPXBackend, HTTPXMock
+from pytest_httpx import HTTPXBackend, HTTPXMock, get_backends
 
 if TYPE_CHECKING:
     try:
@@ -1562,7 +1562,7 @@ def test_request_retrieval_with_more_than_one(testdir: Testdir) -> None:
             httpx_mock.get_request(url=backend.httpx.URL("https://test_url"))
     """)
     result = testdir.runpytest()
-    result.assert_outcomes(failed=1)
+    result.assert_outcomes(failed=len(get_backends()))
     result.stdout.fnmatch_lines(
         [
             "*AssertionError: More than one request (2) matched, use get_requests instead or refine your filters."
