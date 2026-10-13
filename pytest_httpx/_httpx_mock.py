@@ -167,7 +167,7 @@ class HTTPXMock:
         request.read()
         self._requests.append((real_transport, request))
 
-        callback = self._get_callback(backend, real_transport, request)
+        callback = self._get_callback(real_transport, request)
         if callback:
             response = callback(request)
 
@@ -175,17 +175,15 @@ class HTTPXMock:
                 return _unread(response)
 
             raise self._request_not_matched(
-                backend,
                 request,
                 self._explain_that_callback_must_return_a_response(
-                    backend, real_transport, request
+                    real_transport, request
                 ),
             )
 
         raise self._request_not_matched(
-            backend,
             request,
-            self._explain_that_no_response_was_found(backend, real_transport, request),
+            self._explain_that_no_response_was_found(real_transport, request),
         )
 
     async def _handle_async_request(
@@ -202,7 +200,7 @@ class HTTPXMock:
         await request.aread()
         self._requests.append((real_transport, request))
 
-        callback = self._get_callback(backend, real_transport, request)
+        callback = self._get_callback(real_transport, request)
         if callback:
             response = callback(request)
 
@@ -213,40 +211,39 @@ class HTTPXMock:
                 return _unread(response)
 
             raise self._request_not_matched(
-                backend,
                 request,
                 self._explain_that_callback_must_return_a_response(
-                    backend, real_transport, request
+                    real_transport, request
                 ),
             )
 
         raise self._request_not_matched(
-            backend,
             request,
-            self._explain_that_no_response_was_found(backend, real_transport, request),
+            self._explain_that_no_response_was_found(real_transport, request),
         )
 
     def _request_not_matched(
-        self, backend: HTTPXBackend, request: "httpx.Request", message: str
+        self, request: "httpx.Request", message: str
     ) -> "httpx.TimeoutException":
+        backend = _get_backend(request)
         self._requests_not_matched.append(request)
         return backend.httpx.TimeoutException(message, request=request)
 
     def _explain_that_callback_must_return_a_response(
         self,
-        backend: HTTPXBackend,
         real_transport: "httpx.BaseTransport | httpx.AsyncBaseTransport",
         request: "httpx.Request",
     ) -> str:
+        backend = _get_backend(request)
         return f"Callback registered for {RequestDescription(backend, real_transport, request, [])} MUST return {backend.name}.Response"
 
     def _explain_that_no_response_was_found(
         self,
-        backend: HTTPXBackend,
         real_transport: "httpx.BaseTransport | httpx.AsyncBaseTransport",
         request: "httpx.Request",
     ) -> str:
         matchers = [matcher for matcher, _ in self._callbacks]
+        backend = _get_backend(request)
 
         message = f"No response can be found for {RequestDescription(backend, real_transport, request, matchers)}"
 
@@ -272,10 +269,10 @@ class HTTPXMock:
 
     def _get_callback(
         self,
-        backend: HTTPXBackend,
         real_transport: "httpx.HTTPTransport | httpx.AsyncHTTPTransport",
         request: "httpx.Request",
     ) -> Callback | None:
+        backend = _get_backend(request)
         callbacks = [
             (matcher, callback)
             for matcher, callback in self._callbacks
