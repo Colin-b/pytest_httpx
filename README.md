@@ -13,7 +13,23 @@
 >
 > However, current state can be considered as stable.
 
-Once installed, `httpx_mock` [`pytest`](https://docs.pytest.org/en/latest/) fixture will make sure every [`httpx`](https://www.python-httpx.org) request will be replied to with user provided responses ([unless some hosts are explicitly skipped](#do-not-mock-some-requests)).
+Since `pytest-httpx` supports both `httpx` and `httpx2`, it doesn't install any of them by itself,
+you have to pick which one (or both) you are using:
+
+```bash
+# For httpx.
+pip install pytest-httpx[httpx]
+# For httpx2.
+pip install pytest-httpx[httpx2]
+# For both.
+pip install pytest-httpx[httpx,httpx2]
+```
+
+Once installed, `httpx_mock` [`pytest`](https://docs.pytest.org/en/latest/) fixture will make sure every [`httpx`](https://www.python-httpx.org) or [`httpx2`](https://pydantic.dev/docs/httpx2/get-started/)
+request will be replied to with user provided responses ([unless some hosts are explicitly skipped](#do-not-mock-some-requests)).
+
+For brevity, both httpx and httpx2 will be further referred to as httpx. All the examples using httpx
+should stay intact when using httpx2.
 
 - [Add responses](#add-responses)
   - [JSON body](#add-json-response)
@@ -36,7 +52,7 @@ Once installed, `httpx_mock` [`pytest`](https://docs.pytest.org/en/latest/) fixt
 
 ## Add responses
 
-You can register responses for both sync and async [`HTTPX`](https://www.python-httpx.org) requests.
+You can register responses for both sync and async HTTPX requests.
 
 ```python
 import pytest
