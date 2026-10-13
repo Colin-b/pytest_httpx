@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, TypeAlias, Union
 from pytest_httpx._httpx_compat import HTTPXBackend, get_backends
 
 if TYPE_CHECKING:
-    from pytest_httpx._httpx_compat import HttpxURL, httpcore, httpcore2, httpx
+    from pytest_httpx._httpx_compat import httpcore, httpx
 
 # Those types are internally defined within httpx._types
 HeaderTypes: TypeAlias = Union[
@@ -42,9 +42,9 @@ class IteratorStream(*_iterator_stream_bases()):  # type: ignore[misc]
 
 def _to_httpx_url(
     backend: HTTPXBackend,
-    url: "httpcore.URL | httpcore2.URL",
+    url: "httpcore.URL",
     headers: list[tuple[bytes, bytes]],
-) -> "HttpxURL":
+) -> "httpx.URL":
     for name, value in headers:
         if b"Proxy-Authorization" == name:
             return backend.httpx.URL(

@@ -10,7 +10,7 @@ from pytest_httpx._httpx_internals import PrimitiveData, _proxy_url
 from pytest_httpx._options import _HTTPXMockOptions
 
 if TYPE_CHECKING:
-    from pytest_httpx._httpx_compat import httpx, httpx2
+    from pytest_httpx._httpx_compat import httpx
 
 
 def convert_back_mock_any(original: dict, new: dict) -> None:
@@ -60,7 +60,7 @@ def _url_match(
 
 
 def to_params_dict(
-    params: "httpx.QueryParams | httpx2.QueryParams",
+    params: "httpx.QueryParams",
 ) -> dict[str, str | list[str]]:
     """Convert query parameters to a dict where the value is a string if the parameter has a single value and a list of string otherwise."""
     d = {}
