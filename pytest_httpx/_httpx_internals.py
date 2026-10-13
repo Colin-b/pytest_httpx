@@ -1,18 +1,21 @@
 import base64
 from collections.abc import AsyncIterator, Iterable, Iterator, Sequence
-from typing import TypeAlias
+from typing import TYPE_CHECKING, TypeAlias, Union
 
-from pytest_httpx._httpx_compat import HTTPXBackend, get_backends, httpcore, httpx
+from pytest_httpx._httpx_compat import HTTPXBackend, get_backends
+
+if TYPE_CHECKING:
+    from pytest_httpx._httpx_compat import HttpxURL, httpcore, httpcore2, httpx
 
 # Those types are internally defined within httpx._types
-HeaderTypes: TypeAlias = (
-    httpx.Headers
-    | dict[str, str]
-    | dict[bytes, bytes]
-    | Sequence[tuple[str, str]]
-    | Sequence[tuple[bytes, bytes]]
-)
-PrimitiveData: TypeAlias = str | int | float | bool | None
+HeaderTypes: TypeAlias = Union[
+    "httpx.Headers",
+    dict[str, str],
+    dict[bytes, bytes],
+    Sequence[tuple[str, str]],
+    Sequence[tuple[bytes, bytes]],
+]
+PrimitiveData: TypeAlias = str | int | float | bool
 
 
 def _iterator_stream_bases() -> list[type]:
@@ -38,8 +41,10 @@ class IteratorStream(*_iterator_stream_bases()):  # type: ignore[misc]
 
 
 def _to_httpx_url(
-    backend: HTTPXBackend, url: httpcore.URL, headers: list[tuple[bytes, bytes]]
-) -> httpx.URL:
+    backend: HTTPXBackend,
+    url: "httpcore.URL | httpcore2.URL",
+    headers: list[tuple[bytes, bytes]],
+) -> "HttpxURL":
     for name, value in headers:
         if b"Proxy-Authorization" == name:
             return backend.httpx.URL(
@@ -60,8 +65,8 @@ def _to_httpx_url(
 
 def _proxy_url(
     backend: HTTPXBackend,
-    real_transport: httpx.HTTPTransport | httpx.AsyncHTTPTransport,
-) -> httpx.URL | None:
+    real_transport: "httpx.HTTPTransport | httpx.AsyncHTTPTransport",
+) -> "httpx.URL | None":
     if isinstance(
         real_pool := real_transport._pool,
         (backend.httpcore.HTTPProxy, backend.httpcore.AsyncHTTPProxy),
