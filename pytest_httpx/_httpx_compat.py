@@ -1,4 +1,3 @@
-import warnings
 from dataclasses import dataclass
 from functools import cache
 from types import ModuleType
@@ -23,12 +22,12 @@ def get_backends() -> list[HTTPXBackend]:
     backends = []
 
     try:
-        import httpcore2  # pragma: no cover
-        import httpx2
+        import httpcore2 as httpcore2_  # pragma: no cover
+        import httpx2 as httpx2_
     except ModuleNotFoundError:  # pragma: no cover
         pass
     else:
-        backends.append(HTTPXBackend("httpx2", httpx2, httpcore2))  # pragma: no cover
+        backends.append(HTTPXBackend("httpx2", httpx2_, httpcore2_))  # pragma: no cover
 
     try:
         import httpcore as httpcore_  # pragma: no cover
@@ -51,18 +50,9 @@ def get_backends() -> list[HTTPXBackend]:
 
 
 if TYPE_CHECKING:
-    import httpcore2 as httpcore
-    import httpx2 as httpx
-else:
-    # A module-level backend for global httpx/httpcore names references.
-    _backends = get_backends()
-    [_default_backend, *_] = _backends
-    httpx = _default_backend.httpx
-    httpcore = _default_backend.httpcore
+    import httpcore  # noqa: F401
+    import httpcore2  # noqa: F401
+    import httpx
+    import httpx2
 
-    if any(backend.name == "httpx" for backend in _backends):  # pragma: no cover
-        warnings.warn(
-            "Using httpx with pytest-httpx is deprecated; consider using httpx2 instead.",
-            PytestHTTPXDeprecationWarning,
-            stacklevel=2,
-        )
+    HttpxURL = httpx.URL | httpx2.URL

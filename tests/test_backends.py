@@ -138,7 +138,7 @@ def test_add_exception_raises_matching_backend_error(httpx_mock: HTTPXMock) -> N
 seen_request_modules: set[str] = set()
 
 
-def _should_mock(request: httpx.Request | httpx2.Request) -> bool:  # type: ignore[no-untyped-def]
+def _should_mock(request: httpx.Request | httpx2.Request) -> bool:
     # Record the module of the request object so the test below could check them.
     match type(request):
         case httpx.Request:
@@ -161,3 +161,21 @@ def test_should_mock_used_by_both_backends(httpx_mock: HTTPXMock) -> None:
         client.get("https://test_url")
 
     assert set(seen_request_modules) == {"httpx", "httpx2"}
+
+
+def test_conflicting_params_backend_agnostic(httpx_mock: HTTPXMock) -> None:
+    with pytest.raises(ValueError) as exc_httpx:
+        httpx_mock.add_response(
+            url=httpx.URL("https://test_url?a=1"), match_params={"a": "1"}
+        )
+
+    with pytest.raises(ValueError) as exc_httpx2:
+        httpx_mock.add_response(
+            url=httpx2.URL("https://test_url?a=1"), match_params={"a": "1"}
+        )
+
+    assert (
+        str(exc_httpx.value)
+        == str(exc_httpx2.value)
+        == "Provided URL must not contain any query parameter when match_params is used."
+    )
