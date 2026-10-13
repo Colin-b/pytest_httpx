@@ -28,12 +28,13 @@ Title should be a small sentence describing the request.
 1) Create a new branch based on `develop` branch.
 2) Fetch all dependencies using [`pip`](https://pip.pypa.io/en/stable/).
     ```shell
-    python -m pip install .[testing]
+    python -m pip install .[dev]
     ```
-3) Ensure tests are ok by running them using [`pytest`](https://doc.pytest.org/en/latest/index.html).
+3) Ensure tests are ok by running them using [`tox`](https://tox.wiki/en/4.65.4/index.html).
     ```shell
-    pytest
+    tox
     ```
+   You can also run tests directly using [`pytest`](https://doc.pytest.org/en/latest/index.html).
 4) Install [pre-commit](https://pre-commit.com) hook to ensure new code will follow guidelines.
     ```shell
     python -m pip install pre-commit

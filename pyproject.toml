@@ -58,6 +58,10 @@ testing = [
     # Used to run async tests
     "pytest-asyncio==1.*",
 ]
+dev = [
+    "pytest-httpx[testing,httpx,httpx2]",
+    "tox==4.*"
+]
 
 [project.entry-points.pytest11]
 pytest_httpx = "pytest_httpx"
