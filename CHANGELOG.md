@@ -16,7 +16,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Responses with a `Content-Encoding` (such as `gzip`) provided via `content` can now be read by the client. They previously failed with `httpx.DecodingError`.
 
 ### Added
-- Support for httpx2 is implemented via a httpx/httpx2 compatibility module.
+- Support for httpx2 is implemented. When both `httpx` and `httpx2` are installed, the `httpx_mock`
+  fixture now mocks both of them within the same test session.
+
+### Changed
+- `httpx` is not installed automatically anymore. You now have to require it explicitly through the `httpx` or `httpx2` extra.
+  Both extras can be installed at the same time to mock both libraries simultaneously.
 
 ### Removed
 - python `3.10` is not supported anymore.
