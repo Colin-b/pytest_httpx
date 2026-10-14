@@ -153,7 +153,7 @@ class _RequestMatcher:
             return False
 
         [any_backend, *_] = get_backends()
-        # For now it doesn't matter which backend to use, both
+        # It doesn't matter which backend to use, both
         # httpx and httpx2 has the same URL params parsing logic.
         url_has_params = bool(any_backend.httpx.URL(str(self.url)).params)
 

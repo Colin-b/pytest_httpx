@@ -64,7 +64,6 @@ def test_response_type_matches_backend(httpx_mock: HTTPXMock) -> None:
     with httpx2.Client() as client:
         httpx2_response = client.get("https://test_url")
 
-    # Each response must be an instance of its own backend's Response type.
     assert isinstance(httpx_response, httpx.Response)
     assert not isinstance(httpx_response, httpx2.Response)
 
