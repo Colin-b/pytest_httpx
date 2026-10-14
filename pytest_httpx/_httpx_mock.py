@@ -182,8 +182,7 @@ class HTTPXMock:
             )
 
         raise self._request_not_matched(
-            request,
-            self._explain_that_no_response_was_found(real_transport, request),
+            request, self._explain_that_no_response_was_found(real_transport, request)
         )
 
     async def _handle_async_request(
@@ -218,8 +217,7 @@ class HTTPXMock:
             )
 
         raise self._request_not_matched(
-            request,
-            self._explain_that_no_response_was_found(real_transport, request),
+            request, self._explain_that_no_response_was_found(real_transport, request)
         )
 
     def _request_not_matched(
