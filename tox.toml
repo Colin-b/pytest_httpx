@@ -1,5 +1,4 @@
 env_list = ["clean", "httpx", "httpx2", "both"]
-isolated_build = true
 
 [env_run_base]
 # Editable mode so that coverage measures the repo source.
