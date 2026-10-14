@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from pytest_httpx._httpx_compat import HTTPXBackend
+from pytest_httpx._httpx_compat import get_backend
 from pytest_httpx._httpx_internals import _proxy_url
 from pytest_httpx._request_matcher import _RequestMatcher
 
@@ -11,12 +11,11 @@ if TYPE_CHECKING:
 class RequestDescription:
     def __init__(
         self,
-        backend: HTTPXBackend,
         real_transport: "httpx.HTTPTransport | httpx.AsyncHTTPTransport",
         request: "httpx.Request",
         matchers: list[_RequestMatcher],
     ):
-        self.backend = backend
+        self.backend = get_backend(request)
         self.real_transport = real_transport
         self.request = request
 

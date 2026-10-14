@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any
 from unittest.mock import ANY
 
 from pytest_httpx import get_backends
-from pytest_httpx._httpx_compat import HTTPXBackend
+from pytest_httpx._httpx_compat import HTTPXBackend, get_backend
 from pytest_httpx._httpx_internals import PrimitiveData, _proxy_url
 from pytest_httpx._options import _HTTPXMockOptions
 
@@ -165,10 +165,10 @@ class _RequestMatcher:
 
     def match(
         self,
-        backend: HTTPXBackend,
         real_transport: "httpx.HTTPTransport | httpx.AsyncHTTPTransport",
         request: "httpx.Request",
     ) -> bool:
+        backend = get_backend(request)
         return (
             self._url_match(backend, request)
             and self._method_match(request)
