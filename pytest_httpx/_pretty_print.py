@@ -12,7 +12,7 @@ class RequestDescription:
     def __init__(
         self,
         backend: HTTPXBackend,
-        real_transport: "httpx.BaseTransport | httpx.AsyncBaseTransport",
+        real_transport: "httpx.HTTPTransport | httpx.AsyncHTTPTransport",
         request: "httpx.Request",
         matchers: list[_RequestMatcher],
     ):

@@ -229,7 +229,7 @@ class HTTPXMock:
 
     def _explain_that_callback_must_return_a_response(
         self,
-        real_transport: "httpx.BaseTransport | httpx.AsyncBaseTransport",
+        real_transport: "httpx.HTTPTransport | httpx.AsyncHTTPTransport",
         request: "httpx.Request",
     ) -> str:
         backend = _get_backend(request)
@@ -237,7 +237,7 @@ class HTTPXMock:
 
     def _explain_that_no_response_was_found(
         self,
-        real_transport: "httpx.BaseTransport | httpx.AsyncBaseTransport",
+        real_transport: "httpx.HTTPTransport | httpx.AsyncHTTPTransport",
         request: "httpx.Request",
     ) -> str:
         matchers = [matcher for matcher, _ in self._callbacks]
