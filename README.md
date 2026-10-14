@@ -15,6 +15,7 @@
 
 Once installed, `httpx_mock` [`pytest`](https://docs.pytest.org/en/latest/) fixture will make sure every [`httpx`](https://www.python-httpx.org) request will be replied to with user provided responses ([unless some hosts are explicitly skipped](#do-not-mock-some-requests)).
 
+- [Comparing with RESPX](#comparing-with-respx)
 - [Add responses](#add-responses)
   - [JSON body](#add-json-response)
   - [Custom body](#reply-with-custom-body)
@@ -33,6 +34,44 @@ Once installed, `httpx_mock` [`pytest`](https://docs.pytest.org/en/latest/) fixt
 - [Migrating](#migrating-to-pytest-httpx)
   - [responses](#from-responses)
   - [aioresponses](#from-aioresponses)
+
+## Comparing with RESPX
+
+Both pytest-httpx and [RESPX](https://lundberg.github.io/respx/) mock synchronous and asynchronous HTTPX requests. They use different APIs to register responses and inspect requests:
+
+| | pytest-httpx | RESPX |
+| --- | --- | --- |
+| Setup | The `httpx_mock` pytest fixture. | The `respx_mock` pytest fixture, or a decorator or context manager. |
+| Matching | Keyword arguments such as `url`, `method` and `match_json`. | Routes with [composable request patterns](https://lundberg.github.io/respx/guide/#patterns). |
+| Repeated requests | Each registered response is used once by default. Set `is_reusable=True` to [reuse a response](#allow-to-register-a-response-for-more-than-one-request). | A route's fixed response is reused. Use [iterable side effects](https://lundberg.github.io/respx/guide/#iterable) for a sequence of responses. |
+| Inspecting requests | [`get_request()` and `get_requests()`](#check-sent-requests) retrieve matching requests. | [Call history](https://lundberg.github.io/respx/guide/#call-history) is available for the router and individual routes. |
+
+For example, with pytest-httpx installed:
+
+```python
+import httpx
+
+
+def test_request(httpx_mock):
+    httpx_mock.add_response(method="GET", url="https://example.test/", status_code=200)
+
+    assert httpx.get("https://example.test/").status_code == 200
+```
+
+The equivalent test with RESPX installed uses a route:
+
+```python
+import httpx
+
+
+def test_request(respx_mock):
+    route = respx_mock.get("https://example.test/").respond(200)
+
+    assert httpx.get("https://example.test/").status_code == 200
+    route.calls.assert_called_once()
+```
+
+Both libraries reject unmatched requests by default. pytest-httpx also fails the test if a registered response is unused. To require all RESPX routes to be called, configure its fixture with `@pytest.mark.respx(assert_all_called=True)`. These checks are configurable. When testing retries or polling, account for the response reuse difference above.
 
 ## Add responses
 
