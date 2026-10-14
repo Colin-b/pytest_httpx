@@ -52,7 +52,7 @@ should stay intact when using httpx2.
 
 ## Add responses
 
-You can register responses for both sync and async HTTPX requests.
+You can register responses for both sync and async ([`HTTPX`](https://www.python-httpx.org)) requests.
 
 ```python
 import pytest
