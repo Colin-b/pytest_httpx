@@ -19,7 +19,7 @@ def get_backends() -> list[HTTPXBackend]:
 
     try:
         import httpcore2 as httpcore2_  # pragma: no cover
-        import httpx2 as httpx2_
+        import httpx2 as httpx2_  # pragma: no cover
     except ModuleNotFoundError:  # pragma: no cover
         pass
     else:
@@ -27,7 +27,7 @@ def get_backends() -> list[HTTPXBackend]:
 
     try:
         import httpcore as httpcore_  # pragma: no cover
-        import httpx as httpx_
+        import httpx as httpx_  # pragma: no cover
     except ModuleNotFoundError:  # pragma: no cover
         pass
     else:
