@@ -45,7 +45,21 @@ def get_backends() -> list[HTTPXBackend]:
     return backends
 
 
+_BACKEND_ATTRIBUTE = "__pytest_httpx_backend"
+
+
+def set_backend(request: "httpx.Request", backend: HTTPXBackend) -> None:
+    # Store the intercepting backend on the request so that backend-agnostic
+    # callbacks (e.g. the one built by `add_response`) can build a response
+    # with the matching library.
+    setattr(request, _BACKEND_ATTRIBUTE, backend)
+
+
+def get_backend(request: "httpx.Request") -> HTTPXBackend:
+    return getattr(request, _BACKEND_ATTRIBUTE)
+
+
 if TYPE_CHECKING:
     import httpcore  # noqa: F401
-    import httpx  # noqa: F401
+    import httpx
     import httpx2  # noqa: F401

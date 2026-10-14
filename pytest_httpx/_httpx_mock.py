@@ -4,7 +4,7 @@ from collections.abc import Awaitable, Callable
 from typing import TYPE_CHECKING, Any, TypeAlias
 
 from pytest_httpx import _httpx_internals
-from pytest_httpx._httpx_compat import HTTPXBackend
+from pytest_httpx._httpx_compat import HTTPXBackend, get_backend, set_backend
 from pytest_httpx._options import _HTTPXMockOptions
 from pytest_httpx._pretty_print import RequestDescription
 from pytest_httpx._request_matcher import _RequestMatcher
@@ -82,7 +82,7 @@ class HTTPXMock:
         def response_callback(request: "httpx.Request") -> "httpx.Response":
             # Build the response with the backend that intercepted the request
             # so that its type matches the client.
-            backend = _get_backend(request)
+            backend = get_backend(request)
             return backend.httpx.Response(
                 status_code=status_code,
                 extensions={"http_version": http_version.encode("ascii")},
@@ -145,7 +145,7 @@ class HTTPXMock:
         """
 
         def exception_callback(request: "httpx.Request") -> None:
-            backend = _get_backend(request)
+            backend = get_backend(request)
 
             if isinstance(exception, backend.httpx.RequestError):
                 exception.request = request
@@ -161,7 +161,7 @@ class HTTPXMock:
     ) -> "httpx.Response":
         # Save the backend that intercepted this request so that callbacks
         # use the matching library.
-        _set_backend(request, backend)
+        set_backend(request, backend)
 
         # Store the content in request for future matching
         request.read()
@@ -193,7 +193,7 @@ class HTTPXMock:
     ) -> "httpx.Response":
         # Save the backend that intercepted this request so that callbacks
         # use the matching library.
-        _set_backend(request, backend)
+        set_backend(request, backend)
 
         # Store the content in request for future matching
         await request.aread()
@@ -223,7 +223,7 @@ class HTTPXMock:
     def _request_not_matched(
         self, request: "httpx.Request", message: str
     ) -> "httpx.TimeoutException":
-        backend = _get_backend(request)
+        backend = get_backend(request)
         self._requests_not_matched.append(request)
         return backend.httpx.TimeoutException(message, request=request)
 
@@ -232,8 +232,8 @@ class HTTPXMock:
         real_transport: "httpx.HTTPTransport | httpx.AsyncHTTPTransport",
         request: "httpx.Request",
     ) -> str:
-        backend = _get_backend(request)
-        return f"Callback registered for {RequestDescription(backend, real_transport, request, [])} MUST return {backend.name}.Response"
+        backend = get_backend(request)
+        return f"Callback registered for {RequestDescription(real_transport, request, [])} MUST return {backend.name}.Response"
 
     def _explain_that_no_response_was_found(
         self,
@@ -241,9 +241,8 @@ class HTTPXMock:
         request: "httpx.Request",
     ) -> str:
         matchers = [matcher for matcher, _ in self._callbacks]
-        backend = _get_backend(request)
 
-        message = f"No response can be found for {RequestDescription(backend, real_transport, request, matchers)}"
+        message = f"No response can be found for {RequestDescription(real_transport, request, matchers)}"
 
         already_matched = []
         unmatched = []
@@ -270,11 +269,10 @@ class HTTPXMock:
         real_transport: "httpx.HTTPTransport | httpx.AsyncHTTPTransport",
         request: "httpx.Request",
     ) -> Callback | None:
-        backend = _get_backend(request)
         callbacks = [
             (matcher, callback)
             for matcher, callback in self._callbacks
-            if matcher.match(backend, real_transport, request)
+            if matcher.match(real_transport, request)
         ]
 
         # No callback match this request
@@ -317,7 +315,7 @@ class HTTPXMock:
         return [
             request
             for real_transport, request in self._requests
-            if matcher.match(_get_backend(request), real_transport, request)
+            if matcher.match(real_transport, request)
         ]
 
     def get_request(self, **matchers: Any) -> "httpx.Request | None":
@@ -377,20 +375,6 @@ class HTTPXMock:
                 "\n"
                 "If this is on purpose, refer to https://github.com/Colin-b/pytest_httpx/blob/master/README.md#allow-to-not-register-responses-for-every-request"
             )
-
-
-_BACKEND_ATTRIBUTE = "__pytest_httpx_backend"
-
-
-def _set_backend(request: "httpx.Request", backend: HTTPXBackend) -> None:
-    # Store the intercepting backend on the request so that backend-agnostic
-    # callbacks (e.g. the one built by `add_response`) can build a response
-    # with the matching library.
-    setattr(request, _BACKEND_ATTRIBUTE, backend)
-
-
-def _get_backend(request: "httpx.Request") -> HTTPXBackend:
-    return getattr(request, _BACKEND_ATTRIBUTE)
 
 
 def _unread(response: "httpx.Response") -> "httpx.Response":
