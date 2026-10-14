@@ -4,10 +4,6 @@ from types import ModuleType
 from typing import TYPE_CHECKING, Literal
 
 
-class PytestHTTPXDeprecationWarning(UserWarning):
-    pass
-
-
 @dataclass(frozen=True)
 class HTTPXBackend:
     name: Literal["httpx", "httpx2"]
@@ -51,8 +47,5 @@ def get_backends() -> list[HTTPXBackend]:
 
 if TYPE_CHECKING:
     import httpcore  # noqa: F401
-    import httpcore2  # noqa: F401
-    import httpx
-    import httpx2
-
-    HttpxURL = httpx.URL | httpx2.URL
+    import httpx  # noqa: F401
+    import httpx2  # noqa: F401
