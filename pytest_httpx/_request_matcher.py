@@ -213,7 +213,9 @@ class _RequestMatcher:
 
         if self.files:
             if not (
-                boundary_matched := re.match(b"^--([0-9a-f]*)\r\n", request.content)
+                boundary_matched := re.match(
+                    b"^--([^\r\n\x80-\xff]+)\r\n", request.content
+                )
             ):
                 return False
             # Ensure we re-use the same boundary for comparison
