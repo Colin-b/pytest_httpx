@@ -237,7 +237,7 @@ def test_headers_matching(httpx_mock: HTTPXMock):
         response = client.get("https://test_url")
 ```
 
-[^header-absence]: Matching on the absence of a header is currently not supported. [Retrieve the request](#check-sent-requests) after it is sent and assert that the header is absent from `request.headers`.
+[^header-absence]: To match the absence of a header, use [a custom request matcher](#matching-with-a-custom-predicate), such as `match_request=lambda request: "X-Optional" not in request.headers`.
 
 #### Matching on HTTP body
 
@@ -302,6 +302,46 @@ def test_multipart_matching(httpx_mock: HTTPXMock):
 ```
 
 Note that `match_content` or `match_json` cannot be provided if `match_files` is also provided.
+
+#### Matching with a custom predicate
+
+Use `match_request` to inspect the request at runtime, for example to decode an
+encoded body before comparing it. The predicate receives an `httpx.Request` whose
+body has already been read, and must return `True` to match or `False` to continue
+looking for another response.
+
+```python
+import gzip
+
+import httpx
+from pytest_httpx import HTTPXMock
+
+
+def test_encoded_body(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(
+        method="POST",
+        match_request=lambda request: gzip.decompress(request.content) == b"payload",
+    )
+
+    with httpx.Client() as client:
+        response = client.post(
+            "https://test_url",
+            content=gzip.compress(b"payload"),
+            headers={"Content-Encoding": "gzip"},
+        )
+```
+
+The predicate is combined with all other matchers and runs only after those
+matchers succeed. It is also available with `add_callback`, `add_exception`,
+`get_request`, and `get_requests`. The predicate must be synchronous, including
+when requests are sent using `httpx.AsyncClient`. Returning an awaitable or a value
+other than a boolean raises `TypeError`; exceptions raised by the predicate are
+propagated to the caller.
+
+Predicates may be evaluated more than once, including when filtering recorded
+requests. Keep them free of side effects and do not mutate the request. If decoding
+can fail for an unrelated request, handle that failure in the predicate and return
+`False`.
 
 #### Matching on extensions
 

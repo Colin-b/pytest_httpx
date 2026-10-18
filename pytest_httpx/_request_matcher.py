@@ -1,6 +1,7 @@
+import inspect
 import json
 import re
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from re import Pattern
 from typing import Any
 from unittest.mock import ANY
@@ -75,6 +76,7 @@ class _RequestMatcher:
         match_files: Any | None = None,
         match_extensions: dict[str, Any] | None = None,
         match_params: dict[str, PrimitiveData | Sequence[PrimitiveData]] | None = None,
+        match_request: Callable[[httpx.Request], bool] | None = None,
         is_optional: bool | None = None,
         is_reusable: bool | None = None,
     ):
@@ -94,6 +96,7 @@ class _RequestMatcher:
             else proxy_url
         )
         self.extensions = match_extensions
+        self.request_matcher = match_request
         self.is_optional = (
             not options.assert_all_responses_were_requested
             if is_optional is None
@@ -167,7 +170,21 @@ class _RequestMatcher:
             and self._content_match(request)
             and self._proxy_match(real_transport)
             and self._extensions_match(request)
+            and self._request_match(request)
         )
+
+    def _request_match(self, request: httpx.Request) -> bool:
+        if self.request_matcher is None:
+            return True
+
+        result = self.request_matcher(request)
+        if inspect.iscoroutine(result):
+            result.close()
+        if not isinstance(result, bool):
+            raise TypeError(
+                "match_request must return a boolean, not an awaitable or another type."
+            )
+        return result
 
     def _url_match(self, request: httpx.Request) -> bool:
         if not self.url:
@@ -283,5 +300,7 @@ class _RequestMatcher:
             extra_description.append(f"{self.proxy_url} proxy URL")
         if self.extensions:
             extra_description.append(f"{self.extensions} extensions")
+        if self.request_matcher is not None:
+            extra_description.append("custom request matcher")
 
         return " and ".join(extra_description)
