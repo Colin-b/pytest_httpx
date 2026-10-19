@@ -73,12 +73,19 @@ def test_url_query_string_matching(
         assert response.content == b""
 
 
+@pytest.mark.parametrize("sequence_type", [list, tuple])
 def test_url_query_params_partial_matching(
-    httpx_mock: HTTPXMock, backend: HTTPXBackend
+    httpx_mock: HTTPXMock, backend: HTTPXBackend, sequence_type: type
 ) -> None:
     httpx_mock.add_response(
         url="https://test_url",
-        match_params={"a": ["1", "3"], "b": ANY, "c": "4", "d": ["5", ANY], "e": [ANY]},
+        match_params={
+            "a": sequence_type(["1", "3"]),
+            "b": ANY,
+            "c": "4",
+            "d": sequence_type(["5", ANY]),
+            "e": sequence_type([ANY]),
+        },
         is_reusable=True,
     )
 
