@@ -20,7 +20,7 @@ def convert_back_mock_any(original: dict, new: dict) -> None:
     for key, values in original.items():
         if values is ANY:
             new[key] = ANY
-        elif isinstance(values, list):
+        elif isinstance(values, (list, tuple)):
             if len(values) == 1:
                 if values[0] is ANY:
                     new[key] = ANY
