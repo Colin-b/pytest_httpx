@@ -10,12 +10,12 @@ from pytest_httpx._pretty_print import RequestDescription
 from pytest_httpx._request_matcher import _RequestMatcher
 
 if TYPE_CHECKING:
-    from pytest_httpx._httpx_compat import httpx
+    from pytest_httpx._httpx_compat import httpx, httpx2
 
 
 Callback: TypeAlias = Callable[
-    ["httpx.Request"],
-    "httpx.Response | None | Awaitable[httpx.Response | None]",
+    ["httpx.Request | httpx2.Request"],
+    "httpx.Response | httpx2.Response | None | Awaitable[httpx.Response | httpx2.Response | None]",
 ]
 
 
@@ -294,7 +294,7 @@ class HTTPXMock:
         # All callbacks have already been matched and last registered cannot be reused
         return None
 
-    def get_requests(self, **matchers: Any) -> list["httpx.Request"]:
+    def get_requests(self, **matchers: Any) -> list["httpx.Request | httpx2.Request"]:
         """
         Return all requests sent that match (empty list if no requests were matched).
 
@@ -318,7 +318,7 @@ class HTTPXMock:
             if matcher.match(real_transport, request)
         ]
 
-    def get_request(self, **matchers: Any) -> "httpx.Request | None":
+    def get_request(self, **matchers: Any) -> "httpx.Request | httpx2.Request | None":
         """
         Return the single request that match (or None).
 
