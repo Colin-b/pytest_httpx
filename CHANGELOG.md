@@ -14,6 +14,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `match_params` is now handling `bool`, `int` and `float` values in addition to `str`. Only str values were previously expected.
 - A meaningful error will now be returned when a callback that does not return an `httpx.Response` is called.
 
+### Added
+- Support for httpx2 is implemented. When both `httpx` and `httpx2` are installed, the `httpx_mock`
+  fixture now mocks both of them within the same test session.
+
+### Changed
+- `httpx` is not installed automatically anymore. You now have to require it explicitly through the `httpx` or `httpx2` extra.
+  Both extras can be installed at the same time to mock both libraries simultaneously.
+
 ### Removed
 - python `3.10` is not supported anymore.
 

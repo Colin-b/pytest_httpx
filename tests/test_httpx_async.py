@@ -4,22 +4,27 @@ import os
 import re
 import time
 from collections.abc import AsyncIterable
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from unittest.mock import ANY
 
-import httpx
 import pytest
 from pytest import Testdir
 
 import pytest_httpx
-from pytest_httpx import HTTPXMock
+from pytest_httpx import HTTPXBackend, HTTPXMock, get_backends
+
+if TYPE_CHECKING:
+    try:
+        import httpx
+    except ModuleNotFoundError:
+        import httpx2 as httpx
 
 
 @pytest.mark.asyncio
 @pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
-async def test_without_response(httpx_mock: HTTPXMock) -> None:
+async def test_without_response(httpx_mock: HTTPXMock, backend: HTTPXBackend) -> None:
     with pytest.raises(Exception) as exception_info:
-        async with httpx.AsyncClient() as client:
+        async with backend.httpx.AsyncClient() as client:
             await client.get("https://test_url")
     assert (
         str(exception_info.value)
@@ -28,31 +33,33 @@ async def test_without_response(httpx_mock: HTTPXMock) -> None:
 
 
 @pytest.mark.asyncio
-async def test_default_response(httpx_mock: HTTPXMock) -> None:
+async def test_default_response(httpx_mock: HTTPXMock, backend: HTTPXBackend) -> None:
     httpx_mock.add_response()
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         response = await client.get("https://test_url")
     assert response.content == b""
     assert response.status_code == 200
-    assert response.headers == httpx.Headers({})
+    assert response.headers == backend.httpx.Headers({})
     assert response.http_version == "HTTP/1.1"
 
 
 @pytest.mark.asyncio
-async def test_url_matching(httpx_mock: HTTPXMock) -> None:
+async def test_url_matching(httpx_mock: HTTPXMock, backend: HTTPXBackend) -> None:
     httpx_mock.add_response(url="https://test_url")
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         response = await client.get("https://test_url")
         assert response.content == b""
 
 
 @pytest.mark.asyncio
-async def test_url_matching_reusing_response(httpx_mock: HTTPXMock) -> None:
+async def test_url_matching_reusing_response(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     httpx_mock.add_response(url="https://test_url", is_reusable=True)
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         response = await client.get("https://test_url")
         assert response.content == b""
 
@@ -61,10 +68,12 @@ async def test_url_matching_reusing_response(httpx_mock: HTTPXMock) -> None:
 
 
 @pytest.mark.asyncio
-async def test_url_query_string_matching(httpx_mock: HTTPXMock) -> None:
+async def test_url_query_string_matching(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     httpx_mock.add_response(url="https://test_url?a=1&b=2", is_reusable=True)
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         response = await client.post("https://test_url?a=1&b=2")
         assert response.content == b""
 
@@ -73,13 +82,12 @@ async def test_url_query_string_matching(httpx_mock: HTTPXMock) -> None:
         assert response.content == b""
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize("sequence_type", [list, tuple])
 async def test_url_query_params_partial_matching(
-    httpx_mock: HTTPXMock, sequence_type: type
+    httpx_mock: HTTPXMock, backend: HTTPXBackend, sequence_type: type
 ) -> None:
     httpx_mock.add_response(
-        url=httpx.URL("https://test_url"),
+        url=backend.httpx.URL("https://test_url"),
         match_params={
             "a": sequence_type(["1", "3"]),
             "b": ANY,
@@ -90,7 +98,7 @@ async def test_url_query_params_partial_matching(
         is_reusable=True,
     )
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         response = await client.post("https://test_url?a=1&b=2&a=3&c=4&d=5&d=6&e=7")
         assert response.content == b""
 
@@ -100,51 +108,59 @@ async def test_url_query_params_partial_matching(
 
 
 @pytest.mark.asyncio
-async def test_url_as_pattern_ignoring_query_parameters(httpx_mock: HTTPXMock):
+async def test_url_as_pattern_ignoring_query_parameters(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+):
     httpx_mock.add_response(url=re.compile("https://test_url/something.*"))
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         response = await client.get("https://test_url/something?a=1&b=2")
         assert response.content == b""
 
 
 @pytest.mark.asyncio
-async def test_url_query_params_with_single_value_list(httpx_mock: HTTPXMock) -> None:
+async def test_url_query_params_with_single_value_list(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     httpx_mock.add_response(
         url="https://test_url",
         match_params={"a": ["1"]},
         is_optional=True,
     )
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         response = await client.post("https://test_url?a=1")
         assert response.content == b""
 
 
 @pytest.mark.asyncio
-async def test_url_query_params_with_non_str_name(httpx_mock: HTTPXMock) -> None:
+async def test_url_query_params_with_non_str_name(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     httpx_mock.add_response(
         url="https://test_url",
         match_params={1: "1"},
         is_optional=True,
     )
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         response = await client.post("https://test_url?1=1")
         assert response.content == b""
 
 
 @pytest.mark.asyncio
 @pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
-async def test_url_query_params_not_matching(httpx_mock: HTTPXMock) -> None:
+async def test_url_query_params_not_matching(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     httpx_mock.add_response(
         url="https://test_url",
         match_params={"a": "1"},
         is_optional=True,
     )
 
-    async with httpx.AsyncClient() as client:
-        with pytest.raises(httpx.TimeoutException) as exception_info:
+    async with backend.httpx.AsyncClient() as client:
+        with pytest.raises(backend.httpx.TimeoutException) as exception_info:
             await client.post("https://test_url?a=2")
         assert (
             str(exception_info.value)
@@ -210,10 +226,11 @@ async def test_match_params_with_non_str_values_and_params_provided_as_dict(
     httpx_mock: HTTPXMock,
     match_params: dict[str, Any],
     request_params: dict[str, Any],
+    backend: HTTPXBackend,
 ) -> None:
     httpx_mock.add_response(url="https://test_url", match_params=match_params)
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         response = await client.get("https://test_url", params=request_params)
         assert response.content == b""
 
@@ -259,10 +276,11 @@ async def test_match_params_with_non_str_values_and_params_in_requested_url(
     httpx_mock: HTTPXMock,
     match_params: dict[str, Any],
     url: str,
+    backend: HTTPXBackend,
 ) -> None:
     httpx_mock.add_response(url="https://test_url", match_params=match_params)
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         response = await client.get(url)
         assert response.content == b""
 
@@ -270,10 +288,11 @@ async def test_match_params_with_non_str_values_and_params_in_requested_url(
 @pytest.mark.asyncio
 async def test_url_matching_with_more_than_one_value_on_same_param(
     httpx_mock: HTTPXMock,
+    backend: HTTPXBackend,
 ) -> None:
     httpx_mock.add_response(url="https://test_url?a=1&a=3", is_optional=True)
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         response = await client.get("https://test_url", params={"a": [1, 3]})
         assert response.content == b""
 
@@ -282,11 +301,12 @@ async def test_url_matching_with_more_than_one_value_on_same_param(
 @pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
 async def test_url_not_matching_with_more_than_one_value_on_same_param_and_diff_value(
     httpx_mock: HTTPXMock,
+    backend: HTTPXBackend,
 ) -> None:
     httpx_mock.add_response(url="https://test_url?a=2&a=3", is_optional=True)
 
-    async with httpx.AsyncClient() as client:
-        with pytest.raises(httpx.TimeoutException) as exception_info:
+    async with backend.httpx.AsyncClient() as client:
+        with pytest.raises(backend.httpx.TimeoutException) as exception_info:
             await client.get("https://test_url", params={"a": [1, 3]})
         assert (
             str(exception_info.value)
@@ -299,11 +319,12 @@ async def test_url_not_matching_with_more_than_one_value_on_same_param_and_diff_
 @pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
 async def test_url_not_matching_with_more_than_one_value_on_same_param_and_more_values(
     httpx_mock: HTTPXMock,
+    backend: HTTPXBackend,
 ) -> None:
     httpx_mock.add_response(url="https://test_url?a=1&a=3", is_optional=True)
 
-    async with httpx.AsyncClient() as client:
-        with pytest.raises(httpx.TimeoutException) as exception_info:
+    async with backend.httpx.AsyncClient() as client:
+        with pytest.raises(backend.httpx.TimeoutException) as exception_info:
             await client.get("https://test_url", params={"a": [1, 3, 4]})
         assert (
             str(exception_info.value)
@@ -316,11 +337,12 @@ async def test_url_not_matching_with_more_than_one_value_on_same_param_and_more_
 @pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
 async def test_url_not_matching_with_more_than_one_value_on_same_param_and_less_values(
     httpx_mock: HTTPXMock,
+    backend: HTTPXBackend,
 ) -> None:
     httpx_mock.add_response(url="https://test_url?a=1&a=3&a=4", is_optional=True)
 
-    async with httpx.AsyncClient() as client:
-        with pytest.raises(httpx.TimeoutException) as exception_info:
+    async with backend.httpx.AsyncClient() as client:
+        with pytest.raises(backend.httpx.TimeoutException) as exception_info:
             await client.get("https://test_url", params={"a": [1, 3]})
         assert (
             str(exception_info.value)
@@ -331,11 +353,11 @@ async def test_url_not_matching_with_more_than_one_value_on_same_param_and_less_
 
 @pytest.mark.asyncio
 @pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
-async def test_url_not_matching(httpx_mock: HTTPXMock) -> None:
+async def test_url_not_matching(httpx_mock: HTTPXMock, backend: HTTPXBackend) -> None:
     httpx_mock.add_response(url="https://test_url", is_optional=True)
 
-    async with httpx.AsyncClient() as client:
-        with pytest.raises(httpx.TimeoutException) as exception_info:
+    async with backend.httpx.AsyncClient() as client:
+        with pytest.raises(backend.httpx.TimeoutException) as exception_info:
             await client.get("https://test_url2")
         assert (
             str(exception_info.value)
@@ -346,11 +368,13 @@ async def test_url_not_matching(httpx_mock: HTTPXMock) -> None:
 
 @pytest.mark.asyncio
 @pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
-async def test_url_query_string_not_matching(httpx_mock: HTTPXMock) -> None:
+async def test_url_query_string_not_matching(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     httpx_mock.add_response(url="https://test_url?a=1&a=2", is_optional=True)
 
-    async with httpx.AsyncClient() as client:
-        with pytest.raises(httpx.TimeoutException) as exception_info:
+    async with backend.httpx.AsyncClient() as client:
+        with pytest.raises(backend.httpx.TimeoutException) as exception_info:
             # Same parameter order matters as it corresponds to a list on server side
             await client.get("https://test_url?a=2&a=1")
         assert (
@@ -361,10 +385,10 @@ async def test_url_query_string_not_matching(httpx_mock: HTTPXMock) -> None:
 
 
 @pytest.mark.asyncio
-async def test_method_matching(httpx_mock: HTTPXMock) -> None:
+async def test_method_matching(httpx_mock: HTTPXMock, backend: HTTPXBackend) -> None:
     httpx_mock.add_response(method="get", is_reusable=True)
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         response = await client.get("https://test_url")
         assert response.content == b""
 
@@ -374,11 +398,13 @@ async def test_method_matching(httpx_mock: HTTPXMock) -> None:
 
 @pytest.mark.asyncio
 @pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
-async def test_method_not_matching(httpx_mock: HTTPXMock) -> None:
+async def test_method_not_matching(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     httpx_mock.add_response(method="get", is_optional=True)
 
-    async with httpx.AsyncClient() as client:
-        with pytest.raises(httpx.TimeoutException) as exception_info:
+    async with backend.httpx.AsyncClient() as client:
+        with pytest.raises(backend.httpx.TimeoutException) as exception_info:
             await client.post("https://test_url")
         assert (
             str(exception_info.value)
@@ -388,12 +414,14 @@ async def test_method_not_matching(httpx_mock: HTTPXMock) -> None:
 
 
 @pytest.mark.asyncio
-async def test_reusing_one_response(httpx_mock: HTTPXMock) -> None:
+async def test_reusing_one_response(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     httpx_mock.add_response(
         url="https://test_url", content=b"test content", is_reusable=True
     )
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         response = await client.get("https://test_url")
         assert response.content == b"test content"
 
@@ -402,39 +430,45 @@ async def test_reusing_one_response(httpx_mock: HTTPXMock) -> None:
 
 
 @pytest.mark.asyncio
-async def test_response_with_string_body(httpx_mock: HTTPXMock) -> None:
+async def test_response_with_string_body(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     httpx_mock.add_response(url="https://test_url", text="test content")
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         response = await client.get("https://test_url")
         assert response.content == b"test content"
 
 
 @pytest.mark.asyncio
-async def test_response_with_html_string_body(httpx_mock: HTTPXMock) -> None:
+async def test_response_with_html_string_body(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     httpx_mock.add_response(url="https://test_url", html="<body>test content</body>")
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         response = await client.get("https://test_url")
         assert response.content == b"<body>test content</body>"
 
 
 @pytest.mark.asyncio
-async def test_stream_response_streaming(httpx_mock: HTTPXMock) -> None:
+async def test_stream_response_streaming(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     httpx_mock.add_response(
         url="https://test_url",
         stream=pytest_httpx.IteratorStream([b"part 1", b"part 2"]),
         is_reusable=True,
     )
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         async with client.stream(method="GET", url="https://test_url") as response:
             assert [part async for part in response.aiter_raw()] == [
                 b"part 1",
                 b"part 2",
             ]
             # Assert that stream still behaves the proper way (can only be consumed once per request)
-            with pytest.raises(httpx.StreamConsumed):
+            with pytest.raises(backend.httpx.StreamConsumed):
                 async for _ in response.aiter_raw():
                     pass  # pragma: no cover
 
@@ -444,26 +478,28 @@ async def test_stream_response_streaming(httpx_mock: HTTPXMock) -> None:
                 b"part 2",
             ]
             # Assert that stream still behaves the proper way (can only be consumed once per request)
-            with pytest.raises(httpx.StreamConsumed):
+            with pytest.raises(backend.httpx.StreamConsumed):
                 async for _ in response.aiter_raw():
                     pass  # pragma: no cover
 
 
 @pytest.mark.asyncio
-async def test_content_response_streaming(httpx_mock: HTTPXMock) -> None:
+async def test_content_response_streaming(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     httpx_mock.add_response(
         url="https://test_url",
         content=b"part 1 and 2",
         is_reusable=True,
     )
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         async with client.stream(method="GET", url="https://test_url") as response:
             assert [part async for part in response.aiter_raw()] == [
                 b"part 1 and 2",
             ]
             # Assert that stream still behaves the proper way (can only be consumed once per request)
-            with pytest.raises(httpx.StreamConsumed):
+            with pytest.raises(backend.httpx.StreamConsumed):
                 async for _ in response.aiter_raw():
                     pass  # pragma: no cover
 
@@ -472,26 +508,28 @@ async def test_content_response_streaming(httpx_mock: HTTPXMock) -> None:
                 b"part 1 and 2",
             ]
             # Assert that stream still behaves the proper way (can only be consumed once per request)
-            with pytest.raises(httpx.StreamConsumed):
+            with pytest.raises(backend.httpx.StreamConsumed):
                 async for _ in response.aiter_raw():
                     pass  # pragma: no cover
 
 
 @pytest.mark.asyncio
-async def test_text_response_streaming(httpx_mock: HTTPXMock) -> None:
+async def test_text_response_streaming(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     httpx_mock.add_response(
         url="https://test_url",
         text="part 1 and 2",
         is_reusable=True,
     )
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         async with client.stream(method="GET", url="https://test_url") as response:
             assert [part async for part in response.aiter_raw()] == [
                 b"part 1 and 2",
             ]
             # Assert that stream still behaves the proper way (can only be consumed once per request)
-            with pytest.raises(httpx.StreamConsumed):
+            with pytest.raises(backend.httpx.StreamConsumed):
                 async for _ in response.aiter_raw():
                     pass  # pragma: no cover
 
@@ -500,38 +538,42 @@ async def test_text_response_streaming(httpx_mock: HTTPXMock) -> None:
                 b"part 1 and 2",
             ]
             # Assert that stream still behaves the proper way (can only be consumed once per request)
-            with pytest.raises(httpx.StreamConsumed):
+            with pytest.raises(backend.httpx.StreamConsumed):
                 async for _ in response.aiter_raw():
                     pass  # pragma: no cover
 
 
 @pytest.mark.asyncio
-async def test_default_response_streaming(httpx_mock: HTTPXMock) -> None:
+async def test_default_response_streaming(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     httpx_mock.add_response(is_reusable=True)
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         async with client.stream(method="GET", url="https://test_url") as response:
             assert [part async for part in response.aiter_raw()] == []
             # Assert that stream still behaves the proper way (can only be consumed once per request)
-            with pytest.raises(httpx.StreamConsumed):
+            with pytest.raises(backend.httpx.StreamConsumed):
                 async for _ in response.aiter_raw():
                     pass  # pragma: no cover
 
         async with client.stream(method="GET", url="https://test_url") as response:
             assert [part async for part in response.aiter_raw()] == []
             # Assert that stream still behaves the proper way (can only be consumed once per request)
-            with pytest.raises(httpx.StreamConsumed):
+            with pytest.raises(backend.httpx.StreamConsumed):
                 async for _ in response.aiter_raw():
                     pass  # pragma: no cover
 
 
 @pytest.mark.asyncio
-async def test_with_many_responses(httpx_mock: HTTPXMock) -> None:
+async def test_with_many_responses(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     httpx_mock.add_response(url="https://test_url", content=b"test content 1")
     httpx_mock.add_response(url="https://test_url", content=b"test content 2")
     httpx_mock.add_response(url="https://test_url", content=b"test content 2")
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         response = await client.get("https://test_url")
         assert response.content == b"test content 1"
 
@@ -543,13 +585,15 @@ async def test_with_many_responses(httpx_mock: HTTPXMock) -> None:
 
 
 @pytest.mark.asyncio
-async def test_with_many_reused_responses(httpx_mock: HTTPXMock) -> None:
+async def test_with_many_reused_responses(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     httpx_mock.add_response(url="https://test_url", content=b"test content 1")
     httpx_mock.add_response(
         url="https://test_url", content=b"test content 2", is_reusable=True
     )
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         response = await client.get("https://test_url")
         assert response.content == b"test content 1"
 
@@ -561,7 +605,9 @@ async def test_with_many_reused_responses(httpx_mock: HTTPXMock) -> None:
 
 
 @pytest.mark.asyncio
-async def test_with_many_responses_methods(httpx_mock: HTTPXMock) -> None:
+async def test_with_many_responses_methods(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     httpx_mock.add_response(
         url="https://test_url", method="GET", content=b"test content 1"
     )
@@ -581,7 +627,7 @@ async def test_with_many_responses_methods(httpx_mock: HTTPXMock) -> None:
         url="https://test_url", method="HEAD", content=b"test content 6"
     )
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         response = await client.post("https://test_url")
         assert response.content == b"test content 2"
 
@@ -602,7 +648,9 @@ async def test_with_many_responses_methods(httpx_mock: HTTPXMock) -> None:
 
 
 @pytest.mark.asyncio
-async def test_with_many_responses_status_codes(httpx_mock: HTTPXMock) -> None:
+async def test_with_many_responses_status_codes(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     httpx_mock.add_response(
         url="https://test_url", method="GET", content=b"test content 1", status_code=200
     )
@@ -634,7 +682,7 @@ async def test_with_many_responses_status_codes(httpx_mock: HTTPXMock) -> None:
         status_code=500,
     )
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         response = await client.post("https://test_url")
         assert response.content == b"test content 2"
         assert response.status_code == 201
@@ -661,7 +709,9 @@ async def test_with_many_responses_status_codes(httpx_mock: HTTPXMock) -> None:
 
 
 @pytest.mark.asyncio
-async def test_with_many_responses_urls_str(httpx_mock: HTTPXMock) -> None:
+async def test_with_many_responses_urls_str(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     httpx_mock.add_response(
         url="https://test_url?param1=test", method="GET", content=b"test content 1"
     )
@@ -681,44 +731,46 @@ async def test_with_many_responses_urls_str(httpx_mock: HTTPXMock) -> None:
         url="https://test_url?param6=test", method="HEAD", content=b"test content 6"
     )
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         response = await client.post(
-            httpx.URL("https://test_url", params={"param2": "test"})
+            backend.httpx.URL("https://test_url", params={"param2": "test"})
         )
         assert response.content == b"test content 2"
 
         response = await client.get(
-            httpx.URL("https://test_url", params={"param1": "test"})
+            backend.httpx.URL("https://test_url", params={"param1": "test"})
         )
         assert response.content == b"test content 1"
 
         response = await client.put(
-            httpx.URL("https://test_url", params={"param3": "test"})
+            backend.httpx.URL("https://test_url", params={"param3": "test"})
         )
         assert response.content == b"test content 3"
 
         response = await client.head(
-            httpx.URL("https://test_url", params={"param6": "test"})
+            backend.httpx.URL("https://test_url", params={"param6": "test"})
         )
         assert response.content == b"test content 6"
 
         response = await client.patch(
-            httpx.URL("https://test_url", params={"param5": "test"})
+            backend.httpx.URL("https://test_url", params={"param5": "test"})
         )
         assert response.content == b"test content 5"
 
         response = await client.delete(
-            httpx.URL("https://test_url", params={"param4": "test"})
+            backend.httpx.URL("https://test_url", params={"param4": "test"})
         )
         assert response.content == b"test content 4"
 
 
 @pytest.mark.asyncio
-async def test_response_with_pattern_in_url(httpx_mock: HTTPXMock) -> None:
+async def test_response_with_pattern_in_url(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     httpx_mock.add_response(url=re.compile(".*test.*"))
     httpx_mock.add_response(url="https://unmatched", content=b"test content")
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         response = await client.get("https://unmatched")
         assert response.content == b"test content"
 
@@ -727,11 +779,13 @@ async def test_response_with_pattern_in_url(httpx_mock: HTTPXMock) -> None:
 
 
 @pytest.mark.asyncio
-async def test_request_with_pattern_in_url(httpx_mock: HTTPXMock) -> None:
+async def test_request_with_pattern_in_url(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     httpx_mock.add_response(url="https://test_url")
     httpx_mock.add_response(url="https://unmatched")
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         await client.get("https://unmatched")
         await client.get("https://test_url", headers={"X-Test": "1"})
 
@@ -741,12 +795,14 @@ async def test_request_with_pattern_in_url(httpx_mock: HTTPXMock) -> None:
 
 
 @pytest.mark.asyncio
-async def test_requests_with_pattern_in_url(httpx_mock: HTTPXMock) -> None:
+async def test_requests_with_pattern_in_url(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     httpx_mock.add_response(url="https://test_url")
     httpx_mock.add_response(url="https://tests_url")
     httpx_mock.add_response(url="https://unmatched")
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         await client.get("https://tests_url", headers={"X-Test": "1"})
         await client.get("https://unmatched", headers={"X-Test": "2"})
         await client.get("https://test_url")
@@ -758,12 +814,14 @@ async def test_requests_with_pattern_in_url(httpx_mock: HTTPXMock) -> None:
 
 
 @pytest.mark.asyncio
-async def test_callback_with_pattern_in_url(httpx_mock: HTTPXMock) -> None:
-    def custom_response(request: httpx.Request) -> httpx.Response:
-        return httpx.Response(status_code=200, json={"url": str(request.url)})
+async def test_callback_with_pattern_in_url(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
+    def custom_response(request: "httpx.Request") -> "httpx.Response":
+        return backend.httpx.Response(status_code=200, json={"url": str(request.url)})
 
-    def custom_response2(request: httpx.Request) -> httpx.Response:
-        return httpx.Response(
+    def custom_response2(request: "httpx.Request") -> "httpx.Response":
+        return backend.httpx.Response(
             status_code=200,
             extensions={"http_version": b"HTTP/2.0"},
             json={"url": str(request.url)},
@@ -772,7 +830,7 @@ async def test_callback_with_pattern_in_url(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_callback(custom_response, url=re.compile(".*test.*"))
     httpx_mock.add_callback(custom_response2, url="https://unmatched")
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         response = await client.get("https://unmatched")
         assert response.http_version == "HTTP/2.0"
 
@@ -781,16 +839,18 @@ async def test_callback_with_pattern_in_url(httpx_mock: HTTPXMock) -> None:
 
 
 @pytest.mark.asyncio
-async def test_async_callback_with_await_statement(httpx_mock: HTTPXMock) -> None:
-    async def simulate_network_latency(request: httpx.Request):
+async def test_async_callback_with_await_statement(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
+    async def simulate_network_latency(request: "httpx.Request"):
         await asyncio.sleep(1)
-        return httpx.Response(
+        return backend.httpx.Response(
             status_code=200,
             json={"url": str(request.url), "time": time.time()},
         )
 
-    def instant_response(request: httpx.Request) -> httpx.Response:
-        return httpx.Response(
+    def instant_response(request: "httpx.Request") -> "httpx.Response":
+        return backend.httpx.Response(
             status_code=200, json={"url": str(request.url), "time": time.time()}
         )
 
@@ -798,7 +858,7 @@ async def test_async_callback_with_await_statement(httpx_mock: HTTPXMock) -> Non
     httpx_mock.add_callback(instant_response)
     httpx_mock.add_response(json={"url": "not a callback"})
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         responses = await asyncio.gather(
             client.get("https://slow"),
             client.get("https://fast_with_callback"),
@@ -818,12 +878,16 @@ async def test_async_callback_with_await_statement(httpx_mock: HTTPXMock) -> Non
 
 
 @pytest.mark.asyncio
-async def test_async_callback_with_pattern_in_url(httpx_mock: HTTPXMock) -> None:
-    async def custom_response(request: httpx.Request) -> httpx.Response:
-        return httpx.Response(status_code=200, json={"url": str(request.url)})
+async def test_async_callback_with_pattern_in_url(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
+    async def custom_response(request: "httpx.Request") -> "httpx.Response":
+        return backend.httpx.Response(status_code=200, json={"url": str(request.url)})
 
-    async def custom_response2(request: httpx.Request) -> httpx.Response:
-        return httpx.Response(
+    async def custom_response2(
+        request: "httpx.Request",
+    ) -> "httpx.Response":
+        return backend.httpx.Response(
             status_code=200,
             extensions={"http_version": b"HTTP/2.0"},
             json={"url": str(request.url)},
@@ -832,7 +896,7 @@ async def test_async_callback_with_pattern_in_url(httpx_mock: HTTPXMock) -> None
     httpx_mock.add_callback(custom_response, url=re.compile(".*test.*"))
     httpx_mock.add_callback(custom_response2, url="https://unmatched")
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         response = await client.get("https://unmatched")
         assert response.http_version == "HTTP/2.0"
 
@@ -841,39 +905,42 @@ async def test_async_callback_with_pattern_in_url(httpx_mock: HTTPXMock) -> None
 
 
 @pytest.mark.asyncio
-async def test_with_many_responses_urls_instances(httpx_mock: HTTPXMock) -> None:
+async def test_with_many_responses_urls_instances(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
+
     httpx_mock.add_response(
-        url=httpx.URL("https://test_url", params={"param1": "test"}),
+        url=backend.httpx.URL("https://test_url", params={"param1": "test"}),
         method="GET",
         content=b"test content 1",
     )
     httpx_mock.add_response(
-        url=httpx.URL("https://test_url", params={"param2": "test"}),
+        url=backend.httpx.URL("https://test_url", params={"param2": "test"}),
         method="POST",
         content=b"test content 2",
     )
     httpx_mock.add_response(
-        url=httpx.URL("https://test_url", params={"param3": "test"}),
+        url=backend.httpx.URL("https://test_url", params={"param3": "test"}),
         method="PUT",
         content=b"test content 3",
     )
     httpx_mock.add_response(
-        url=httpx.URL("https://test_url", params={"param4": "test"}),
+        url=backend.httpx.URL("https://test_url", params={"param4": "test"}),
         method="DELETE",
         content=b"test content 4",
     )
     httpx_mock.add_response(
-        url=httpx.URL("https://test_url", params={"param5": "test"}),
+        url=backend.httpx.URL("https://test_url", params={"param5": "test"}),
         method="PATCH",
         content=b"test content 5",
     )
     httpx_mock.add_response(
-        url=httpx.URL("https://test_url", params={"param6": "test"}),
+        url=backend.httpx.URL("https://test_url", params={"param6": "test"}),
         method="HEAD",
         content=b"test content 6",
     )
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         response = await client.post("https://test_url?param2=test")
         assert response.content == b"test content 2"
 
@@ -894,35 +961,38 @@ async def test_with_many_responses_urls_instances(httpx_mock: HTTPXMock) -> None
 
 
 @pytest.mark.asyncio
-async def test_with_http_version_2(httpx_mock: HTTPXMock) -> None:
+async def test_with_http_version_2(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     httpx_mock.add_response(
         url="https://test_url", http_version="HTTP/2", content=b"test content 1"
     )
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         response = await client.get("https://test_url")
         assert response.content == b"test content 1"
         assert response.http_version == "HTTP/2"
 
 
 @pytest.mark.asyncio
-async def test_with_headers(httpx_mock: HTTPXMock) -> None:
+async def test_with_headers(httpx_mock: HTTPXMock, backend: HTTPXBackend) -> None:
     httpx_mock.add_response(
         url="https://test_url",
         content=b"test content 1",
         headers={"X-Test": "Test value"},
     )
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         response = await client.get("https://test_url")
         assert response.content == b"test content 1"
-        assert response.headers == httpx.Headers(
+        assert response.headers == backend.httpx.Headers(
             {"x-test": "Test value", "content-length": "14"}
         )
 
 
 @pytest.mark.asyncio
-async def test_requests_retrieval(httpx_mock: HTTPXMock) -> None:
+async def test_requests_retrieval(httpx_mock: HTTPXMock, backend: HTTPXBackend) -> None:
+
     httpx_mock.add_response(
         url="https://test_url", method="GET", content=b"test content 1"
     )
@@ -942,7 +1012,7 @@ async def test_requests_retrieval(httpx_mock: HTTPXMock) -> None:
         url="https://test_url", method="HEAD", content=b"test content 6"
     )
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         await client.post("https://test_url", content=b"sent content 2")
         await client.get("https://test_url", headers={"X-TEST": "test header 1"})
         await client.put("https://test_url", content=b"sent content 3")
@@ -951,74 +1021,80 @@ async def test_requests_retrieval(httpx_mock: HTTPXMock) -> None:
         await client.delete("https://test_url", headers={"X-Test": "test header 4"})
 
     patch_request = httpx_mock.get_request(
-        url=httpx.URL("https://test_url"), method="PATCH"
+        url=backend.httpx.URL("https://test_url"), method="PATCH"
     )
     assert patch_request is not None
     assert patch_request.read() == b"sent content 5"
 
     head_request = httpx_mock.get_request(
-        url=httpx.URL("https://test_url"), method="HEAD"
+        url=backend.httpx.URL("https://test_url"), method="HEAD"
     )
     assert head_request is not None
     assert head_request.read() == b""
 
     put_request = httpx_mock.get_request(
-        url=httpx.URL("https://test_url"), method="PUT"
+        url=backend.httpx.URL("https://test_url"), method="PUT"
     )
     assert put_request is not None
     assert put_request.read() == b"sent content 3"
 
     get_request = httpx_mock.get_request(
-        url=httpx.URL("https://test_url"), method="GET"
+        url=backend.httpx.URL("https://test_url"), method="GET"
     )
     assert get_request is not None
     assert get_request.headers["x-test"] == "test header 1"
 
     post_request = httpx_mock.get_request(
-        url=httpx.URL("https://test_url"), method="POST"
+        url=backend.httpx.URL("https://test_url"), method="POST"
     )
     assert post_request is not None
     assert post_request.read() == b"sent content 2"
 
     delete_request = httpx_mock.get_request(
-        url=httpx.URL("https://test_url"), method="DELETE"
+        url=backend.httpx.URL("https://test_url"), method="DELETE"
     )
     assert delete_request is not None
     assert delete_request.headers["x-test"] == "test header 4"
 
 
 @pytest.mark.asyncio
-async def test_requests_retrieval_on_same_url(httpx_mock: HTTPXMock) -> None:
+async def test_requests_retrieval_on_same_url(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     httpx_mock.add_response(url="https://test_url", is_reusable=True)
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         await client.get("https://test_url", headers={"X-TEST": "test header 1"})
         await client.get("https://test_url", headers={"X-TEST": "test header 2"})
 
-    requests = httpx_mock.get_requests(url=httpx.URL("https://test_url"))
+    requests = httpx_mock.get_requests(url=backend.httpx.URL("https://test_url"))
     assert len(requests) == 2
     assert requests[0].headers["x-test"] == "test header 1"
     assert requests[1].headers["x-test"] == "test header 2"
 
 
 @pytest.mark.asyncio
-async def test_request_retrieval_on_same_url(httpx_mock: HTTPXMock) -> None:
+async def test_request_retrieval_on_same_url(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     httpx_mock.add_response(is_reusable=True)
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         await client.get("https://test_url", headers={"X-TEST": "test header 1"})
         await client.get("https://test_url2", headers={"X-TEST": "test header 2"})
 
-    request = httpx_mock.get_request(url=httpx.URL("https://test_url"))
+    request = httpx_mock.get_request(url=backend.httpx.URL("https://test_url"))
     assert request is not None
     assert request.headers["x-test"] == "test header 1"
 
 
 @pytest.mark.asyncio
-async def test_requests_retrieval_on_same_method(httpx_mock: HTTPXMock) -> None:
+async def test_requests_retrieval_on_same_method(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     httpx_mock.add_response(is_reusable=True)
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         await client.get("https://test_url", headers={"X-TEST": "test header 1"})
         await client.get("https://test_url2", headers={"X-TEST": "test header 2"})
 
@@ -1029,10 +1105,12 @@ async def test_requests_retrieval_on_same_method(httpx_mock: HTTPXMock) -> None:
 
 
 @pytest.mark.asyncio
-async def test_request_retrieval_on_same_method(httpx_mock: HTTPXMock) -> None:
+async def test_request_retrieval_on_same_method(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     httpx_mock.add_response(is_reusable=True)
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         await client.get("https://test_url", headers={"X-TEST": "test header 1"})
         await client.post("https://test_url", headers={"X-TEST": "test header 2"})
 
@@ -1042,26 +1120,32 @@ async def test_request_retrieval_on_same_method(httpx_mock: HTTPXMock) -> None:
 
 
 @pytest.mark.asyncio
-async def test_requests_retrieval_on_same_url_and_method(httpx_mock: HTTPXMock) -> None:
+async def test_requests_retrieval_on_same_url_and_method(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     httpx_mock.add_response(is_reusable=True)
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         await client.get("https://test_url", headers={"X-TEST": "test header 1"})
         await client.get("https://test_url", headers={"X-TEST": "test header 2"})
         await client.post("https://test_url", headers={"X-TEST": "test header 3"})
         await client.get("https://test_url2", headers={"X-TEST": "test header 4"})
 
-    requests = httpx_mock.get_requests(url=httpx.URL("https://test_url"), method="GET")
+    requests = httpx_mock.get_requests(
+        url=backend.httpx.URL("https://test_url"), method="GET"
+    )
     assert len(requests) == 2
     assert requests[0].headers["x-test"] == "test header 1"
     assert requests[1].headers["x-test"] == "test header 2"
 
 
 @pytest.mark.asyncio
-async def test_default_requests_retrieval(httpx_mock: HTTPXMock) -> None:
+async def test_default_requests_retrieval(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     httpx_mock.add_response(is_reusable=True)
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         await client.post("https://test_url", headers={"X-TEST": "test header 1"})
         await client.get("https://test_url2", headers={"X-TEST": "test header 2"})
 
@@ -1072,10 +1156,12 @@ async def test_default_requests_retrieval(httpx_mock: HTTPXMock) -> None:
 
 
 @pytest.mark.asyncio
-async def test_default_request_retrieval(httpx_mock: HTTPXMock) -> None:
+async def test_default_request_retrieval(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     httpx_mock.add_response()
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         await client.post("https://test_url", headers={"X-TEST": "test header 1"})
 
     request = httpx_mock.get_request()
@@ -1084,7 +1170,7 @@ async def test_default_request_retrieval(httpx_mock: HTTPXMock) -> None:
 
 
 @pytest.mark.asyncio
-async def test_requests_json_body(httpx_mock: HTTPXMock) -> None:
+async def test_requests_json_body(httpx_mock: HTTPXMock, backend: HTTPXBackend) -> None:
     httpx_mock.add_response(
         url="https://test_url", method="GET", json=["list content 1", "list content 2"]
     )
@@ -1095,7 +1181,7 @@ async def test_requests_json_body(httpx_mock: HTTPXMock) -> None:
     )
     httpx_mock.add_response(url="https://test_url", method="PUT", json="string value")
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         response = await client.post("https://test_url")
         assert response.json() == {"key 1": "value 1", "key 2": "value 2"}
         assert response.headers["content-type"] == "application/json"
@@ -1110,85 +1196,107 @@ async def test_requests_json_body(httpx_mock: HTTPXMock) -> None:
 
 
 @pytest.mark.asyncio
-async def test_callback_raising_exception(httpx_mock: HTTPXMock) -> None:
-    def raise_timeout(request: httpx.Request) -> httpx.Response:
-        raise httpx.ReadTimeout(
+async def test_callback_raising_exception(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
+
+    def raise_timeout(request: "httpx.Request") -> "httpx.Response":
+        raise backend.httpx.ReadTimeout(
             f"Unable to read within {request.extensions['timeout']['read']}",
             request=request,
         )
 
     httpx_mock.add_callback(raise_timeout, url="https://test_url")
 
-    async with httpx.AsyncClient() as client:
-        with pytest.raises(httpx.ReadTimeout) as exception_info:
+    async with backend.httpx.AsyncClient() as client:
+        with pytest.raises(backend.httpx.ReadTimeout) as exception_info:
             await client.get("https://test_url")
         assert str(exception_info.value) == "Unable to read within 5.0"
 
 
 @pytest.mark.asyncio
-async def test_async_callback_raising_exception(httpx_mock: HTTPXMock) -> None:
-    async def raise_timeout(request: httpx.Request) -> httpx.Response:
-        raise httpx.ReadTimeout(
+async def test_async_callback_raising_exception(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
+
+    async def raise_timeout(request: "httpx.Request") -> "httpx.Response":
+        raise backend.httpx.ReadTimeout(
             f"Unable to read within {request.extensions['timeout']['read']}",
             request=request,
         )
 
     httpx_mock.add_callback(raise_timeout, url="https://test_url")
 
-    async with httpx.AsyncClient() as client:
-        with pytest.raises(httpx.ReadTimeout) as exception_info:
+    async with backend.httpx.AsyncClient() as client:
+        with pytest.raises(backend.httpx.ReadTimeout) as exception_info:
             await client.get("https://test_url")
         assert str(exception_info.value) == "Unable to read within 5.0"
 
 
 @pytest.mark.asyncio
-async def test_request_exception_raising(httpx_mock: HTTPXMock) -> None:
+async def test_request_exception_raising(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     httpx_mock.add_exception(
-        httpx.ReadTimeout("Unable to read within 5.0"), url="https://test_url"
+        backend.httpx.ReadTimeout("Unable to read within 5.0"), url="https://test_url"
     )
 
-    async with httpx.AsyncClient() as client:
-        with pytest.raises(httpx.ReadTimeout) as exception_info:
+    async with backend.httpx.AsyncClient() as client:
+        with pytest.raises(backend.httpx.ReadTimeout) as exception_info:
             await client.get("https://test_url")
         assert str(exception_info.value) == "Unable to read within 5.0"
         assert exception_info.value.request is not None
 
 
+@pytest.fixture
+def _non_request_exception_raising_errors(
+    request: pytest.FixtureRequest, backend: HTTPXBackend
+) -> tuple[type[BaseException], str]:
+    if request.param == "http":
+        return backend.httpx.HTTPError, "Unable to read within 5.0"
+
+    if request.param == "cancelled":
+        return asyncio.CancelledError, "Request was cancelled"
+
+    raise ValueError(
+        f'Invalid param {request.param}, must be either "http" or "cancelled".'
+    )
+
+
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    ("exception_type", "message"),
+    "_non_request_exception_raising_errors",
     [
         # httpx exception without request context
-        pytest.param(
-            httpx.HTTPError, "Unable to read within 5.0", id="non_request_exception"
-        ),
+        pytest.param("http", id="non_request_exception"),
         # BaseException derived exception
-        pytest.param(
-            asyncio.CancelledError,
-            "Request was cancelled",
-            id="cancelled_exception",
-        ),
+        pytest.param("cancelled", id="cancelled_exception"),
     ],
+    indirect=True,
 )
 async def test_non_request_exception_raising(
-    httpx_mock: HTTPXMock, exception_type: type, message: str
+    httpx_mock: HTTPXMock, _non_request_exception_raising_errors, backend: HTTPXBackend
 ) -> None:
-    httpx_mock.add_exception(exception_type(message), url="https://test_url")
+    [exc_type, message] = _non_request_exception_raising_errors
+    httpx_mock.add_exception(exc_type(message), url="https://test_url")
 
-    async with httpx.AsyncClient() as client:
-        with pytest.raises(exception_type) as exception_info:
+    async with backend.httpx.AsyncClient() as client:
+        with pytest.raises(exc_type) as exception_info:
             await client.get("https://test_url")
         assert str(exception_info.value) == message
 
 
 @pytest.mark.asyncio
-async def test_callback_returning_response(httpx_mock: HTTPXMock) -> None:
-    def custom_response(request: httpx.Request) -> httpx.Response:
-        return httpx.Response(status_code=200, json={"url": str(request.url)})
+async def test_callback_returning_response(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
+
+    def custom_response(request: "httpx.Request") -> "httpx.Response":
+        return backend.httpx.Response(status_code=200, json={"url": str(request.url)})
 
     httpx_mock.add_callback(custom_response, url="https://test_url")
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         response = await client.get("https://test_url")
         assert response.json() == {"url": "https://test_url"}
         assert response.headers["content-type"] == "application/json"
@@ -1198,16 +1306,16 @@ async def test_callback_returning_response(httpx_mock: HTTPXMock) -> None:
 @pytest.mark.parametrize("return_value", [None, "not a response"])
 @pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
 async def test_callback_not_returning_a_response(
-    httpx_mock: HTTPXMock, return_value: str | None
+    httpx_mock: HTTPXMock, return_value: str | None, backend: HTTPXBackend
 ) -> None:
     httpx_mock.add_callback(lambda request: return_value, url="https://test_url")
 
-    async with httpx.AsyncClient() as client:
-        with pytest.raises(httpx.TimeoutException) as exception_info:
+    async with backend.httpx.AsyncClient() as client:
+        with pytest.raises(backend.httpx.TimeoutException) as exception_info:
             await client.get("https://test_url")
         assert (
             str(exception_info.value)
-            == "Callback registered for GET request on https://test_url MUST return httpx.Response"
+            == f"Callback registered for GET request on https://test_url MUST return {backend.name}.Response"
         )
 
 
@@ -1215,43 +1323,52 @@ async def test_callback_not_returning_a_response(
 @pytest.mark.parametrize("return_value", [None, "not a response"])
 @pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
 async def test_async_callback_not_returning_a_response(
-    httpx_mock: HTTPXMock, return_value: str | None
+    httpx_mock: HTTPXMock, return_value: str | None, backend: HTTPXBackend
 ) -> None:
-    async def invalid_response(request: httpx.Request) -> httpx.Response:
+
+    async def invalid_response(
+        request: "httpx.Request",
+    ) -> "httpx.Response":
         return return_value
 
     httpx_mock.add_callback(invalid_response, url="https://test_url")
 
-    async with httpx.AsyncClient() as client:
-        with pytest.raises(httpx.TimeoutException) as exception_info:
+    async with backend.httpx.AsyncClient() as client:
+        with pytest.raises(backend.httpx.TimeoutException) as exception_info:
             await client.get("https://test_url")
         assert (
             str(exception_info.value)
-            == "Callback registered for GET request on https://test_url MUST return httpx.Response"
+            == f"Callback registered for GET request on https://test_url MUST return {backend.name}.Response"
         )
 
 
 @pytest.mark.asyncio
-async def test_async_callback_returning_response(httpx_mock: HTTPXMock) -> None:
-    async def custom_response(request: httpx.Request) -> httpx.Response:
-        return httpx.Response(status_code=200, json={"url": str(request.url)})
+async def test_async_callback_returning_response(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
+
+    async def custom_response(request: "httpx.Request") -> "httpx.Response":
+        return backend.httpx.Response(status_code=200, json={"url": str(request.url)})
 
     httpx_mock.add_callback(custom_response, url="https://test_url")
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         response = await client.get("https://test_url")
         assert response.json() == {"url": "https://test_url"}
         assert response.headers["content-type"] == "application/json"
 
 
 @pytest.mark.asyncio
-async def test_callback_executed_twice(httpx_mock: HTTPXMock) -> None:
-    def custom_response(request: httpx.Request) -> httpx.Response:
-        return httpx.Response(status_code=200, json=["content"])
+async def test_callback_executed_twice(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
+
+    def custom_response(request: "httpx.Request") -> "httpx.Response":
+        return backend.httpx.Response(status_code=200, json=["content"])
 
     httpx_mock.add_callback(custom_response, is_reusable=True)
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         response = await client.get("https://test_url")
         assert response.json() == ["content"]
         assert response.headers["content-type"] == "application/json"
@@ -1262,13 +1379,16 @@ async def test_callback_executed_twice(httpx_mock: HTTPXMock) -> None:
 
 
 @pytest.mark.asyncio
-async def test_async_callback_executed_twice(httpx_mock: HTTPXMock) -> None:
-    async def custom_response(request: httpx.Request) -> httpx.Response:
-        return httpx.Response(status_code=200, json=["content"])
+async def test_async_callback_executed_twice(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
+
+    async def custom_response(request: "httpx.Request") -> "httpx.Response":
+        return backend.httpx.Response(status_code=200, json=["content"])
 
     httpx_mock.add_callback(custom_response, is_reusable=True)
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         response = await client.get("https://test_url")
         assert response.json() == ["content"]
         assert response.headers["content-type"] == "application/json"
@@ -1279,14 +1399,17 @@ async def test_async_callback_executed_twice(httpx_mock: HTTPXMock) -> None:
 
 
 @pytest.mark.asyncio
-async def test_callback_registered_after_response(httpx_mock: HTTPXMock) -> None:
-    def custom_response(request: httpx.Request) -> httpx.Response:
-        return httpx.Response(status_code=200, json=["content2"])
+async def test_callback_registered_after_response(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
+
+    def custom_response(request: "httpx.Request") -> "httpx.Response":
+        return backend.httpx.Response(status_code=200, json=["content2"])
 
     httpx_mock.add_response(json=["content1"])
     httpx_mock.add_callback(custom_response, is_reusable=True)
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         response = await client.get("https://test_url")
         assert response.json() == ["content1"]
         assert response.headers["content-type"] == "application/json"
@@ -1302,14 +1425,17 @@ async def test_callback_registered_after_response(httpx_mock: HTTPXMock) -> None
 
 
 @pytest.mark.asyncio
-async def test_async_callback_registered_after_response(httpx_mock: HTTPXMock) -> None:
-    async def custom_response(request: httpx.Request) -> httpx.Response:
-        return httpx.Response(status_code=200, json=["content2"])
+async def test_async_callback_registered_after_response(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
+
+    async def custom_response(request: "httpx.Request") -> "httpx.Response":
+        return backend.httpx.Response(status_code=200, json=["content2"])
 
     httpx_mock.add_response(json=["content1"])
     httpx_mock.add_callback(custom_response, is_reusable=True)
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         response = await client.get("https://test_url")
         assert response.json() == ["content1"]
         assert response.headers["content-type"] == "application/json"
@@ -1325,14 +1451,17 @@ async def test_async_callback_registered_after_response(httpx_mock: HTTPXMock) -
 
 
 @pytest.mark.asyncio
-async def test_response_registered_after_callback(httpx_mock: HTTPXMock) -> None:
-    def custom_response(request: httpx.Request) -> httpx.Response:
-        return httpx.Response(status_code=200, json=["content1"])
+async def test_response_registered_after_callback(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
+
+    def custom_response(request: "httpx.Request") -> "httpx.Response":
+        return backend.httpx.Response(status_code=200, json=["content1"])
 
     httpx_mock.add_callback(custom_response)
     httpx_mock.add_response(json=["content2"], is_reusable=True)
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         response = await client.get("https://test_url")
         assert response.json() == ["content1"]
         assert response.headers["content-type"] == "application/json"
@@ -1348,14 +1477,17 @@ async def test_response_registered_after_callback(httpx_mock: HTTPXMock) -> None
 
 
 @pytest.mark.asyncio
-async def test_response_registered_after_async_callback(httpx_mock: HTTPXMock) -> None:
-    async def custom_response(request: httpx.Request) -> httpx.Response:
-        return httpx.Response(status_code=200, json=["content1"])
+async def test_response_registered_after_async_callback(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
+
+    async def custom_response(request: "httpx.Request") -> "httpx.Response":
+        return backend.httpx.Response(status_code=200, json=["content1"])
 
     httpx_mock.add_callback(custom_response)
     httpx_mock.add_response(json=["content2"], is_reusable=True)
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         response = await client.get("https://test_url")
         assert response.json() == ["content1"]
         assert response.headers["content-type"] == "application/json"
@@ -1371,13 +1503,16 @@ async def test_response_registered_after_async_callback(httpx_mock: HTTPXMock) -
 
 
 @pytest.mark.asyncio
-async def test_callback_matching_method(httpx_mock: HTTPXMock) -> None:
-    def custom_response(request: httpx.Request) -> httpx.Response:
-        return httpx.Response(status_code=200, json=["content"])
+async def test_callback_matching_method(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
+
+    def custom_response(request: "httpx.Request") -> "httpx.Response":
+        return backend.httpx.Response(status_code=200, json=["content"])
 
     httpx_mock.add_callback(custom_response, method="GET", is_reusable=True)
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         response = await client.get("https://test_url")
         assert response.json() == ["content"]
         assert response.headers["content-type"] == "application/json"
@@ -1388,13 +1523,16 @@ async def test_callback_matching_method(httpx_mock: HTTPXMock) -> None:
 
 
 @pytest.mark.asyncio
-async def test_async_callback_matching_method(httpx_mock: HTTPXMock) -> None:
-    async def custom_response(request: httpx.Request) -> httpx.Response:
-        return httpx.Response(status_code=200, json=["content"])
+async def test_async_callback_matching_method(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
+
+    async def custom_response(request: "httpx.Request") -> "httpx.Response":
+        return backend.httpx.Response(status_code=200, json=["content"])
 
     httpx_mock.add_callback(custom_response, method="GET", is_reusable=True)
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         response = await client.get("https://test_url")
         assert response.json() == ["content"]
         assert response.headers["content-type"] == "application/json"
@@ -1408,23 +1546,29 @@ def test_request_retrieval_with_more_than_one(testdir: Testdir) -> None:
     """
     Single request cannot be returned if there is more than one matching.
     """
+    testdir.makeconftest("""
+        import pytest
+        from pytest_httpx import HTTPXBackend, get_backends
+
+        @pytest.fixture(params=get_backends(), ids=lambda b: b.name)
+        def backend(request):
+            return request.param
+        """)
     testdir.makepyfile("""
-        import httpx
         import pytest
 
-
         @pytest.mark.asyncio
-        async def test_request_retrieval_with_more_than_one(httpx_mock):
+        async def test_request_retrieval_with_more_than_one(httpx_mock, backend):
             httpx_mock.add_response(is_reusable=True)
 
-            async with httpx.AsyncClient() as client:
+            async with backend.httpx.AsyncClient() as client:
                 await client.get("https://test_url", headers={"X-TEST": "test header 1"})
                 await client.get("https://test_url", headers={"X-TEST": "test header 2"})
 
-            httpx_mock.get_request(url=httpx.URL("https://test_url"))
+            httpx_mock.get_request(url=backend.httpx.URL("https://test_url"))
     """)
     result = testdir.runpytest()
-    result.assert_outcomes(failed=1)
+    result.assert_outcomes(failed=len(get_backends()))
     result.stdout.fnmatch_lines(
         [
             "*AssertionError: More than one request (2) matched, use get_requests instead or refine your filters."
@@ -1433,21 +1577,26 @@ def test_request_retrieval_with_more_than_one(testdir: Testdir) -> None:
 
 
 @pytest.mark.asyncio
-async def test_headers_matching(httpx_mock: HTTPXMock) -> None:
+async def test_headers_matching(httpx_mock: HTTPXMock, backend: HTTPXBackend) -> None:
+
     httpx_mock.add_response(
-        match_headers={"User-Agent": f"python-httpx/{httpx.__version__}"}
+        match_headers={
+            "User-Agent": f"python-{backend.httpx.__name__}/{backend.httpx.__version__}"
+        }
     )
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         response = await client.get("https://test_url")
         assert response.content == b""
 
 
 @pytest.mark.asyncio
-async def test_multi_value_headers_matching(httpx_mock: HTTPXMock) -> None:
+async def test_multi_value_headers_matching(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     httpx_mock.add_response(match_headers={"my-custom-header": "value1, value2"})
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         response = await client.get(
             "https://test_url",
             headers=[("my-custom-header", "value1"), ("my-custom-header", "value2")],
@@ -1459,13 +1608,14 @@ async def test_multi_value_headers_matching(httpx_mock: HTTPXMock) -> None:
 @pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
 async def test_multi_value_headers_not_matching_single_value_issued(
     httpx_mock: HTTPXMock,
+    backend: HTTPXBackend,
 ) -> None:
     httpx_mock.add_response(
         match_headers={"my-custom-header": "value1"}, is_optional=True
     )
 
-    async with httpx.AsyncClient() as client:
-        with pytest.raises(httpx.TimeoutException) as exception_info:
+    async with backend.httpx.AsyncClient() as client:
+        with pytest.raises(backend.httpx.TimeoutException) as exception_info:
             await client.get(
                 "https://test_url",
                 headers=[
@@ -1484,13 +1634,14 @@ async def test_multi_value_headers_not_matching_single_value_issued(
 @pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
 async def test_multi_value_headers_not_matching_multi_value_issued(
     httpx_mock: HTTPXMock,
+    backend: HTTPXBackend,
 ) -> None:
     httpx_mock.add_response(
         match_headers={"my-custom-header": "value1, value2"}, is_optional=True
     )
 
-    async with httpx.AsyncClient() as client:
-        with pytest.raises(httpx.TimeoutException) as exception_info:
+    async with backend.httpx.AsyncClient() as client:
+        with pytest.raises(backend.httpx.TimeoutException) as exception_info:
             await client.get(
                 "https://test_url",
                 headers=[
@@ -1507,41 +1658,49 @@ async def test_multi_value_headers_not_matching_multi_value_issued(
 
 @pytest.mark.asyncio
 @pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
-async def test_headers_matching_respect_case(httpx_mock: HTTPXMock) -> None:
+async def test_headers_matching_respect_case(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
+
     httpx_mock.add_response(
-        match_headers={"user-agent": f"python-httpx/{httpx.__version__}"},
+        match_headers={
+            "user-agent": f"python-{backend.httpx.__name__}/{backend.httpx.__version__}"
+        },
         is_optional=True,
     )
 
-    async with httpx.AsyncClient() as client:
-        with pytest.raises(httpx.TimeoutException) as exception_info:
+    async with backend.httpx.AsyncClient() as client:
+        with pytest.raises(backend.httpx.TimeoutException) as exception_info:
             await client.get("https://test_url")
         assert (
             str(exception_info.value)
-            == f"""No response can be found for GET request on https://test_url with {{'User-Agent': 'python-httpx/{httpx.__version__}'}} headers amongst:
-- Match any request with {{'user-agent': 'python-httpx/{httpx.__version__}'}} headers"""
+            == f"""No response can be found for GET request on https://test_url with {{'User-Agent': 'python-{backend.httpx.__name__}/{backend.httpx.__version__}'}} headers amongst:
+- Match any request with {{'user-agent': 'python-{backend.httpx.__name__}/{backend.httpx.__version__}'}} headers"""
         )
 
 
 @pytest.mark.asyncio
 @pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
-async def test_headers_not_matching(httpx_mock: HTTPXMock) -> None:
+async def test_headers_not_matching(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
+
     httpx_mock.add_response(
         match_headers={
-            "User-Agent": f"python-httpx/{httpx.__version__}",
+            "User-Agent": f"python-{backend.httpx.__name__}/{backend.httpx.__version__}",
             "Host": "test_url2",
             "Host2": "test_url",
         },
         is_optional=True,
     )
 
-    async with httpx.AsyncClient() as client:
-        with pytest.raises(httpx.TimeoutException) as exception_info:
+    async with backend.httpx.AsyncClient() as client:
+        with pytest.raises(backend.httpx.TimeoutException) as exception_info:
             await client.get("https://test_url")
         assert (
             str(exception_info.value)
-            == f"""No response can be found for GET request on https://test_url with {{'Host': 'test_url', 'User-Agent': 'python-httpx/{httpx.__version__}'}} headers amongst:
-- Match any request with {{'User-Agent': 'python-httpx/{httpx.__version__}', 'Host': 'test_url2', 'Host2': 'test_url'}} headers"""
+            == f"""No response can be found for GET request on https://test_url with {{'Host': 'test_url', 'User-Agent': 'python-{backend.httpx.__name__}/{backend.httpx.__version__}'}} headers amongst:
+- Match any request with {{'User-Agent': 'python-{backend.httpx.__name__}/{backend.httpx.__version__}', 'Host': 'test_url2', 'Host2': 'test_url'}} headers"""
         )
 
 
@@ -1549,6 +1708,7 @@ async def test_headers_not_matching(httpx_mock: HTTPXMock) -> None:
 @pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
 async def test_url_not_matching_upper_case_headers_matching(
     httpx_mock: HTTPXMock,
+    backend: HTTPXBackend,
 ) -> None:
     httpx_mock.add_response(
         method="GET",
@@ -1556,8 +1716,8 @@ async def test_url_not_matching_upper_case_headers_matching(
         match_headers={"MyHeader": "Something"},
         is_optional=True,
     )
-    async with httpx.AsyncClient() as client:
-        with pytest.raises(httpx.TimeoutException) as exception_info:
+    async with backend.httpx.AsyncClient() as client:
+        with pytest.raises(backend.httpx.TimeoutException) as exception_info:
             await client.get("https://test_url", headers={"MyHeader": "Something"})
         assert (
             str(exception_info.value)
@@ -1567,29 +1727,37 @@ async def test_url_not_matching_upper_case_headers_matching(
 
 
 @pytest.mark.asyncio
-async def test_content_matching(httpx_mock: HTTPXMock) -> None:
+async def test_content_matching(httpx_mock: HTTPXMock, backend: HTTPXBackend) -> None:
     httpx_mock.add_response(match_content=b"This is the body")
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         response = await client.post("https://test_url", content=b"This is the body")
         assert response.read() == b""
 
 
 @pytest.mark.asyncio
-async def test_proxy_matching_with_authentication(httpx_mock: HTTPXMock) -> None:
+async def test_proxy_matching_with_authentication(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     httpx_mock.add_response(proxy_url="http://user:pwd@my_other_proxy/")
 
-    async with httpx.AsyncClient(proxy="http://user:pwd@my_other_proxy") as client:
+    async with backend.httpx.AsyncClient(
+        proxy="http://user:pwd@my_other_proxy"
+    ) as client:
         response = await client.get("https://test_url")
         assert response.read() == b""
 
 
 @pytest.mark.asyncio
-async def test_proxy_matching_with_custom_proxy_headers(httpx_mock: HTTPXMock) -> None:
+async def test_proxy_matching_with_custom_proxy_headers(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     httpx_mock.add_response(proxy_url="http://my_test_proxy/")
 
-    async with httpx.AsyncClient(
-        proxy=httpx.Proxy("http://my_test_proxy", headers={"X-Something": "value"})
+    async with backend.httpx.AsyncClient(
+        proxy=backend.httpx.Proxy(
+            "http://my_test_proxy", headers={"X-Something": "value"}
+        )
     ) as client:
         response = await client.get("https://test_url")
         assert response.read() == b""
@@ -1598,11 +1766,12 @@ async def test_proxy_matching_with_custom_proxy_headers(httpx_mock: HTTPXMock) -
 @pytest.mark.asyncio
 async def test_proxy_matching_with_authentication_and_custom_proxy_headers(
     httpx_mock: HTTPXMock,
+    backend: HTTPXBackend,
 ) -> None:
     httpx_mock.add_response(proxy_url="http://user:pwd@my_other_proxy/")
 
-    async with httpx.AsyncClient(
-        proxy=httpx.Proxy(
+    async with backend.httpx.AsyncClient(
+        proxy=backend.httpx.Proxy(
             "http://user:pwd@my_other_proxy", headers={"X-Something": "value"}
         )
     ) as client:
@@ -1612,11 +1781,11 @@ async def test_proxy_matching_with_authentication_and_custom_proxy_headers(
 
 @pytest.mark.asyncio
 @pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
-async def test_proxy_not_matching(httpx_mock: HTTPXMock) -> None:
+async def test_proxy_not_matching(httpx_mock: HTTPXMock, backend: HTTPXBackend) -> None:
     httpx_mock.add_response(proxy_url="http://my_test_proxy", is_optional=True)
 
-    async with httpx.AsyncClient(proxy="http://my_test_proxy") as client:
-        with pytest.raises(httpx.TimeoutException) as exception_info:
+    async with backend.httpx.AsyncClient(proxy="http://my_test_proxy") as client:
+        with pytest.raises(backend.httpx.TimeoutException) as exception_info:
             await client.get("http://test_url")
         assert (
             str(exception_info.value)
@@ -1627,11 +1796,11 @@ async def test_proxy_not_matching(httpx_mock: HTTPXMock) -> None:
 
 @pytest.mark.asyncio
 @pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
-async def test_proxy_not_existing(httpx_mock: HTTPXMock) -> None:
+async def test_proxy_not_existing(httpx_mock: HTTPXMock, backend: HTTPXBackend) -> None:
     httpx_mock.add_response(proxy_url="http://my_test_proxy", is_optional=True)
 
-    async with httpx.AsyncClient() as client:
-        with pytest.raises(httpx.TimeoutException) as exception_info:
+    async with backend.httpx.AsyncClient() as client:
+        with pytest.raises(backend.httpx.TimeoutException) as exception_info:
             await client.get("http://test_url")
         assert (
             str(exception_info.value)
@@ -1641,10 +1810,12 @@ async def test_proxy_not_existing(httpx_mock: HTTPXMock) -> None:
 
 
 @pytest.mark.asyncio
-async def test_requests_retrieval_content_matching(httpx_mock: HTTPXMock) -> None:
+async def test_requests_retrieval_content_matching(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     httpx_mock.add_response(is_reusable=True)
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         await client.post("https://test_url", content=b"This is the body")
         await client.post("https://test_url2", content=b"This is the body")
         await client.post("https://test_url2", content=b"This is the body2")
@@ -1653,10 +1824,12 @@ async def test_requests_retrieval_content_matching(httpx_mock: HTTPXMock) -> Non
 
 
 @pytest.mark.asyncio
-async def test_requests_retrieval_json_matching(httpx_mock: HTTPXMock) -> None:
+async def test_requests_retrieval_json_matching(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     httpx_mock.add_response(is_reusable=True)
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         await client.post("https://test_url", json=["my_str"])
         await client.post("https://test_url2", json=["my_str"])
         await client.post("https://test_url2", json=["my_str2"])
@@ -1665,13 +1838,15 @@ async def test_requests_retrieval_json_matching(httpx_mock: HTTPXMock) -> None:
 
 
 @pytest.mark.asyncio
-async def test_requests_retrieval_proxy_matching(httpx_mock: HTTPXMock) -> None:
+async def test_requests_retrieval_proxy_matching(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     httpx_mock.add_response(is_reusable=True)
 
-    async with httpx.AsyncClient(
+    async with backend.httpx.AsyncClient(
         mounts={
-            "http://": httpx.AsyncHTTPTransport(proxy="http://my_test_proxy"),
-            "https://": httpx.AsyncHTTPTransport(
+            "http://": backend.httpx.AsyncHTTPTransport(proxy="http://my_test_proxy"),
+            "https://": backend.httpx.AsyncHTTPTransport(
                 proxy="http://user:pwd@my_other_proxy"
             ),
         }
@@ -1686,13 +1861,15 @@ async def test_requests_retrieval_proxy_matching(httpx_mock: HTTPXMock) -> None:
 
 
 @pytest.mark.asyncio
-async def test_request_retrieval_proxy_matching(httpx_mock: HTTPXMock) -> None:
+async def test_request_retrieval_proxy_matching(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     httpx_mock.add_response(is_reusable=True)
 
-    async with httpx.AsyncClient(
+    async with backend.httpx.AsyncClient(
         mounts={
-            "http://": httpx.AsyncHTTPTransport(proxy="http://my_test_proxy"),
-            "https://": httpx.AsyncHTTPTransport(
+            "http://": backend.httpx.AsyncHTTPTransport(proxy="http://my_test_proxy"),
+            "https://": backend.httpx.AsyncHTTPTransport(
                 proxy="http://user:pwd@my_other_proxy"
             ),
         }
@@ -1707,10 +1884,11 @@ async def test_request_retrieval_proxy_matching(httpx_mock: HTTPXMock) -> None:
 @pytest.mark.asyncio
 async def test_requests_retrieval_files_and_data_matching(
     httpx_mock: HTTPXMock,
+    backend: HTTPXBackend,
 ) -> None:
     httpx_mock.add_response(is_reusable=True)
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         await client.put(
             "https://test_url",
             files={"name": ("file_name", b"File content")},
@@ -1739,10 +1917,12 @@ async def test_requests_retrieval_files_and_data_matching(
 
 
 @pytest.mark.asyncio
-async def test_request_retrieval_files_and_data_matching(httpx_mock: HTTPXMock) -> None:
+async def test_request_retrieval_files_and_data_matching(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     httpx_mock.add_response(is_reusable=True)
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         await client.put(
             "https://test_url",
             files={"name": ("file_name", b"File content")},
@@ -1758,10 +1938,12 @@ async def test_request_retrieval_files_and_data_matching(httpx_mock: HTTPXMock) 
 
 
 @pytest.mark.asyncio
-async def test_requests_retrieval_extensions_matching(httpx_mock: HTTPXMock) -> None:
+async def test_requests_retrieval_extensions_matching(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     httpx_mock.add_response(is_reusable=True)
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         await client.get("https://test_url")
         await client.get("https://test_url2", timeout=10)
         await client.get("https://test_url2", timeout=10)
@@ -1778,11 +1960,13 @@ async def test_requests_retrieval_extensions_matching(httpx_mock: HTTPXMock) -> 
 
 
 @pytest.mark.asyncio
-async def test_request_retrieval_extensions_matching(httpx_mock: HTTPXMock) -> None:
+async def test_request_retrieval_extensions_matching(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     httpx_mock.add_response(is_reusable=True)
 
-    async with httpx.AsyncClient() as client:
-        await client.get("https://test_url", timeout=httpx.Timeout(5, read=10))
+    async with backend.httpx.AsyncClient() as client:
+        await client.get("https://test_url", timeout=backend.httpx.Timeout(5, read=10))
         await client.get("https://test_url2", timeout=10)
         await client.get("http://test_url2", timeout=10)
 
@@ -1793,11 +1977,13 @@ async def test_request_retrieval_extensions_matching(httpx_mock: HTTPXMock) -> N
 
 @pytest.mark.asyncio
 @pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
-async def test_content_not_matching(httpx_mock: HTTPXMock) -> None:
+async def test_content_not_matching(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     httpx_mock.add_response(match_content=b"This is the body", is_optional=True)
 
-    async with httpx.AsyncClient() as client:
-        with pytest.raises(httpx.TimeoutException) as exception_info:
+    async with backend.httpx.AsyncClient() as client:
+        with pytest.raises(backend.httpx.TimeoutException) as exception_info:
             await client.post("https://test_url", content=b"This is the body2")
         assert (
             str(exception_info.value)
@@ -1807,30 +1993,32 @@ async def test_content_not_matching(httpx_mock: HTTPXMock) -> None:
 
 
 @pytest.mark.asyncio
-async def test_json_matching(httpx_mock: HTTPXMock) -> None:
+async def test_json_matching(httpx_mock: HTTPXMock, backend: HTTPXBackend) -> None:
     httpx_mock.add_response(match_json={"a": 1, "b": 2})
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         response = await client.post("https://test_url", json={"b": 2, "a": 1})
         assert response.read() == b""
 
 
 @pytest.mark.asyncio
-async def test_json_partial_matching(httpx_mock: HTTPXMock) -> None:
+async def test_json_partial_matching(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     httpx_mock.add_response(match_json={"a": 1, "b": ANY})
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         response = await client.post("https://test_url", json={"b": 2, "a": 1})
         assert response.read() == b""
 
 
 @pytest.mark.asyncio
 @pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
-async def test_json_not_matching(httpx_mock: HTTPXMock) -> None:
+async def test_json_not_matching(httpx_mock: HTTPXMock, backend: HTTPXBackend) -> None:
     httpx_mock.add_response(match_json={"a": 1, "b": 2}, is_optional=True)
 
-    async with httpx.AsyncClient() as client:
-        with pytest.raises(httpx.TimeoutException) as exception_info:
+    async with backend.httpx.AsyncClient() as client:
+        with pytest.raises(backend.httpx.TimeoutException) as exception_info:
             await client.post("https://test_url", json={"c": 3, "b": 2, "a": 1})
         assert (
             str(exception_info.value)
@@ -1841,15 +2029,17 @@ async def test_json_not_matching(httpx_mock: HTTPXMock) -> None:
 
 @pytest.mark.asyncio
 @pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
-async def test_headers_and_json_not_matching(httpx_mock: HTTPXMock) -> None:
+async def test_headers_and_json_not_matching(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     httpx_mock.add_response(
         match_json={"a": 1, "b": 2},
         match_headers={"foo": "bar"},
         is_optional=True,
     )
 
-    async with httpx.AsyncClient() as client:
-        with pytest.raises(httpx.TimeoutException) as exception_info:
+    async with backend.httpx.AsyncClient() as client:
+        with pytest.raises(backend.httpx.TimeoutException) as exception_info:
             await client.post("https://test_url", json={"c": 3, "b": 2, "a": 1})
         assert (
             str(exception_info.value)
@@ -1860,11 +2050,13 @@ async def test_headers_and_json_not_matching(httpx_mock: HTTPXMock) -> None:
 
 @pytest.mark.asyncio
 @pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
-async def test_match_json_invalid_json(httpx_mock: HTTPXMock) -> None:
+async def test_match_json_invalid_json(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     httpx_mock.add_response(match_json={"a": 1, "b": 2}, is_optional=True)
 
-    async with httpx.AsyncClient() as client:
-        with pytest.raises(httpx.TimeoutException) as exception_info:
+    async with backend.httpx.AsyncClient() as client:
+        with pytest.raises(backend.httpx.TimeoutException) as exception_info:
             await client.post("https://test_url", content=b"<test>foobar</test>")
         assert (
             str(exception_info.value)
@@ -1876,11 +2068,13 @@ async def test_match_json_invalid_json(httpx_mock: HTTPXMock) -> None:
 @pytest.mark.asyncio
 @pytest.mark.parametrize("content", [b'{"a":"\xff"}', b'{"a":"\xc3"}'])
 @pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
-async def test_match_json_invalid_utf8(httpx_mock: HTTPXMock, content: bytes) -> None:
+async def test_match_json_invalid_utf8(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend, content: bytes
+) -> None:
     httpx_mock.add_response(match_json={"a": "value"})
 
-    async with httpx.AsyncClient() as client:
-        with pytest.raises(httpx.TimeoutException) as exception_info:
+    async with backend.httpx.AsyncClient() as client:
+        with pytest.raises(backend.httpx.TimeoutException) as exception_info:
             await client.post("https://test_url", content=content)
         assert exception_info.value.request.content == content
         assert "No response can be found" in str(exception_info.value)
@@ -1890,11 +2084,13 @@ async def test_match_json_invalid_utf8(httpx_mock: HTTPXMock, content: bytes) ->
 
 
 @pytest.mark.asyncio
-async def test_match_json_binary_content_fallback(httpx_mock: HTTPXMock) -> None:
+async def test_match_json_binary_content_fallback(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     httpx_mock.add_response(match_json={"a": "value"}, status_code=201)
     httpx_mock.add_response(match_content=b"\xff", status_code=202)
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         response = await client.post("https://test_url", content=b"\xff")
         assert response.status_code == 202
         response = await client.post("https://test_url", json={"a": "value"})
@@ -1903,11 +2099,11 @@ async def test_match_json_binary_content_fallback(httpx_mock: HTTPXMock) -> None
 
 @pytest.mark.asyncio
 async def test_requests_retrieval_json_matching_with_binary_content(
-    httpx_mock: HTTPXMock,
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
 ) -> None:
     httpx_mock.add_response(is_reusable=True)
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         binary_request = (
             await client.post("https://test_url", content=b"\xff")
         ).request
@@ -1921,92 +2117,106 @@ async def test_requests_retrieval_json_matching_with_binary_content(
 
 
 @pytest.mark.asyncio
-async def test_headers_and_content_matching(httpx_mock: HTTPXMock) -> None:
+async def test_headers_and_content_matching(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     httpx_mock.add_response(
-        match_headers={"User-Agent": f"python-httpx/{httpx.__version__}"},
+        match_headers={
+            "User-Agent": f"python-{backend.httpx.__name__}/{backend.httpx.__version__}"
+        },
         match_content=b"This is the body",
     )
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         response = await client.post("https://test_url", content=b"This is the body")
         assert response.content == b""
 
 
 @pytest.mark.asyncio
 @pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
-async def test_headers_not_matching_and_content_matching(httpx_mock: HTTPXMock) -> None:
+async def test_headers_not_matching_and_content_matching(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     httpx_mock.add_response(
         match_headers={
-            "User-Agent": f"python-httpx/{httpx.__version__}",
+            "User-Agent": f"python-{backend.httpx.__name__}/{backend.httpx.__version__}",
             "Host": "test_url2",
         },
         match_content=b"This is the body",
         is_optional=True,
     )
 
-    async with httpx.AsyncClient() as client:
-        with pytest.raises(httpx.TimeoutException) as exception_info:
+    async with backend.httpx.AsyncClient() as client:
+        with pytest.raises(backend.httpx.TimeoutException) as exception_info:
             await client.post("https://test_url", content=b"This is the body")
         assert (
             str(exception_info.value)
-            == f"""No response can be found for POST request on https://test_url with {{'Host': 'test_url', 'User-Agent': 'python-httpx/{httpx.__version__}'}} headers and b'This is the body' body amongst:
-- Match any request with {{'User-Agent': 'python-httpx/{httpx.__version__}', 'Host': 'test_url2'}} headers and b'This is the body' body"""
+            == f"""No response can be found for POST request on https://test_url with {{'Host': 'test_url', 'User-Agent': 'python-{backend.httpx.__name__}/{backend.httpx.__version__}'}} headers and b'This is the body' body amongst:
+- Match any request with {{'User-Agent': 'python-{backend.httpx.__name__}/{backend.httpx.__version__}', 'Host': 'test_url2'}} headers and b'This is the body' body"""
         )
 
 
 @pytest.mark.asyncio
 @pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
-async def test_headers_matching_and_content_not_matching(httpx_mock: HTTPXMock) -> None:
+async def test_headers_matching_and_content_not_matching(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     httpx_mock.add_response(
         match_headers={
-            "User-Agent": f"python-httpx/{httpx.__version__}",
+            "User-Agent": f"python-{backend.httpx.__name__}/{backend.httpx.__version__}",
             "Host": "test_url",
         },
         match_content=b"This is the body2",
         is_optional=True,
     )
 
-    async with httpx.AsyncClient() as client:
-        with pytest.raises(httpx.TimeoutException) as exception_info:
+    async with backend.httpx.AsyncClient() as client:
+        with pytest.raises(backend.httpx.TimeoutException) as exception_info:
             await client.post("https://test_url", content=b"This is the body")
         assert (
             str(exception_info.value)
-            == f"""No response can be found for POST request on https://test_url with {{'Host': 'test_url', 'User-Agent': 'python-httpx/{httpx.__version__}'}} headers and b'This is the body' body amongst:
-- Match any request with {{'User-Agent': 'python-httpx/{httpx.__version__}', 'Host': 'test_url'}} headers and b'This is the body2' body"""
+            == f"""No response can be found for POST request on https://test_url with {{'Host': 'test_url', 'User-Agent': 'python-{backend.httpx.__name__}/{backend.httpx.__version__}'}} headers and b'This is the body' body amongst:
+- Match any request with {{'User-Agent': 'python-{backend.httpx.__name__}/{backend.httpx.__version__}', 'Host': 'test_url'}} headers and b'This is the body2' body"""
         )
 
 
 @pytest.mark.asyncio
 @pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
-async def test_headers_and_content_not_matching(httpx_mock: HTTPXMock) -> None:
+async def test_headers_and_content_not_matching(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     httpx_mock.add_response(
         match_headers={
-            "User-Agent": f"python-httpx/{httpx.__version__}",
+            "User-Agent": f"python-{backend.httpx.__name__}/{backend.httpx.__version__}",
             "Host": "test_url2",
         },
         match_content=b"This is the body2",
         is_optional=True,
     )
 
-    async with httpx.AsyncClient() as client:
-        with pytest.raises(httpx.TimeoutException) as exception_info:
+    async with backend.httpx.AsyncClient() as client:
+        with pytest.raises(backend.httpx.TimeoutException) as exception_info:
             await client.post("https://test_url", content=b"This is the body")
         assert (
             str(exception_info.value)
-            == f"""No response can be found for POST request on https://test_url with {{'Host': 'test_url', 'User-Agent': 'python-httpx/{httpx.__version__}'}} headers and b'This is the body' body amongst:
-- Match any request with {{'User-Agent': 'python-httpx/{httpx.__version__}', 'Host': 'test_url2'}} headers and b'This is the body2' body"""
+            == f"""No response can be found for POST request on https://test_url with {{'Host': 'test_url', 'User-Agent': 'python-{backend.httpx.__name__}/{backend.httpx.__version__}'}} headers and b'This is the body' body amongst:
+- Match any request with {{'User-Agent': 'python-{backend.httpx.__name__}/{backend.httpx.__version__}', 'Host': 'test_url2'}} headers and b'This is the body2' body"""
         )
 
 
 @pytest.mark.asyncio
-async def test_url_and_headers_and_content_matching(httpx_mock: HTTPXMock) -> None:
+async def test_url_and_headers_and_content_matching(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     httpx_mock.add_response(
         url="https://test_url",
-        match_headers={"User-Agent": f"python-httpx/{httpx.__version__}"},
+        match_headers={
+            "User-Agent": f"python-{backend.httpx.__name__}/{backend.httpx.__version__}"
+        },
         match_content=b"This is the body",
     )
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         response = await client.post("https://test_url", content=b"This is the body")
         assert response.content == b""
 
@@ -2015,24 +2225,25 @@ async def test_url_and_headers_and_content_matching(httpx_mock: HTTPXMock) -> No
 @pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
 async def test_headers_not_matching_and_url_and_content_matching(
     httpx_mock: HTTPXMock,
+    backend: HTTPXBackend,
 ) -> None:
     httpx_mock.add_response(
         url="https://test_url",
         match_headers={
-            "User-Agent": f"python-httpx/{httpx.__version__}",
+            "User-Agent": f"python-{backend.httpx.__name__}/{backend.httpx.__version__}",
             "Host": "test_url2",
         },
         match_content=b"This is the body",
         is_optional=True,
     )
 
-    async with httpx.AsyncClient() as client:
-        with pytest.raises(httpx.TimeoutException) as exception_info:
+    async with backend.httpx.AsyncClient() as client:
+        with pytest.raises(backend.httpx.TimeoutException) as exception_info:
             await client.post("https://test_url", content=b"This is the body")
         assert (
             str(exception_info.value)
-            == f"""No response can be found for POST request on https://test_url with {{'Host': 'test_url', 'User-Agent': 'python-httpx/{httpx.__version__}'}} headers and b'This is the body' body amongst:
-- Match any request on https://test_url with {{'User-Agent': 'python-httpx/{httpx.__version__}', 'Host': 'test_url2'}} headers and b'This is the body' body"""
+            == f"""No response can be found for POST request on https://test_url with {{'Host': 'test_url', 'User-Agent': 'python-{backend.httpx.__name__}/{backend.httpx.__version__}'}} headers and b'This is the body' body amongst:
+- Match any request on https://test_url with {{'User-Agent': 'python-{backend.httpx.__name__}/{backend.httpx.__version__}', 'Host': 'test_url2'}} headers and b'This is the body' body"""
         )
 
 
@@ -2040,24 +2251,25 @@ async def test_headers_not_matching_and_url_and_content_matching(
 @pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
 async def test_url_and_headers_not_matching_and_content_matching(
     httpx_mock: HTTPXMock,
+    backend: HTTPXBackend,
 ) -> None:
     httpx_mock.add_response(
         url="https://test_url2",
         match_headers={
-            "User-Agent": f"python-httpx/{httpx.__version__}",
+            "User-Agent": f"python-{backend.httpx.__name__}/{backend.httpx.__version__}",
             "Host": "test_url2",
         },
         match_content=b"This is the body",
         is_optional=True,
     )
 
-    async with httpx.AsyncClient() as client:
-        with pytest.raises(httpx.TimeoutException) as exception_info:
+    async with backend.httpx.AsyncClient() as client:
+        with pytest.raises(backend.httpx.TimeoutException) as exception_info:
             await client.post("https://test_url", content=b"This is the body")
         assert (
             str(exception_info.value)
-            == f"""No response can be found for POST request on https://test_url with {{'Host': 'test_url', 'User-Agent': 'python-httpx/{httpx.__version__}'}} headers and b'This is the body' body amongst:
-- Match any request on https://test_url2 with {{'User-Agent': 'python-httpx/{httpx.__version__}', 'Host': 'test_url2'}} headers and b'This is the body' body"""
+            == f"""No response can be found for POST request on https://test_url with {{'Host': 'test_url', 'User-Agent': 'python-{backend.httpx.__name__}/{backend.httpx.__version__}'}} headers and b'This is the body' body amongst:
+- Match any request on https://test_url2 with {{'User-Agent': 'python-{backend.httpx.__name__}/{backend.httpx.__version__}', 'Host': 'test_url2'}} headers and b'This is the body' body"""
         )
 
 
@@ -2065,24 +2277,25 @@ async def test_url_and_headers_not_matching_and_content_matching(
 @pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
 async def test_url_and_headers_matching_and_content_not_matching(
     httpx_mock: HTTPXMock,
+    backend: HTTPXBackend,
 ) -> None:
     httpx_mock.add_response(
         url="https://test_url",
         match_headers={
-            "User-Agent": f"python-httpx/{httpx.__version__}",
+            "User-Agent": f"python-{backend.httpx.__name__}/{backend.httpx.__version__}",
             "Host": "test_url",
         },
         match_content=b"This is the body2",
         is_optional=True,
     )
 
-    async with httpx.AsyncClient() as client:
-        with pytest.raises(httpx.TimeoutException) as exception_info:
+    async with backend.httpx.AsyncClient() as client:
+        with pytest.raises(backend.httpx.TimeoutException) as exception_info:
             await client.post("https://test_url", content=b"This is the body")
         assert (
             str(exception_info.value)
-            == f"""No response can be found for POST request on https://test_url with {{'Host': 'test_url', 'User-Agent': 'python-httpx/{httpx.__version__}'}} headers and b'This is the body' body amongst:
-- Match any request on https://test_url with {{'User-Agent': 'python-httpx/{httpx.__version__}', 'Host': 'test_url'}} headers and b'This is the body2' body"""
+            == f"""No response can be found for POST request on https://test_url with {{'Host': 'test_url', 'User-Agent': 'python-{backend.httpx.__name__}/{backend.httpx.__version__}'}} headers and b'This is the body' body amongst:
+- Match any request on https://test_url with {{'User-Agent': 'python-{backend.httpx.__name__}/{backend.httpx.__version__}', 'Host': 'test_url'}} headers and b'This is the body2' body"""
         )
 
 
@@ -2090,24 +2303,25 @@ async def test_url_and_headers_matching_and_content_not_matching(
 @pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
 async def test_headers_matching_and_url_and_content_not_matching(
     httpx_mock: HTTPXMock,
+    backend: HTTPXBackend,
 ) -> None:
     httpx_mock.add_response(
         url="https://test_url2",
         match_headers={
-            "User-Agent": f"python-httpx/{httpx.__version__}",
+            "User-Agent": f"python-{backend.httpx.__name__}/{backend.httpx.__version__}",
             "Host": "test_url",
         },
         match_content=b"This is the body2",
         is_optional=True,
     )
 
-    async with httpx.AsyncClient() as client:
-        with pytest.raises(httpx.TimeoutException) as exception_info:
+    async with backend.httpx.AsyncClient() as client:
+        with pytest.raises(backend.httpx.TimeoutException) as exception_info:
             await client.post("https://test_url", content=b"This is the body")
         assert (
             str(exception_info.value)
-            == f"""No response can be found for POST request on https://test_url with {{'Host': 'test_url', 'User-Agent': 'python-httpx/{httpx.__version__}'}} headers and b'This is the body' body amongst:
-- Match any request on https://test_url2 with {{'User-Agent': 'python-httpx/{httpx.__version__}', 'Host': 'test_url'}} headers and b'This is the body2' body"""
+            == f"""No response can be found for POST request on https://test_url with {{'Host': 'test_url', 'User-Agent': 'python-{backend.httpx.__name__}/{backend.httpx.__version__}'}} headers and b'This is the body' body amongst:
+- Match any request on https://test_url2 with {{'User-Agent': 'python-{backend.httpx.__name__}/{backend.httpx.__version__}', 'Host': 'test_url'}} headers and b'This is the body2' body"""
         )
 
 
@@ -2115,62 +2329,68 @@ async def test_headers_matching_and_url_and_content_not_matching(
 @pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
 async def test_url_matching_and_headers_and_content_not_matching(
     httpx_mock: HTTPXMock,
+    backend: HTTPXBackend,
 ) -> None:
     httpx_mock.add_response(
         url="https://test_url",
         match_headers={
-            "User-Agent": f"python-httpx/{httpx.__version__}",
+            "User-Agent": f"python-{backend.httpx.__name__}/{backend.httpx.__version__}",
             "Host": "test_url2",
         },
         match_content=b"This is the body2",
         is_optional=True,
     )
 
-    async with httpx.AsyncClient() as client:
-        with pytest.raises(httpx.TimeoutException) as exception_info:
+    async with backend.httpx.AsyncClient() as client:
+        with pytest.raises(backend.httpx.TimeoutException) as exception_info:
             await client.post("https://test_url", content=b"This is the body")
         assert (
             str(exception_info.value)
-            == f"""No response can be found for POST request on https://test_url with {{'Host': 'test_url', 'User-Agent': 'python-httpx/{httpx.__version__}'}} headers and b'This is the body' body amongst:
-- Match any request on https://test_url with {{'User-Agent': 'python-httpx/{httpx.__version__}', 'Host': 'test_url2'}} headers and b'This is the body2' body"""
+            == f"""No response can be found for POST request on https://test_url with {{'Host': 'test_url', 'User-Agent': 'python-{backend.httpx.__name__}/{backend.httpx.__version__}'}} headers and b'This is the body' body amongst:
+- Match any request on https://test_url with {{'User-Agent': 'python-{backend.httpx.__name__}/{backend.httpx.__version__}', 'Host': 'test_url2'}} headers and b'This is the body2' body"""
         )
 
 
 @pytest.mark.asyncio
 @pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
-async def test_url_and_headers_and_content_not_matching(httpx_mock: HTTPXMock) -> None:
+async def test_url_and_headers_and_content_not_matching(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     httpx_mock.add_response(
         url="https://test_url2",
         match_headers={
-            "User-Agent": f"python-httpx/{httpx.__version__}",
+            "User-Agent": f"python-{backend.httpx.__name__}/{backend.httpx.__version__}",
             "Host": "test_url2",
         },
         match_content=b"This is the body2",
         is_optional=True,
     )
 
-    async with httpx.AsyncClient() as client:
-        with pytest.raises(httpx.TimeoutException) as exception_info:
+    async with backend.httpx.AsyncClient() as client:
+        with pytest.raises(backend.httpx.TimeoutException) as exception_info:
             await client.post("https://test_url", content=b"This is the body")
         assert (
             str(exception_info.value)
-            == f"""No response can be found for POST request on https://test_url with {{'Host': 'test_url', 'User-Agent': 'python-httpx/{httpx.__version__}'}} headers and b'This is the body' body amongst:
-- Match any request on https://test_url2 with {{'User-Agent': 'python-httpx/{httpx.__version__}', 'Host': 'test_url2'}} headers and b'This is the body2' body"""
+            == f"""No response can be found for POST request on https://test_url with {{'Host': 'test_url', 'User-Agent': 'python-{backend.httpx.__name__}/{backend.httpx.__version__}'}} headers and b'This is the body' body amongst:
+- Match any request on https://test_url2 with {{'User-Agent': 'python-{backend.httpx.__name__}/{backend.httpx.__version__}', 'Host': 'test_url2'}} headers and b'This is the body2' body"""
         )
 
 
 @pytest.mark.asyncio
 async def test_method_and_url_and_headers_and_content_matching(
     httpx_mock: HTTPXMock,
+    backend: HTTPXBackend,
 ) -> None:
     httpx_mock.add_response(
         url="https://test_url",
         method="POST",
-        match_headers={"User-Agent": f"python-httpx/{httpx.__version__}"},
+        match_headers={
+            "User-Agent": f"python-{backend.httpx.__name__}/{backend.httpx.__version__}"
+        },
         match_content=b"This is the body",
     )
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         response = await client.post("https://test_url", content=b"This is the body")
         assert response.content == b""
 
@@ -2179,25 +2399,26 @@ async def test_method_and_url_and_headers_and_content_matching(
 @pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
 async def test_headers_not_matching_and_method_and_url_and_content_matching(
     httpx_mock: HTTPXMock,
+    backend: HTTPXBackend,
 ) -> None:
     httpx_mock.add_response(
         url="https://test_url",
         method="POST",
         match_headers={
-            "User-Agent": f"python-httpx/{httpx.__version__}",
+            "User-Agent": f"python-{backend.httpx.__name__}/{backend.httpx.__version__}",
             "Host": "test_url2",
         },
         match_content=b"This is the body",
         is_optional=True,
     )
 
-    async with httpx.AsyncClient() as client:
-        with pytest.raises(httpx.TimeoutException) as exception_info:
+    async with backend.httpx.AsyncClient() as client:
+        with pytest.raises(backend.httpx.TimeoutException) as exception_info:
             await client.post("https://test_url", content=b"This is the body")
         assert (
             str(exception_info.value)
-            == f"""No response can be found for POST request on https://test_url with {{'Host': 'test_url', 'User-Agent': 'python-httpx/{httpx.__version__}'}} headers and b'This is the body' body amongst:
-- Match POST request on https://test_url with {{'User-Agent': 'python-httpx/{httpx.__version__}', 'Host': 'test_url2'}} headers and b'This is the body' body"""
+            == f"""No response can be found for POST request on https://test_url with {{'Host': 'test_url', 'User-Agent': 'python-{backend.httpx.__name__}/{backend.httpx.__version__}'}} headers and b'This is the body' body amongst:
+- Match POST request on https://test_url with {{'User-Agent': 'python-{backend.httpx.__name__}/{backend.httpx.__version__}', 'Host': 'test_url2'}} headers and b'This is the body' body"""
         )
 
 
@@ -2205,25 +2426,26 @@ async def test_headers_not_matching_and_method_and_url_and_content_matching(
 @pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
 async def test_url_and_headers_not_matching_and_method_and_content_matching(
     httpx_mock: HTTPXMock,
+    backend: HTTPXBackend,
 ) -> None:
     httpx_mock.add_response(
         url="https://test_url2",
         method="POST",
         match_headers={
-            "User-Agent": f"python-httpx/{httpx.__version__}",
+            "User-Agent": f"python-{backend.httpx.__name__}/{backend.httpx.__version__}",
             "Host": "test_url2",
         },
         match_content=b"This is the body",
         is_optional=True,
     )
 
-    async with httpx.AsyncClient() as client:
-        with pytest.raises(httpx.TimeoutException) as exception_info:
+    async with backend.httpx.AsyncClient() as client:
+        with pytest.raises(backend.httpx.TimeoutException) as exception_info:
             await client.post("https://test_url", content=b"This is the body")
         assert (
             str(exception_info.value)
-            == f"""No response can be found for POST request on https://test_url with {{'Host': 'test_url', 'User-Agent': 'python-httpx/{httpx.__version__}'}} headers and b'This is the body' body amongst:
-- Match POST request on https://test_url2 with {{'User-Agent': 'python-httpx/{httpx.__version__}', 'Host': 'test_url2'}} headers and b'This is the body' body"""
+            == f"""No response can be found for POST request on https://test_url with {{'Host': 'test_url', 'User-Agent': 'python-{backend.httpx.__name__}/{backend.httpx.__version__}'}} headers and b'This is the body' body amongst:
+- Match POST request on https://test_url2 with {{'User-Agent': 'python-{backend.httpx.__name__}/{backend.httpx.__version__}', 'Host': 'test_url2'}} headers and b'This is the body' body"""
         )
 
 
@@ -2231,25 +2453,26 @@ async def test_url_and_headers_not_matching_and_method_and_content_matching(
 @pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
 async def test_method_and_url_and_headers_matching_and_content_not_matching(
     httpx_mock: HTTPXMock,
+    backend: HTTPXBackend,
 ) -> None:
     httpx_mock.add_response(
         url="https://test_url",
         method="POST",
         match_headers={
-            "User-Agent": f"python-httpx/{httpx.__version__}",
+            "User-Agent": f"python-{backend.httpx.__name__}/{backend.httpx.__version__}",
             "Host": "test_url",
         },
         match_content=b"This is the body2",
         is_optional=True,
     )
 
-    async with httpx.AsyncClient() as client:
-        with pytest.raises(httpx.TimeoutException) as exception_info:
+    async with backend.httpx.AsyncClient() as client:
+        with pytest.raises(backend.httpx.TimeoutException) as exception_info:
             await client.post("https://test_url", content=b"This is the body")
         assert (
             str(exception_info.value)
-            == f"""No response can be found for POST request on https://test_url with {{'Host': 'test_url', 'User-Agent': 'python-httpx/{httpx.__version__}'}} headers and b'This is the body' body amongst:
-- Match POST request on https://test_url with {{'User-Agent': 'python-httpx/{httpx.__version__}', 'Host': 'test_url'}} headers and b'This is the body2' body"""
+            == f"""No response can be found for POST request on https://test_url with {{'Host': 'test_url', 'User-Agent': 'python-{backend.httpx.__name__}/{backend.httpx.__version__}'}} headers and b'This is the body' body amongst:
+- Match POST request on https://test_url with {{'User-Agent': 'python-{backend.httpx.__name__}/{backend.httpx.__version__}', 'Host': 'test_url'}} headers and b'This is the body2' body"""
         )
 
 
@@ -2257,25 +2480,26 @@ async def test_method_and_url_and_headers_matching_and_content_not_matching(
 @pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
 async def test_method_and_headers_matching_and_url_and_content_not_matching(
     httpx_mock: HTTPXMock,
+    backend: HTTPXBackend,
 ) -> None:
     httpx_mock.add_response(
         url="https://test_url2",
         method="POST",
         match_headers={
-            "User-Agent": f"python-httpx/{httpx.__version__}",
+            "User-Agent": f"python-{backend.httpx.__name__}/{backend.httpx.__version__}",
             "Host": "test_url",
         },
         match_content=b"This is the body2",
         is_optional=True,
     )
 
-    async with httpx.AsyncClient() as client:
-        with pytest.raises(httpx.TimeoutException) as exception_info:
+    async with backend.httpx.AsyncClient() as client:
+        with pytest.raises(backend.httpx.TimeoutException) as exception_info:
             await client.post("https://test_url", content=b"This is the body")
         assert (
             str(exception_info.value)
-            == f"""No response can be found for POST request on https://test_url with {{'Host': 'test_url', 'User-Agent': 'python-httpx/{httpx.__version__}'}} headers and b'This is the body' body amongst:
-- Match POST request on https://test_url2 with {{'User-Agent': 'python-httpx/{httpx.__version__}', 'Host': 'test_url'}} headers and b'This is the body2' body"""
+            == f"""No response can be found for POST request on https://test_url with {{'Host': 'test_url', 'User-Agent': 'python-{backend.httpx.__name__}/{backend.httpx.__version__}'}} headers and b'This is the body' body amongst:
+- Match POST request on https://test_url2 with {{'User-Agent': 'python-{backend.httpx.__name__}/{backend.httpx.__version__}', 'Host': 'test_url'}} headers and b'This is the body2' body"""
         )
 
 
@@ -2283,25 +2507,26 @@ async def test_method_and_headers_matching_and_url_and_content_not_matching(
 @pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
 async def test_method_and_url_matching_and_headers_and_content_not_matching(
     httpx_mock: HTTPXMock,
+    backend: HTTPXBackend,
 ) -> None:
     httpx_mock.add_response(
         url="https://test_url",
         method="POST",
         match_headers={
-            "User-Agent": f"python-httpx/{httpx.__version__}",
+            "User-Agent": f"python-{backend.httpx.__name__}/{backend.httpx.__version__}",
             "Host": "test_url2",
         },
         match_content=b"This is the body2",
         is_optional=True,
     )
 
-    async with httpx.AsyncClient() as client:
-        with pytest.raises(httpx.TimeoutException) as exception_info:
+    async with backend.httpx.AsyncClient() as client:
+        with pytest.raises(backend.httpx.TimeoutException) as exception_info:
             await client.post("https://test_url", content=b"This is the body")
         assert (
             str(exception_info.value)
-            == f"""No response can be found for POST request on https://test_url with {{'Host': 'test_url', 'User-Agent': 'python-httpx/{httpx.__version__}'}} headers and b'This is the body' body amongst:
-- Match POST request on https://test_url with {{'User-Agent': 'python-httpx/{httpx.__version__}', 'Host': 'test_url2'}} headers and b'This is the body2' body"""
+            == f"""No response can be found for POST request on https://test_url with {{'Host': 'test_url', 'User-Agent': 'python-{backend.httpx.__name__}/{backend.httpx.__version__}'}} headers and b'This is the body' body amongst:
+- Match POST request on https://test_url with {{'User-Agent': 'python-{backend.httpx.__name__}/{backend.httpx.__version__}', 'Host': 'test_url2'}} headers and b'This is the body2' body"""
         )
 
 
@@ -2309,25 +2534,26 @@ async def test_method_and_url_matching_and_headers_and_content_not_matching(
 @pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
 async def test_method_matching_and_url_and_headers_and_content_not_matching(
     httpx_mock: HTTPXMock,
+    backend: HTTPXBackend,
 ) -> None:
     httpx_mock.add_response(
         url="https://test_url2",
         method="POST",
         match_headers={
-            "User-Agent": f"python-httpx/{httpx.__version__}",
+            "User-Agent": f"python-{backend.httpx.__name__}/{backend.httpx.__version__}",
             "Host": "test_url2",
         },
         match_content=b"This is the body2",
         is_optional=True,
     )
 
-    async with httpx.AsyncClient() as client:
-        with pytest.raises(httpx.TimeoutException) as exception_info:
+    async with backend.httpx.AsyncClient() as client:
+        with pytest.raises(backend.httpx.TimeoutException) as exception_info:
             await client.post("https://test_url", content=b"This is the body")
         assert (
             str(exception_info.value)
-            == f"""No response can be found for POST request on https://test_url with {{'Host': 'test_url', 'User-Agent': 'python-httpx/{httpx.__version__}'}} headers and b'This is the body' body amongst:
-- Match POST request on https://test_url2 with {{'User-Agent': 'python-httpx/{httpx.__version__}', 'Host': 'test_url2'}} headers and b'This is the body2' body"""
+            == f"""No response can be found for POST request on https://test_url with {{'Host': 'test_url', 'User-Agent': 'python-{backend.httpx.__name__}/{backend.httpx.__version__}'}} headers and b'This is the body' body amongst:
+- Match POST request on https://test_url2 with {{'User-Agent': 'python-{backend.httpx.__name__}/{backend.httpx.__version__}', 'Host': 'test_url2'}} headers and b'This is the body2' body"""
         )
 
 
@@ -2335,126 +2561,149 @@ async def test_method_matching_and_url_and_headers_and_content_not_matching(
 @pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
 async def test_method_and_url_and_headers_and_content_not_matching(
     httpx_mock: HTTPXMock,
+    backend: HTTPXBackend,
 ) -> None:
     httpx_mock.add_response(
         url="https://test_url2",
         method="PUT",
         match_headers={
-            "User-Agent": f"python-httpx/{httpx.__version__}",
+            "User-Agent": f"python-{backend.httpx.__name__}/{backend.httpx.__version__}",
             "Host": "test_url2",
         },
         match_content=b"This is the body2",
         is_optional=True,
     )
 
-    async with httpx.AsyncClient() as client:
-        with pytest.raises(httpx.TimeoutException) as exception_info:
+    async with backend.httpx.AsyncClient() as client:
+        with pytest.raises(backend.httpx.TimeoutException) as exception_info:
             await client.post("https://test_url", content=b"This is the body")
         assert (
             str(exception_info.value)
-            == f"""No response can be found for POST request on https://test_url with {{'Host': 'test_url', 'User-Agent': 'python-httpx/{httpx.__version__}'}} headers and b'This is the body' body amongst:
-- Match PUT request on https://test_url2 with {{'User-Agent': 'python-httpx/{httpx.__version__}', 'Host': 'test_url2'}} headers and b'This is the body2' body"""
+            == f"""No response can be found for POST request on https://test_url with {{'Host': 'test_url', 'User-Agent': 'python-{backend.httpx.__name__}/{backend.httpx.__version__}'}} headers and b'This is the body' body amongst:
+- Match PUT request on https://test_url2 with {{'User-Agent': 'python-{backend.httpx.__name__}/{backend.httpx.__version__}', 'Host': 'test_url2'}} headers and b'This is the body2' body"""
         )
 
 
 @pytest.mark.asyncio
-async def test_header_as_str_tuple_list(httpx_mock: HTTPXMock) -> None:
+async def test_header_as_str_tuple_list(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     httpx_mock.add_response(
         headers=[("set-cookie", "key=value"), ("set-cookie", "key2=value2")]
     )
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         response = await client.get("https://test_url")
 
     assert dict(response.cookies) == {"key": "value", "key2": "value2"}
 
 
 @pytest.mark.asyncio
-async def test_header_as_bytes_tuple_list(httpx_mock: HTTPXMock) -> None:
+async def test_header_as_bytes_tuple_list(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     httpx_mock.add_response(
         headers=[(b"set-cookie", b"key=value"), (b"set-cookie", b"key2=value2")]
     )
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         response = await client.get("https://test_url")
 
     assert dict(response.cookies) == {"key": "value", "key2": "value2"}
 
 
 @pytest.mark.asyncio
-async def test_header_as_bytes_dict(httpx_mock: HTTPXMock) -> None:
+async def test_header_as_bytes_dict(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     httpx_mock.add_response(headers={b"set-cookie": b"key=value"})
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         response = await client.get("https://test_url")
 
     assert dict(response.cookies) == {"key": "value"}
 
 
 @pytest.mark.asyncio
-async def test_header_as_httpx_headers(httpx_mock: HTTPXMock) -> None:
-    httpx_mock.add_response(headers=httpx.Headers({"set-cookie": "key=value"}))
+async def test_header_as_httpx_headers(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
+    httpx_mock.add_response(headers=backend.httpx.Headers({"set-cookie": "key=value"}))
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         response = await client.get("https://test_url")
 
     assert dict(response.cookies) == {"key": "value"}
 
 
 @pytest.mark.asyncio
-async def test_elapsed_when_add_response(httpx_mock: HTTPXMock) -> None:
+async def test_elapsed_when_add_response(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     httpx_mock.add_response()
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         response = await client.get("https://test_url")
     assert response.elapsed is not None
 
 
 @pytest.mark.asyncio
-async def test_elapsed_when_add_callback(httpx_mock: HTTPXMock) -> None:
+async def test_elapsed_when_add_callback(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     httpx_mock.add_callback(
-        callback=lambda req: httpx.Response(status_code=200, json={"foo": "bar"})
+        callback=lambda req: backend.httpx.Response(
+            status_code=200, json={"foo": "bar"}
+        )
     )
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         response = await client.get("https://test_url")
     assert response.elapsed is not None
 
 
 @pytest.mark.asyncio
-async def test_elapsed_when_add_async_callback(httpx_mock: HTTPXMock) -> None:
-    async def custom_response(request: httpx.Request) -> httpx.Response:
-        return httpx.Response(status_code=200, json={"foo": "bar"})
+async def test_elapsed_when_add_async_callback(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
+    async def custom_response(request: "httpx.Request") -> "httpx.Response":
+        return backend.httpx.Response(status_code=200, json={"foo": "bar"})
 
     httpx_mock.add_callback(custom_response)
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         response = await client.get("https://test_url")
     assert response.elapsed is not None
 
 
 @pytest.mark.asyncio
-async def test_non_ascii_url_response(httpx_mock: HTTPXMock) -> None:
+async def test_non_ascii_url_response(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     httpx_mock.add_response(url="https://test_url?query_type=数据")
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         response = await client.get("https://test_url?query_type=数据")
     assert response.content == b""
 
 
 @pytest.mark.asyncio
-async def test_url_encoded_matching_response(httpx_mock: HTTPXMock) -> None:
+async def test_url_encoded_matching_response(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     httpx_mock.add_response(url="https://test_url?a=%E6%95%B0%E6%8D%AE")
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         response = await client.get("https://test_url?a=数据")
     assert response.content == b""
 
 
 @pytest.mark.asyncio
-async def test_reset_is_removing_requests(httpx_mock: HTTPXMock) -> None:
+async def test_reset_is_removing_requests(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     httpx_mock.add_response()
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         await client.get("https://test_url")
 
     assert len(httpx_mock.get_requests()) == 1
@@ -2464,14 +2713,14 @@ async def test_reset_is_removing_requests(httpx_mock: HTTPXMock) -> None:
 
 
 @pytest.mark.asyncio
-async def test_mutating_json(httpx_mock: HTTPXMock) -> None:
+async def test_mutating_json(httpx_mock: HTTPXMock, backend: HTTPXBackend) -> None:
     mutating_json = {"content": "request 1"}
     httpx_mock.add_response(json=mutating_json)
 
     mutating_json["content"] = "request 2"
     httpx_mock.add_response(json=mutating_json)
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         response = await client.get("https://test_url")
         assert response.json() == {"content": "request 1"}
 
@@ -2482,32 +2731,35 @@ async def test_mutating_json(httpx_mock: HTTPXMock) -> None:
 @pytest.mark.asyncio
 async def test_streams_are_not_cascading_resulting_in_maximum_recursion(
     httpx_mock: HTTPXMock,
+    backend: HTTPXBackend,
 ) -> None:
     httpx_mock.add_response(json={"abc": "def"}, is_reusable=True)
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         tasks = [client.get("https://test_url") for _ in range(950)]
         await asyncio.gather(*tasks)
     # No need to assert anything, this test case ensure that no error was raised by the gather
 
 
 @pytest.mark.asyncio
-async def test_custom_transport(httpx_mock: HTTPXMock) -> None:
-    class CustomTransport(httpx.AsyncHTTPTransport):
+async def test_custom_transport(httpx_mock: HTTPXMock, backend: HTTPXBackend) -> None:
+    class CustomTransport(backend.httpx.AsyncHTTPTransport):  # type: ignore[name-defined]
         def __init__(self, prefix: str, *args, **kwargs):
             super().__init__(*args, **kwargs)
             self.prefix = prefix
 
         async def handle_async_request(
             self,
-            request: httpx.Request,
-        ) -> httpx.Response:
+            request: "httpx.Request",
+        ) -> "httpx.Response":
             httpx_response = await super().handle_async_request(request)
             httpx_response.headers["x-prefix"] = self.prefix
             return httpx_response
 
     httpx_mock.add_response()
 
-    async with httpx.AsyncClient(transport=CustomTransport(prefix="test")) as client:
+    async with backend.httpx.AsyncClient(
+        transport=CustomTransport(prefix="test")
+    ) as client:
         response = await client.post("https://test_url", content=b"This is the body")
         assert response.read() == b""
         assert response.headers["x-prefix"] == "test"
@@ -2516,6 +2768,7 @@ async def test_custom_transport(httpx_mock: HTTPXMock) -> None:
 @pytest.mark.asyncio
 async def test_response_selection_content_matching_with_async_iterable(
     httpx_mock: HTTPXMock,
+    backend: HTTPXBackend,
 ) -> None:
     httpx_mock.add_response(match_content=b"full content 1", content=b"matched 1")
     httpx_mock.add_response(match_content=b"full content 2", content=b"matched 2")
@@ -2532,7 +2785,7 @@ async def test_response_selection_content_matching_with_async_iterable(
         yield b"content"
         yield b" 2"
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         response_2 = await client.put("https://test_url", content=stream_content_2())
         response_1 = await client.put("https://test_url", content=stream_content_1())
     assert response_1.content == b"matched 1"
@@ -2542,6 +2795,7 @@ async def test_response_selection_content_matching_with_async_iterable(
 @pytest.mark.asyncio
 async def test_request_selection_content_matching_with_async_iterable(
     httpx_mock: HTTPXMock,
+    backend: HTTPXBackend,
 ) -> None:
     httpx_mock.add_response(match_content=b"full content 1")
     httpx_mock.add_response(match_content=b"full content 2")
@@ -2558,7 +2812,7 @@ async def test_request_selection_content_matching_with_async_iterable(
         yield b"content"
         yield b" 2"
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         await client.put("https://test_url_2", content=stream_content_2())
         await client.put("https://test_url_1", content=stream_content_1())
 
@@ -2572,10 +2826,10 @@ async def test_request_selection_content_matching_with_async_iterable(
 
 
 @pytest.mark.asyncio
-async def test_files_matching(httpx_mock: HTTPXMock) -> None:
+async def test_files_matching(httpx_mock: HTTPXMock, backend: HTTPXBackend) -> None:
     httpx_mock.add_response(match_files={"name": ("file_name", b"File content")})
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         response = await client.put(
             "https://test_url", files={"name": ("file_name", b"File content")}
         )
@@ -2583,13 +2837,15 @@ async def test_files_matching(httpx_mock: HTTPXMock) -> None:
 
 
 @pytest.mark.asyncio
-async def test_files_and_data_matching(httpx_mock: HTTPXMock) -> None:
+async def test_files_and_data_matching(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     httpx_mock.add_response(
         match_files={"name": ("file_name", b"File content")},
         match_data={"field": "value"},
     )
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         response = await client.put(
             "https://test_url",
             files={"name": ("file_name", b"File content")},
@@ -2600,7 +2856,9 @@ async def test_files_and_data_matching(httpx_mock: HTTPXMock) -> None:
 
 @pytest.mark.asyncio
 @pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
-async def test_files_not_matching_name(httpx_mock: HTTPXMock, monkeypatch) -> None:
+async def test_files_not_matching_name(
+    httpx_mock: HTTPXMock, monkeypatch, backend: HTTPXBackend
+) -> None:
     # Ensure generated boundary will be fbe495efe4cd41b941ca13e254d6b018
     monkeypatch.setattr(
         os,
@@ -2612,8 +2870,8 @@ async def test_files_not_matching_name(httpx_mock: HTTPXMock, monkeypatch) -> No
         match_files={"name2": ("file_name", b"File content")}, is_optional=True
     )
 
-    async with httpx.AsyncClient() as client:
-        with pytest.raises(httpx.TimeoutException) as exception_info:
+    async with backend.httpx.AsyncClient() as client:
+        with pytest.raises(backend.httpx.TimeoutException) as exception_info:
             await client.put(
                 "https://test_url", files={"name1": ("file_name", b"File content")}
             )
@@ -2626,7 +2884,9 @@ async def test_files_not_matching_name(httpx_mock: HTTPXMock, monkeypatch) -> No
 
 @pytest.mark.asyncio
 @pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
-async def test_files_not_matching_file_name(httpx_mock: HTTPXMock, monkeypatch) -> None:
+async def test_files_not_matching_file_name(
+    httpx_mock: HTTPXMock, monkeypatch, backend: HTTPXBackend
+) -> None:
     # Ensure generated boundary will be fbe495efe4cd41b941ca13e254d6b018
     monkeypatch.setattr(
         os,
@@ -2638,8 +2898,8 @@ async def test_files_not_matching_file_name(httpx_mock: HTTPXMock, monkeypatch) 
         match_files={"name": ("file_name2", b"File content")}, is_optional=True
     )
 
-    async with httpx.AsyncClient() as client:
-        with pytest.raises(httpx.TimeoutException) as exception_info:
+    async with backend.httpx.AsyncClient() as client:
+        with pytest.raises(backend.httpx.TimeoutException) as exception_info:
             await client.put(
                 "https://test_url", files={"name": ("file_name1", b"File content")}
             )
@@ -2652,7 +2912,9 @@ async def test_files_not_matching_file_name(httpx_mock: HTTPXMock, monkeypatch) 
 
 @pytest.mark.asyncio
 @pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
-async def test_files_not_matching_content(httpx_mock: HTTPXMock, monkeypatch) -> None:
+async def test_files_not_matching_content(
+    httpx_mock: HTTPXMock, monkeypatch, backend: HTTPXBackend
+) -> None:
     # Ensure generated boundary will be fbe495efe4cd41b941ca13e254d6b018
     monkeypatch.setattr(
         os,
@@ -2664,8 +2926,8 @@ async def test_files_not_matching_content(httpx_mock: HTTPXMock, monkeypatch) ->
         match_files={"name": ("file_name", b"File content2")}, is_optional=True
     )
 
-    async with httpx.AsyncClient() as client:
-        with pytest.raises(httpx.TimeoutException) as exception_info:
+    async with backend.httpx.AsyncClient() as client:
+        with pytest.raises(backend.httpx.TimeoutException) as exception_info:
             await client.put(
                 "https://test_url", files={"name": ("file_name", b"File content1")}
             )
@@ -2679,7 +2941,7 @@ async def test_files_not_matching_content(httpx_mock: HTTPXMock, monkeypatch) ->
 @pytest.mark.asyncio
 @pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
 async def test_files_matching_but_data_not_matching(
-    httpx_mock: HTTPXMock, monkeypatch
+    httpx_mock: HTTPXMock, monkeypatch, backend: HTTPXBackend
 ) -> None:
     # Ensure generated boundary will be fbe495efe4cd41b941ca13e254d6b018
     monkeypatch.setattr(
@@ -2694,8 +2956,8 @@ async def test_files_matching_but_data_not_matching(
         is_optional=True,
     )
 
-    async with httpx.AsyncClient() as client:
-        with pytest.raises(httpx.TimeoutException) as exception_info:
+    async with backend.httpx.AsyncClient() as client:
+        with pytest.raises(backend.httpx.TimeoutException) as exception_info:
             await client.put(
                 "https://test_url", files={"name": ("file_name", b"File content")}
             )
@@ -2707,28 +2969,30 @@ async def test_files_matching_but_data_not_matching(
 
 
 @pytest.mark.asyncio
-async def test_timeout_matching(httpx_mock: HTTPXMock) -> None:
+async def test_timeout_matching(httpx_mock: HTTPXMock, backend: HTTPXBackend) -> None:
     httpx_mock.add_response(
         match_extensions={"timeout": {"connect": 5, "read": 5, "write": 10, "pool": 5}}
     )
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         response = await client.put(
-            "https://test_url", timeout=httpx.Timeout(5, write=10)
+            "https://test_url", timeout=backend.httpx.Timeout(5, write=10)
         )
     assert response.content == b""
 
 
 @pytest.mark.asyncio
 @pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
-async def test_timeout_not_matching(httpx_mock: HTTPXMock) -> None:
+async def test_timeout_not_matching(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     httpx_mock.add_response(
         match_extensions={"timeout": {"connect": 5, "read": 5, "write": 10, "pool": 5}},
         is_optional=True,
     )
 
-    async with httpx.AsyncClient() as client:
-        with pytest.raises(httpx.TimeoutException) as exception_info:
+    async with backend.httpx.AsyncClient() as client:
+        with pytest.raises(backend.httpx.TimeoutException) as exception_info:
             await client.get("https://test_url", extensions={"test": "value"})
         assert (
             str(exception_info.value)
@@ -2738,10 +3002,12 @@ async def test_timeout_not_matching(httpx_mock: HTTPXMock) -> None:
 
 
 @pytest.mark.asyncio
-async def test_extensions_matching(httpx_mock: HTTPXMock) -> None:
+async def test_extensions_matching(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     httpx_mock.add_response(match_extensions={"test": "value"})
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         response = await client.put(
             "https://test_url", extensions={"test": "value", "test2": "value2"}
         )
@@ -2750,11 +3016,13 @@ async def test_extensions_matching(httpx_mock: HTTPXMock) -> None:
 
 @pytest.mark.asyncio
 @pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
-async def test_extensions_not_matching(httpx_mock: HTTPXMock) -> None:
+async def test_extensions_not_matching(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     httpx_mock.add_response(match_extensions={"test": "value"}, is_optional=True)
 
-    async with httpx.AsyncClient() as client:
-        with pytest.raises(httpx.TimeoutException) as exception_info:
+    async with backend.httpx.AsyncClient() as client:
+        with pytest.raises(backend.httpx.TimeoutException) as exception_info:
             await client.get("https://test_url", extensions={"test": "value2"})
         assert (
             str(exception_info.value)
@@ -2764,23 +3032,27 @@ async def test_extensions_not_matching(httpx_mock: HTTPXMock) -> None:
 
 
 @pytest.mark.asyncio
-async def test_optional_response_not_matched(httpx_mock: HTTPXMock) -> None:
+async def test_optional_response_not_matched(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     # This response is optional and the fact that it was never requested should not trigger anything
     httpx_mock.add_response(url="https://test_url", is_optional=True)
     httpx_mock.add_response(url="https://test_url2")
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         response = await client.get("https://test_url2")
     assert response.content == b""
 
 
 @pytest.mark.asyncio
-async def test_optional_response_matched(httpx_mock: HTTPXMock) -> None:
+async def test_optional_response_matched(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     # This response is optional and the fact that it was never requested should not trigger anything
     httpx_mock.add_response(url="https://test_url", is_optional=True)
     httpx_mock.add_response(url="https://test_url2")
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         response1 = await client.get("https://test_url")
         response2 = await client.get("https://test_url2")
     assert response1.content == b""
@@ -2789,31 +3061,37 @@ async def test_optional_response_matched(httpx_mock: HTTPXMock) -> None:
 
 @pytest.mark.asyncio
 @pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
-async def test_mandatory_response_matched(httpx_mock: HTTPXMock) -> None:
+async def test_mandatory_response_matched(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     # This response is optional and the fact that it was never requested should not trigger anything
     httpx_mock.add_response(url="https://test_url")
     # This response MUST be requested (overrides global settings via marker)
     httpx_mock.add_response(url="https://test_url2", is_optional=False)
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         response = await client.get("https://test_url2")
     assert response.content == b""
 
 
 @pytest.mark.asyncio
-async def test_multi_response_matched_once(httpx_mock: HTTPXMock) -> None:
+async def test_multi_response_matched_once(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     httpx_mock.add_response(url="https://test_url", is_reusable=True)
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         response = await client.get("https://test_url")
     assert response.content == b""
 
 
 @pytest.mark.asyncio
-async def test_multi_response_matched_twice(httpx_mock: HTTPXMock) -> None:
+async def test_multi_response_matched_twice(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     httpx_mock.add_response(url="https://test_url", is_reusable=True)
 
-    async with httpx.AsyncClient() as client:
+    async with backend.httpx.AsyncClient() as client:
         response1 = await client.get("https://test_url")
         response2 = await client.get("https://test_url")
     assert response1.content == b""
