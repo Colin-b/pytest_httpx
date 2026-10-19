@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Multipart requests with custom boundaries are now matched by `match_files` (and `match_data`), including when retrieving requests.
+- `match_params` now preserves `unittest.mock.ANY` inside tuple values, as it already does for lists.
 - Sending a non UTF8 body while having a `json` matcher registered will not raise a `UnicodeDecodeError` anymore.
 - `match_params` is now handling `bool`, `int` and `float` values in addition to `str`. Only str values were previously expected.
 - A meaningful error will now be returned when a callback that does not return an `httpx.Response` is called.
