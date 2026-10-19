@@ -5,11 +5,12 @@ from typing import TYPE_CHECKING, TypeAlias, Union
 from pytest_httpx._httpx_compat import HTTPXBackend, get_backends
 
 if TYPE_CHECKING:
-    from pytest_httpx._httpx_compat import httpcore, httpx
+    from pytest_httpx._httpx_compat import httpcore, httpx, httpx2
 
 # Those types are internally defined within httpx._types
 HeaderTypes: TypeAlias = Union[
     "httpx.Headers",
+    "httpx2.Headers",
     dict[str, str],
     dict[bytes, bytes],
     Sequence[tuple[str, str]],

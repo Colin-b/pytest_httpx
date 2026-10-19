@@ -10,7 +10,7 @@ from pytest_httpx._httpx_internals import PrimitiveData, _proxy_url
 from pytest_httpx._options import _HTTPXMockOptions
 
 if TYPE_CHECKING:
-    from pytest_httpx._httpx_compat import httpx
+    from pytest_httpx._httpx_compat import httpx, httpx2
 
 
 def convert_back_mock_any(original: dict, new: dict) -> None:
@@ -74,9 +74,9 @@ class _RequestMatcher:
     def __init__(
         self,
         options: _HTTPXMockOptions,
-        url: "str | re.Pattern[str] | httpx.URL | None" = None,
+        url: "str | re.Pattern[str] | httpx.URL | httpx2.URL | None" = None,
         method: str | None = None,
-        proxy_url: "str | re.Pattern[str] | httpx.URL | None" = None,
+        proxy_url: "str | re.Pattern[str] | httpx.URL | httpx2.URL | None" = None,
         match_headers: dict[str, Any] | None = None,
         match_content: bytes | None = None,
         match_json: Any | None = None,
