@@ -13,10 +13,16 @@ if TYPE_CHECKING:
     from pytest_httpx._httpx_compat import httpx, httpx2
 
 
-Callback: TypeAlias = Callable[
-    ["httpx.Request | httpx2.Request"],
-    "httpx.Response | httpx2.Response | None | Awaitable[httpx.Response | httpx2.Response | None]",
-]
+Callback: TypeAlias = (
+    Callable[
+        ["httpx.Request"],
+        "httpx.Response | None | Awaitable[httpx.Response | None]",
+    ]
+    | Callable[
+        ["httpx2.Request"],
+        "httpx2.Response | None | Awaitable[httpx2.Response | None]",
+    ]
+)
 
 
 class HTTPXMock:
