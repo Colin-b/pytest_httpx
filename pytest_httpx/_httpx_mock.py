@@ -369,4 +369,6 @@ def _unread(response: httpx.Response) -> httpx.Response:
     response.is_closed = False
     if hasattr(response, "_content"):
         del response._content
+    if hasattr(response, "_decoder"):
+        del response._decoder
     return response

@@ -1,4 +1,5 @@
 import asyncio
+import gzip
 import math
 import os
 import re
@@ -919,6 +920,51 @@ async def test_with_headers(httpx_mock: HTTPXMock) -> None:
         assert response.headers == httpx.Headers(
             {"x-test": "Test value", "content-length": "14"}
         )
+
+
+@pytest.mark.asyncio
+async def test_with_gzip_content_encoding(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(
+        url="https://test_url",
+        content=gzip.compress(b"test content 1"),
+        headers={"Content-Encoding": "gzip"},
+    )
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get("https://test_url")
+        assert response.content == b"test content 1"
+
+
+@pytest.mark.asyncio
+async def test_stream_with_gzip_content_encoding(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(
+        url="https://test_url",
+        content=gzip.compress(b"test content 1"),
+        headers={"Content-Encoding": "gzip"},
+    )
+
+    async with (
+        httpx.AsyncClient() as client,
+        client.stream(method="GET", url="https://test_url") as response,
+    ):
+        chunks = [chunk async for chunk in response.aiter_bytes()]
+        assert b"".join(chunks) == b"test content 1"
+
+
+@pytest.mark.asyncio
+async def test_callback_with_gzip_content_encoding(httpx_mock: HTTPXMock) -> None:
+    def custom_response(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            status_code=200,
+            content=gzip.compress(b"test content 1"),
+            headers={"Content-Encoding": "gzip"},
+        )
+
+    httpx_mock.add_callback(custom_response, url="https://test_url")
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get("https://test_url")
+        assert response.content == b"test content 1"
 
 
 @pytest.mark.asyncio

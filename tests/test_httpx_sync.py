@@ -1,3 +1,4 @@
+import gzip
 import os
 import re
 from collections.abc import Iterable
@@ -832,6 +833,47 @@ def test_with_headers(httpx_mock: HTTPXMock) -> None:
         assert response.headers == httpx.Headers(
             {"x-test": "Test value", "content-length": "14"}
         )
+
+
+def test_with_gzip_content_encoding(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(
+        url="https://test_url",
+        content=gzip.compress(b"test content 1"),
+        headers={"Content-Encoding": "gzip"},
+    )
+
+    with httpx.Client() as client:
+        response = client.get("https://test_url")
+        assert response.content == b"test content 1"
+
+
+def test_stream_with_gzip_content_encoding(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(
+        url="https://test_url",
+        content=gzip.compress(b"test content 1"),
+        headers={"Content-Encoding": "gzip"},
+    )
+
+    with (
+        httpx.Client() as client,
+        client.stream(method="GET", url="https://test_url") as response,
+    ):
+        assert b"".join(response.iter_bytes()) == b"test content 1"
+
+
+def test_callback_with_gzip_content_encoding(httpx_mock: HTTPXMock) -> None:
+    def custom_response(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            status_code=200,
+            content=gzip.compress(b"test content 1"),
+            headers={"Content-Encoding": "gzip"},
+        )
+
+    httpx_mock.add_callback(custom_response, url="https://test_url")
+
+    with httpx.Client() as client:
+        response = client.get("https://test_url")
+        assert response.content == b"test content 1"
 
 
 def test_requests_retrieval(httpx_mock: HTTPXMock) -> None:
