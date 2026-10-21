@@ -22,11 +22,12 @@ def test_without_response(httpx_mock: HTTPXMock) -> None:
     )
 
 
-def test_default_response(httpx_mock: HTTPXMock) -> None:
+@pytest.mark.parametrize("url", ["https://test_url", "https://test_url?a=1"])
+def test_default_response(httpx_mock: HTTPXMock, url: str) -> None:
     httpx_mock.add_response()
 
     with httpx.Client() as client:
-        response = client.get("https://test_url")
+        response = client.get(url)
     assert response.content == b""
     assert response.status_code == 200
     assert response.headers == httpx.Headers({})
@@ -116,12 +117,9 @@ def test_url_query_params_with_non_str_name(httpx_mock: HTTPXMock) -> None:
         assert response.content == b""
 
 
-@pytest.mark.parametrize("match_params", [{}, {"a": "1"}])
-def test_match_params_without_url(
-    httpx_mock: HTTPXMock, match_params: dict[str, str]
-) -> None:
+def test_match_params_without_url(httpx_mock: HTTPXMock) -> None:
     with pytest.raises(ValueError) as exception_info:
-        httpx_mock.add_response(match_params=match_params)
+        httpx_mock.add_response(match_params={"a": "1"})
 
     assert (
         str(exception_info.value) == "URL must be provided when match_params is used."
@@ -153,6 +151,18 @@ def test_regex_url_and_match_params(
 
 @pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
 def test_empty_match_params_requires_no_query(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(match_params={}, is_reusable=True)
+
+    with httpx.Client() as client:
+        assert client.get("https://test_url").status_code == 200
+        assert client.get("https://other_url/path").status_code == 200
+        with pytest.raises(httpx.TimeoutException) as exception_info:
+            client.get("https://test_url?a=1")
+        assert "with {} query parameters" in str(exception_info.value)
+
+
+@pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
+def test_url_and_empty_match_params_requires_no_query(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url="https://test_url", match_params={}, is_reusable=True)
 
     with httpx.Client() as client:

@@ -111,7 +111,7 @@ class _RequestMatcher:
                 "If you want to match against the multipart representation, use match_files (and match_data). "
                 "Otherwise, use match_content."
             )
-        if self.params is not None and not self.url:
+        if self.params and not self.url:
             raise ValueError("URL must be provided when match_params is used.")
         if self.params is not None and isinstance(self.url, re.Pattern):
             raise ValueError(
@@ -171,7 +171,7 @@ class _RequestMatcher:
 
     def _url_match(self, request: httpx.Request) -> bool:
         if not self.url:
-            return True
+            return self.params is None or not request.url.params
 
         return _url_match(self.url, request.url, self.params)
 
@@ -267,7 +267,7 @@ class _RequestMatcher:
     def _extra_description(self) -> str:
         extra_description = []
 
-        if self.params:
+        if self.params is not None:
             extra_description.append(f"{self.params} query parameters")
         if self.headers:
             extra_description.append(f"{self.headers} headers")
