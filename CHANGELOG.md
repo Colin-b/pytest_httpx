@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - `match_params` now preserves `unittest.mock.ANY` inside tuple values, as it already does for lists.
+- An empty `match_params` now matches only requests without query parameters, even when `url` is omitted. This is unnecessary when `url` already specifies a URL without query parameters.
 - Sending a non UTF8 body while having a `json` matcher registered will not raise a `UnicodeDecodeError` anymore.
 - `match_params` is now handling `bool`, `int` and `float` values in addition to `str`. Only str values were previously expected.
 - A meaningful error will now be returned when a callback that does not return an `httpx.Response` is called.
