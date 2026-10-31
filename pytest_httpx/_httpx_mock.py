@@ -156,7 +156,7 @@ class HTTPXMock:
         self._requests.append((real_transport, request))
 
         callback = self._get_callback(real_transport, request)
-        if callback:
+        if callback is not None:
             response = callback(request)
 
             if isinstance(response, httpx.Response):
@@ -183,7 +183,7 @@ class HTTPXMock:
         self._requests.append((real_transport, request))
 
         callback = self._get_callback(real_transport, request)
-        if callback:
+        if callback is not None:
             response = callback(request)
 
             if inspect.isawaitable(response):
