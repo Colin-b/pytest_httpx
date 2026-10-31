@@ -113,7 +113,7 @@ class _RequestMatcher:
             )
         if self.params and not self.url:
             raise ValueError("URL must be provided when match_params is used.")
-        if self.params and isinstance(self.url, re.Pattern):
+        if self.params is not None and isinstance(self.url, re.Pattern):
             raise ValueError(
                 "match_params cannot be used in addition to regex URL. Request this feature via https://github.com/Colin-b/pytest_httpx/issues/new?title=Regex%20URL%20should%20allow%20match_params&body=Hi,%20I%20need%20a%20regex%20to%20match%20the%20non%20query%20part%20of%20the%20URL%20only"
             )
@@ -171,7 +171,7 @@ class _RequestMatcher:
 
     def _url_match(self, request: httpx.Request) -> bool:
         if not self.url:
-            return True
+            return self.params is None or not request.url.params
 
         return _url_match(self.url, request.url, self.params)
 
@@ -267,7 +267,7 @@ class _RequestMatcher:
     def _extra_description(self) -> str:
         extra_description = []
 
-        if self.params:
+        if self.params is not None:
             extra_description.append(f"{self.params} query parameters")
         if self.headers:
             extra_description.append(f"{self.headers} headers")
