@@ -16,6 +16,7 @@
 Once installed, `httpx_mock` [`pytest`](https://docs.pytest.org/en/latest/) fixture will make sure every [`httpx`](https://www.python-httpx.org) request will be replied to with user provided responses ([unless some hosts are explicitly skipped](#do-not-mock-some-requests)).
 
 - [Add responses](#add-responses)
+  - [Responses from a file](#responses-from-a-file)
   - [JSON body](#add-json-response)
   - [Custom body](#reply-with-custom-body)
   - [Multipart body (files, ...)](#add-multipart-response)
@@ -62,6 +63,57 @@ async def test_something_async(httpx_mock):
 If all registered responses are not sent back during test execution, the test case will fail at teardown [(unless you turned `assert_all_responses_were_requested` option off)](#allow-to-register-more-responses-than-what-will-be-requested).
 
 Default response is a `HTTP/1.1` `200 (OK)` without any body.
+
+### Responses from a file
+
+Use `httpx_mock.add_responses_from_file(path)` to register multiple responses from
+a UTF-8 JSON file. The file contains an array of objects, each using the keyword
+arguments accepted by `add_response`, including request matchers:
+
+```json
+[
+  {"url": "https://example.com/api", "status_code": 503, "text": "Unavailable"},
+  {"url": "https://example.com/api", "json": {"result": "OK"}}
+]
+```
+
+```python
+from pathlib import Path
+
+import httpx
+
+
+def test_responses(httpx_mock):
+    httpx_mock.add_responses_from_file(Path(__file__).parent / "responses.json")
+    with httpx.Client() as client:
+        assert client.get("https://example.com/api").status_code == 503
+        assert client.get("https://example.com/api").json() == {"result": "OK"}
+```
+
+Both string paths and path-like objects are accepted. Relative paths are resolved
+from the current working directory. Responses are appended in file order and use
+the usual matching, reuse and teardown rules for both sync and async clients.
+An empty array registers nothing. The file is read once at registration time;
+later changes to the file do not affect registered responses. Parsing or
+registration errors add no responses from that file and preserve earlier registrations.
+Response body validation still follows `add_response` and may occur when requested.
+
+JSON values are passed through without special conversions. For values JSON cannot
+represent, such as `bytes`, regular expressions or streams, pass keyword overrides:
+
+```python
+import re
+
+httpx_mock.add_responses_from_file(
+    "responses.json", url=re.compile(r"https://example\.com/.*"), is_optional=True
+)
+```
+
+Overrides apply to every entry and replace whole parameter values (nested mappings
+are not merged). For binary bodies or streams, omit the other body parameters in
+the file and supply `content=b"..."` or `stream=...` in Python, just as with
+`add_response`. This API loads manually prepared response configurations; it does
+not record HTTP traffic or define a recording format for replay.
 
 ### How response is selected
 

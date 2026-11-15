@@ -1,6 +1,9 @@
 import copy
 import inspect
+import json as json_module
 from collections.abc import Awaitable, Callable
+from os import PathLike
+from pathlib import Path
 from typing import Any
 
 import httpx
@@ -87,6 +90,30 @@ class HTTPXMock:
             )
 
         self.add_callback(response_callback, **matchers)
+
+    def add_responses_from_file(
+        self, path: str | PathLike[str], **overrides: Any
+    ) -> None:
+        """Register responses from a UTF-8 JSON array of objects.
+
+        Each object contains keyword arguments for :meth:`add_response`.
+        Overrides replace whole parameter values in every object, allowing
+        Python-only values such as bytes, regular expressions and streams.
+        The file is read immediately. Parsing or registration errors leave
+        previously registered responses unchanged.
+        """
+        with Path(path).open(encoding="utf-8") as response_file:
+            responses = json_module.load(response_file)
+        if not isinstance(responses, list) or any(
+            not isinstance(response, dict) for response in responses
+        ):
+            raise ValueError("Response file must contain a JSON array of objects")
+
+        # Stage registrations so an invalid entry cannot leave a partial batch.
+        pending = HTTPXMock(self._options)
+        for response in responses:
+            pending.add_response(**(response | overrides))
+        self._callbacks.extend(pending._callbacks)
 
     def add_callback(
         self,

@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
+- Register responses from a UTF-8 JSON file with `httpx_mock.add_responses_from_file`, with optional Python keyword overrides.
 - Explicit support for python `3.15`.
 
 ### Fixed
