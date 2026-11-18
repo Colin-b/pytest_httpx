@@ -1,15 +1,16 @@
 import json
 import re
 from collections.abc import Sequence
-from re import Pattern
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from unittest.mock import ANY
 
-import httpx
-from httpx import QueryParams
-
+from pytest_httpx import get_backends
+from pytest_httpx._httpx_compat import HTTPXBackend, get_backend
 from pytest_httpx._httpx_internals import PrimitiveData, _proxy_url
 from pytest_httpx._options import _HTTPXMockOptions
+
+if TYPE_CHECKING:
+    from pytest_httpx._httpx_compat import httpx, httpx2
 
 
 def convert_back_mock_any(original: dict, new: dict) -> None:
@@ -30,17 +31,23 @@ def convert_back_mock_any(original: dict, new: dict) -> None:
 
 
 def _url_match(
-    url_to_match: Pattern[str] | httpx.URL,
-    received: httpx.URL,
+    backend: HTTPXBackend,
+    url_to_match: "re.Pattern[str] | httpx.URL",
+    received: "httpx.URL",
     params: dict[str, PrimitiveData | Sequence[PrimitiveData]] | None,
 ) -> bool:
     if isinstance(url_to_match, re.Pattern):
         return url_to_match.match(str(received)) is not None
 
+    # The expected URL may have been built with a different backend than the one
+    # that received the request, so normalize it to the request's backend before
+    # comparing.
+    url_to_match = backend.httpx.URL(str(url_to_match))
+
     # Compare query parameters apart as order of parameters should not matter
     received_params = to_params_dict(received.params)
     expected_params = to_params_dict(
-        url_to_match.params if params is None else QueryParams(params)
+        url_to_match.params if params is None else backend.httpx.QueryParams(params)
     )
     if params:
         convert_back_mock_any(params, expected_params)
@@ -52,7 +59,9 @@ def _url_match(
     return (received_params == expected_params) and (url == received_url)
 
 
-def to_params_dict(params: QueryParams) -> dict[str, str | list[str]]:
+def to_params_dict(
+    params: "httpx.QueryParams",
+) -> dict[str, str | list[str]]:
     """Convert query parameters to a dict where the value is a string if the parameter has a single value and a list of string otherwise."""
     d = {}
     for key in params:
@@ -65,9 +74,9 @@ class _RequestMatcher:
     def __init__(
         self,
         options: _HTTPXMockOptions,
-        url: str | Pattern[str] | httpx.URL | None = None,
+        url: "str | re.Pattern[str] | httpx.URL | httpx2.URL | None" = None,
         method: str | None = None,
-        proxy_url: str | Pattern[str] | httpx.URL | None = None,
+        proxy_url: "str | re.Pattern[str] | httpx.URL | httpx2.URL | None" = None,
         match_headers: dict[str, Any] | None = None,
         match_content: bytes | None = None,
         match_json: Any | None = None,
@@ -80,7 +89,7 @@ class _RequestMatcher:
     ):
         self._options = options
         self.nb_calls = 0
-        self.url = httpx.URL(url) if url and isinstance(url, str) else url
+        self.url = url
         self.method = method.upper() if method else method
         self.headers = match_headers
         self.content = match_content
@@ -88,11 +97,7 @@ class _RequestMatcher:
         self.data = match_data
         self.files = match_files
         self.params = match_params
-        self.proxy_url = (
-            httpx.URL(proxy_url)
-            if proxy_url and isinstance(proxy_url, str)
-            else proxy_url
-        )
+        self.proxy_url = proxy_url
         self.extensions = match_extensions
         self.is_optional = (
             not options.assert_all_responses_were_requested
@@ -144,11 +149,14 @@ class _RequestMatcher:
         return sum(matching_ways) > 1
 
     def _is_matching_params_more_than_one_way(self) -> bool:
-        url_has_params = (
-            bool(self.url.params)
-            if (self.url and isinstance(self.url, httpx.URL))
-            else False
-        )
+        if not self.url or isinstance(self.url, re.Pattern):
+            return False
+
+        [any_backend, *_] = get_backends()
+        # It doesn't matter which backend to use, both
+        # httpx and httpx2 has the same URL params parsing logic.
+        url_has_params = bool(any_backend.httpx.URL(str(self.url)).params)
+
         matching_ways = [
             self.params is not None,
             url_has_params,
@@ -157,31 +165,32 @@ class _RequestMatcher:
 
     def match(
         self,
-        real_transport: httpx.HTTPTransport | httpx.AsyncHTTPTransport,
-        request: httpx.Request,
+        real_transport: "httpx.HTTPTransport | httpx.AsyncHTTPTransport",
+        request: "httpx.Request",
     ) -> bool:
+        backend = get_backend(request)
         return (
-            self._url_match(request)
+            self._url_match(backend, request)
             and self._method_match(request)
             and self._headers_match(request)
-            and self._content_match(request)
-            and self._proxy_match(real_transport)
+            and self._content_match(backend, request)
+            and self._proxy_match(backend, real_transport)
             and self._extensions_match(request)
         )
 
-    def _url_match(self, request: httpx.Request) -> bool:
+    def _url_match(self, backend: HTTPXBackend, request: "httpx.Request") -> bool:
         if not self.url:
             return True
 
-        return _url_match(self.url, request.url, self.params)
+        return _url_match(backend, self.url, request.url, self.params)
 
-    def _method_match(self, request: httpx.Request) -> bool:
+    def _method_match(self, request: "httpx.Request") -> bool:
         if not self.method:
             return True
 
         return request.method == self.method
 
-    def _headers_match(self, request: httpx.Request) -> bool:
+    def _headers_match(self, request: "httpx.Request") -> bool:
         if not self.headers:
             return True
 
@@ -200,7 +209,7 @@ class _RequestMatcher:
             for header_name, header_value in self.headers.items()
         )
 
-    def _content_match(self, request: httpx.Request) -> bool:
+    def _content_match(self, backend: HTTPXBackend, request: "httpx.Request") -> bool:
         if self.content is not None:
             return request.content == self.content
 
@@ -219,7 +228,7 @@ class _RequestMatcher:
             # Ensure we re-use the same boundary for comparison
             boundary = boundary_matched.group(1)
             # Prevent internal httpx changes from impacting users not matching on files
-            from httpx._multipart import MultipartStream
+            MultipartStream = backend.httpx._multipart.MultipartStream
 
             multipart_content = b"".join(
                 MultipartStream(self.data or {}, self.files, boundary)
@@ -229,17 +238,19 @@ class _RequestMatcher:
         return True
 
     def _proxy_match(
-        self, real_transport: httpx.HTTPTransport | httpx.AsyncHTTPTransport
+        self,
+        backend: HTTPXBackend,
+        real_transport: "httpx.HTTPTransport | httpx.AsyncHTTPTransport",
     ) -> bool:
         if not self.proxy_url:
             return True
 
-        if real_proxy_url := _proxy_url(real_transport):
-            return _url_match(self.proxy_url, real_proxy_url, params=None)
+        if real_proxy_url := _proxy_url(backend, real_transport):
+            return _url_match(backend, self.proxy_url, real_proxy_url, params=None)
 
         return False
 
-    def _extensions_match(self, request: httpx.Request) -> bool:
+    def _extensions_match(self, request: "httpx.Request") -> bool:
         if not self.extensions:
             return True
 
