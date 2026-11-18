@@ -993,7 +993,9 @@ async def test_with_headers(httpx_mock: HTTPXMock, backend: HTTPXBackend) -> Non
 
 
 @pytest.mark.asyncio
-async def test_with_gzip_content_encoding(httpx_mock: HTTPXMock, backend: HTTPXBackend) -> None:
+async def test_with_gzip_content_encoding(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     httpx_mock.add_response(
         url="https://test_url",
         content=gzip.compress(b"test content 1"),
@@ -1006,7 +1008,9 @@ async def test_with_gzip_content_encoding(httpx_mock: HTTPXMock, backend: HTTPXB
 
 
 @pytest.mark.asyncio
-async def test_stream_with_gzip_content_encoding(httpx_mock: HTTPXMock, backend: HTTPXBackend) -> None:
+async def test_stream_with_gzip_content_encoding(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     httpx_mock.add_response(
         url="https://test_url",
         content=gzip.compress(b"test content 1"),
@@ -1022,8 +1026,10 @@ async def test_stream_with_gzip_content_encoding(httpx_mock: HTTPXMock, backend:
 
 
 @pytest.mark.asyncio
-async def test_callback_with_gzip_content_encoding(httpx_mock: HTTPXMock, backend: HTTPXBackend) -> None:
-    def custom_response(request: httpx.Request) -> httpx.Response:
+async def test_callback_with_gzip_content_encoding(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
+    def custom_response(request: "httpx.Request") -> "httpx.Response":
         return backend.httpx.Response(
             status_code=200,
             content=gzip.compress(b"test content 1"),

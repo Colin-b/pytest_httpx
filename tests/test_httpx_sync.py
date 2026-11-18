@@ -898,7 +898,9 @@ def test_with_headers(httpx_mock: HTTPXMock, backend: HTTPXBackend) -> None:
         )
 
 
-def test_with_gzip_content_encoding(httpx_mock: HTTPXMock, backend: HTTPXBackend) -> None:
+def test_with_gzip_content_encoding(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     httpx_mock.add_response(
         url="https://test_url",
         content=gzip.compress(b"test content 1"),
@@ -910,7 +912,9 @@ def test_with_gzip_content_encoding(httpx_mock: HTTPXMock, backend: HTTPXBackend
         assert response.content == b"test content 1"
 
 
-def test_stream_with_gzip_content_encoding(httpx_mock: HTTPXMock, backend: HTTPXBackend) -> None:
+def test_stream_with_gzip_content_encoding(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
     httpx_mock.add_response(
         url="https://test_url",
         content=gzip.compress(b"test content 1"),
@@ -924,8 +928,10 @@ def test_stream_with_gzip_content_encoding(httpx_mock: HTTPXMock, backend: HTTPX
         assert b"".join(response.iter_bytes()) == b"test content 1"
 
 
-def test_callback_with_gzip_content_encoding(httpx_mock: HTTPXMock, backend: HTTPXBackend) -> None:
-    def custom_response(request: httpx.Request) -> httpx.Response:
+def test_callback_with_gzip_content_encoding(
+    httpx_mock: HTTPXMock, backend: HTTPXBackend
+) -> None:
+    def custom_response(request: "httpx.Request") -> "httpx.Response":
         return backend.httpx.Response(
             status_code=200,
             content=gzip.compress(b"test content 1"),
