@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
+- `match_request` parameter is now available on responses, callbacks and exceptions registration, as well as request(s) retrieval. It expects a callable receiving the `httpx.Request` and returning a boolean. It is combined with the other match parameters: all of them must match. This allows matching on conditions such as the absence of a header ([refer to documentation](README.md#matching-with-a-custom-matcher) for more information).
 - Explicit support for python `3.15`.
 
 ### Fixed

@@ -238,7 +238,7 @@ def test_headers_matching(httpx_mock: HTTPXMock):
         response = client.get("https://test_url")
 ```
 
-[^header-absence]: Matching on the absence of a header is currently not supported. [Retrieve the request](#check-sent-requests) after it is sent and assert that the header is absent from `request.headers`.
+[^header-absence]: `match_headers` matches provided headers on equality and cannot express the absence of a header. Use a [custom matcher](#matching-with-a-custom-matcher) for that.
 
 #### Matching on HTTP body
 
@@ -338,6 +338,28 @@ def test_timeout_matching(httpx_mock: HTTPXMock):
 
     with httpx.Client() as client:
         response = client.get("https://test_url", timeout=10)
+```
+
+#### Matching with a custom matcher
+
+Use `match_request` to provide your own matching logic.
+
+`match_request` must be a callable expecting the [`httpx.Request`](https://www.python-httpx.org/api/#request) as parameter and returning a boolean.
+
+Returning `True` means that the request matches. The callable is used in addition to the other match parameters, and all of them have to match.
+
+For instance, to reply only when a header is absent:
+
+```python
+import httpx
+from pytest_httpx import HTTPXMock
+
+
+def test_header_absence(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(match_request=lambda request: "X-Foo" not in request.headers)
+
+    with httpx.Client() as client:
+        response = client.get("https://test_url")
 ```
 
 ### Add JSON response

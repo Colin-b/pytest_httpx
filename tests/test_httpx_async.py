@@ -2864,3 +2864,126 @@ async def test_multi_response_matched_twice(httpx_mock: HTTPXMock) -> None:
         response2 = await client.get("https://test_url")
     assert response1.content == b""
     assert response2.content == b""
+
+
+@pytest.mark.asyncio
+async def test_custom_matcher_matching(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(
+        match_request=lambda request: "X-Foo" not in request.headers,
+        json={"ok": True},
+    )
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get("https://test_url")
+        assert response.json() == {"ok": True}
+
+
+@pytest.mark.asyncio
+@pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
+async def test_custom_matcher_not_matching(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(
+        match_request=lambda request: "X-Foo" not in request.headers,
+        is_optional=True,
+    )
+
+    async with httpx.AsyncClient() as client:
+        with pytest.raises(httpx.TimeoutException) as exception_info:
+            await client.get("https://test_url", headers={"X-Foo": "bar"})
+        assert (
+            str(exception_info.value)
+            == """No response can be found for GET request on https://test_url amongst:
+- Match any request with custom matcher <lambda>"""
+        )
+
+
+@pytest.mark.asyncio
+async def test_custom_matcher_combined_with_other_matchers(
+    httpx_mock: HTTPXMock,
+) -> None:
+    httpx_mock.add_response(
+        url="https://test_url",
+        method="GET",
+        match_request=lambda request: "X-Foo" not in request.headers,
+        json={"matched": True},
+    )
+    httpx_mock.add_response(
+        url="https://test_url", method="GET", json={"matched": False}
+    )
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get("https://test_url")
+        assert response.json() == {"matched": True}
+
+        response = await client.get("https://test_url", headers={"X-Foo": "bar"})
+        assert response.json() == {"matched": False}
+
+
+@pytest.mark.asyncio
+@pytest.mark.httpx_mock(assert_all_requests_were_expected=False)
+async def test_custom_matcher_with_other_matchers_not_matching(
+    httpx_mock: HTTPXMock,
+) -> None:
+    httpx_mock.add_response(
+        url="https://test_url",
+        method="POST",
+        match_headers={"X-Other": "yes"},
+        match_request=lambda request: "X-Foo" not in request.headers,
+        is_optional=True,
+    )
+
+    async with httpx.AsyncClient() as client:
+        with pytest.raises(httpx.TimeoutException) as exception_info:
+            await client.get("https://test_url", headers={"X-Other": "yes"})
+        assert (
+            str(exception_info.value)
+            == """No response can be found for GET request on https://test_url with {'X-Other': 'yes'} headers amongst:
+- Match POST request on https://test_url with {'X-Other': 'yes'} headers and custom matcher <lambda>"""
+        )
+
+
+@pytest.mark.asyncio
+async def test_custom_matcher_request_retrieval(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(is_reusable=True)
+
+    async with httpx.AsyncClient() as client:
+        await client.get("https://test_url")
+        await client.get("https://test_url", headers={"X-Foo": "bar"})
+
+    without_header = httpx_mock.get_requests(
+        match_request=lambda request: "X-Foo" not in request.headers
+    )
+    with_header = httpx_mock.get_request(
+        match_request=lambda request: "X-Foo" in request.headers
+    )
+
+    assert len(without_header) == 1
+    assert "X-Foo" not in without_header[0].headers
+    assert with_header is not None
+    assert with_header.headers["X-Foo"] == "bar"
+
+
+@pytest.mark.asyncio
+async def test_custom_matcher_callback(httpx_mock: HTTPXMock) -> None:
+    def custom_response(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(status_code=200, text="matched")
+
+    httpx_mock.add_callback(
+        custom_response,
+        match_request=lambda request: "X-Foo" not in request.headers,
+    )
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get("https://test_url")
+        assert response.text == "matched"
+
+
+@pytest.mark.asyncio
+async def test_custom_matcher_exception(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_exception(
+        httpx.ReadTimeout("Unable to read within timeout"),
+        match_request=lambda request: "X-Foo" not in request.headers,
+    )
+
+    async with httpx.AsyncClient() as client:
+        with pytest.raises(httpx.ReadTimeout):
+            await client.get("https://test_url")

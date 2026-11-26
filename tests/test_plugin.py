@@ -40,6 +40,30 @@ def test_httpx_mock_unused_response(testdir: Testdir) -> None:
     )
 
 
+def test_httpx_mock_unused_response_with_custom_matcher(testdir: Testdir) -> None:
+    """
+    Unused responses registered with a custom matcher should mention it.
+    """
+    testdir.makepyfile("""
+        def test_httpx_mock_unused_response_with_custom_matcher(httpx_mock):
+            def no_x_foo(request):
+                return "X-Foo" not in request.headers
+
+            httpx_mock.add_response(match_request=no_x_foo)
+    """)
+    result = testdir.runpytest()
+    result.assert_outcomes(errors=1, passed=1)
+    result.stdout.fnmatch_lines(
+        [
+            "*AssertionError: The following responses are mocked but not requested:",
+            "*  - Match any request with custom matcher no_x_foo",
+            "*  ",
+            "*  If this is on purpose, refer to https://github.com/Colin-b/pytest_httpx/blob/master/README.md#allow-to-register-more-responses-than-what-will-be-requested",
+        ],
+        consecutive=True,
+    )
+
+
 def test_httpx_mock_unused_response_without_assertion(testdir: Testdir) -> None:
     """
     Unused responses should not fail test case if
