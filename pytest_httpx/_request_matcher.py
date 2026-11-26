@@ -1,6 +1,6 @@
 import json
 import re
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from re import Pattern
 from typing import Any
 from unittest.mock import ANY
@@ -75,6 +75,7 @@ class _RequestMatcher:
         match_files: Any | None = None,
         match_extensions: dict[str, Any] | None = None,
         match_params: dict[str, PrimitiveData | Sequence[PrimitiveData]] | None = None,
+        match_request: Callable[[httpx.Request], bool] | None = None,
         is_optional: bool | None = None,
         is_reusable: bool | None = None,
     ):
@@ -88,6 +89,7 @@ class _RequestMatcher:
         self.data = match_data
         self.files = match_files
         self.params = match_params
+        self.match_request = match_request
         self.proxy_url = (
             httpx.URL(proxy_url)
             if proxy_url and isinstance(proxy_url, str)
@@ -167,6 +169,7 @@ class _RequestMatcher:
             and self._content_match(request)
             and self._proxy_match(real_transport)
             and self._extensions_match(request)
+            and self._match_request(request)
         )
 
     def _url_match(self, request: httpx.Request) -> bool:
@@ -248,6 +251,12 @@ class _RequestMatcher:
             for extension_name, extension_value in self.extensions.items()
         )
 
+    def _match_request(self, request: httpx.Request) -> bool:
+        if self.match_request is None:
+            return True
+
+        return self.match_request(request)
+
     def should_have_matched(self) -> bool:
         """Return True if the matcher did not serve its purpose."""
         return not self.is_optional and not self.nb_calls
@@ -283,5 +292,10 @@ class _RequestMatcher:
             extra_description.append(f"{self.proxy_url} proxy URL")
         if self.extensions:
             extra_description.append(f"{self.extensions} extensions")
+        if self.match_request is not None:
+            name = getattr(
+                self.match_request, "__name__", type(self.match_request).__name__
+            )
+            extra_description.append(f"custom matcher {name}")
 
         return " and ".join(extra_description)
